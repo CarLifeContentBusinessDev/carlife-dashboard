@@ -8,7 +8,7 @@ interface DemoEpisodeListProps {
 }
 
 const gridCols =
-  'minmax(40px,0.5fr) minmax(80px,3fr) minmax(80px,2fr) minmax(80px,0.8fr) minmax(80px,0.8fr) minmax(80px,0.6fr) minmax(80px,0.6fr) minmax(80px,0.5fr) minmax(140px,1fr)';
+  'minmax(40px,0.5fr) minmax(80px,3fr) minmax(80px,2fr) minmax(80px,0.8fr) minmax(80px,0.8fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,0.5fr) minmax(140px,1fr)';
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -16,8 +16,8 @@ const columns = [
   { key: 'programs.title', label: '프로그램' },
   { key: 'date', label: '날짜' },
   { key: 'duration', label: '길이' },
-  { key: 'is_active', label: '공개' },
-  { key: 'is_searchable', label: '검색' },
+  { key: 'is_active', label: 'Status' },
+  { key: 'is_searchable', label: 'Searchable' },
   { key: 'language', label: '국가' },
   { key: 'actions', label: '' },
 ];

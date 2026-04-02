@@ -117,6 +117,17 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
 
     // boolean 타입 처리
     if (typeof value === 'boolean') {
+      if (key === 'is_active' || key === 'is_searchable') {
+        return value ? (
+          <span className='px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700'>
+            Active
+          </span>
+        ) : (
+          <span className='px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500'>
+            Inactive
+          </span>
+        );
+      }
       return value ? 'O' : 'X';
     }
 

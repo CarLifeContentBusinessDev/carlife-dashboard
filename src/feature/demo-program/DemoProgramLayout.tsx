@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import DemoListLayout from '../../components/DemoListLayout';
+import DemoListLayout, { type StatusFilter } from '../../components/DemoListLayout';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import DemoProgramList from './DemoProgramList';
 import type { LanguageCode } from '../../constants/languages';
@@ -20,6 +20,9 @@ const DemoProgramLayout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchPrograms = async () => {
     setLoading(true);
@@ -41,13 +44,24 @@ const DemoProgramLayout = () => {
     fetchPrograms();
   }, []);
 
-  const filteredPrograms =
-    selectedLang === 'all'
-      ? programs
-      : programs.filter((prog) => {
-          const langs = parseLanguages(prog.language);
-          return langs.includes(selectedLang);
-        });
+  const filteredPrograms = programs
+    .filter((prog) => {
+      if (selectedLang === 'all') return true;
+      const langs = parseLanguages(prog.language);
+      return langs.includes(selectedLang);
+    })
+    .filter((prog) => {
+      if (statusFilter === 'all') return true;
+      return statusFilter === 'active' ? prog.is_active : !prog.is_active;
+    })
+    .filter((prog) => {
+      if (searchableFilter === 'all') return true;
+      return searchableFilter === 'active' ? prog.is_searchable : !prog.is_searchable;
+    })
+    .filter((prog) => {
+      if (!searchQuery) return true;
+      return prog.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
   const displayPrograms = filteredPrograms.map((prog) => {
     const broadcasting = (prog as any).broadcastings;
@@ -90,6 +104,13 @@ const DemoProgramLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
+      statusFilter={statusFilter}
+      onStatusFilterChange={setStatusFilter}
+      searchableFilter={searchableFilter}
+      onSearchableFilterChange={setSearchableFilter}
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      searchPlaceholder='프로그램명을 입력하세요.'
       addLabel='프로그램 추가'
       onAdd={() => navigate('/demo/program/new')}
     >

@@ -37,6 +37,7 @@ const DemoCategoryLayout = () => {
   const [programCounts, setProgramCounts] = useState<Record<number, number>>(
     {}
   );
+  const [searchQuery, setSearchQuery] = useState('');
 
   // 언어별로 보여줄 컬럼명 매핑 (공통 상수 사용)
   const langColumnMap = LANG_COLUMN_MAP;
@@ -75,15 +76,20 @@ const DemoCategoryLayout = () => {
   }, [selectedLang]);
 
   // 필터링된 데이터 생성
-  const filteredCategories = categories.map((cat) => ({
-    id: cat.id,
-    title: cat[langColumnMap[selectedLang].title],
-    img_url: cat[langColumnMap[selectedLang].img_url],
-    order: cat.order,
-    created_at: cat.created_at,
-    language: cat.language,
-    programsCount: programCounts[cat.id] || 0,
-  }));
+  const filteredCategories = categories
+    .map((cat) => ({
+      id: cat.id,
+      title: cat[langColumnMap[selectedLang].title],
+      img_url: cat[langColumnMap[selectedLang].img_url],
+      order: cat.order,
+      created_at: cat.created_at,
+      language: cat.language,
+      programsCount: programCounts[cat.id] || 0,
+    }))
+    .filter((cat) => {
+      if (!searchQuery) return true;
+      return cat.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
   const {
     sortKey,
@@ -138,6 +144,9 @@ const DemoCategoryLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      searchPlaceholder='카테고리명을 입력하세요.'
       addLabel='카테고리 추가'
       onAdd={() => navigate('/demo/category/new')}
     >

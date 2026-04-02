@@ -24,6 +24,7 @@ const DemoBroadcastingLayout = () => {
   const [programCounts, setProgramCounts] = useState<Record<number, number>>(
     {}
   );
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchProgramCounts = async () => {
@@ -58,21 +59,24 @@ const DemoBroadcastingLayout = () => {
   }, [selectedLang]);
 
   const filteredBroadcasting = useMemo(() => {
-    const byLanguage =
-      selectedLang === 'all'
-        ? broadcasting
-        : broadcasting.filter((brod) => {
-            const langs = parseLanguages(brod.language);
-            return langs.includes(selectedLang);
-          });
-
-    const withCounts = byLanguage.map((brod) => ({
-      ...brod,
-      programsCount: programCounts[brod.id] || 0,
-    }));
-
-    return withCounts;
-  }, [broadcasting, selectedLang, programCounts]);
+    return broadcasting
+      .filter((brod) => {
+        if (selectedLang === 'all') return true;
+        return parseLanguages(brod.language).includes(selectedLang);
+      })
+      .filter((brod) => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          brod.title?.toLowerCase().includes(q) ||
+          brod.channel?.toLowerCase().includes(q)
+        );
+      })
+      .map((brod) => ({
+        ...brod,
+        programsCount: programCounts[brod.id] || 0,
+      }));
+  }, [broadcasting, selectedLang, searchQuery, programCounts]);
 
   const {
     sortKey,
@@ -124,6 +128,9 @@ const DemoBroadcastingLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      searchPlaceholder='방송사명 또는 채널명을 입력하세요.'
       addLabel='방송사 추가'
       onAdd={() => navigate('/demo/broadcasting/new')}
     >

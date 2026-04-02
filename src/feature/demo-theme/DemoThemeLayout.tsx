@@ -1,4 +1,5 @@
 import DemoListLayout from '../../components/DemoListLayout';
+import Dropdown from '../../components/Dropdown';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import SortControls from '../../components/SortControls';
 import type { LanguageCode } from '../../constants/languages';
@@ -21,6 +22,9 @@ const DemoThemeLayout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
+  const [sections, setSections] = useState<{ id: number; title: string }[]>([]);
+  const [selectedSection, setSelectedSection] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchThemes = async () => {
     setLoading(true);
@@ -40,15 +44,35 @@ const DemoThemeLayout = () => {
 
   useEffect(() => {
     fetchThemes();
+    fetchAllSupabaseRows<{ id: number; title: string }>({
+      table: 'sections',
+      select: 'id, title',
+      orderColumn: 'id',
+    }).then(setSections);
   }, []);
 
-  const filteredTheme =
-    selectedLang === 'all'
-      ? themes
-      : themes.filter((t) => {
-          const langs = parseLanguages(t.language);
-          return langs.includes(selectedLang);
-        });
+  const sectionOptions = [
+    { value: 'all', label: '전체 섹션' },
+    ...sections.map((s) => ({ value: String(s.id), label: s.title })),
+  ];
+
+  const filteredTheme = themes
+    .filter((t) => {
+      if (selectedLang === 'all') return true;
+      return parseLanguages(t.language).includes(selectedLang);
+    })
+    .filter((t) => {
+      if (selectedSection === 'all') return true;
+      return String(t.section_id) === selectedSection;
+    })
+    .filter((t) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        t.title?.toLowerCase().includes(q) ||
+        t.subtitle?.toLowerCase().includes(q)
+      );
+    });
 
   const {
     sortKey,
@@ -80,6 +104,19 @@ const DemoThemeLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
+      filterExtras={
+        <div className='flex items-center gap-2'>
+          <span className='text-sm text-gray-600 font-medium'>Section:</span>
+          <Dropdown
+            value={selectedSection}
+            options={sectionOptions}
+            onChange={setSelectedSection}
+          />
+        </div>
+      }
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      searchPlaceholder='테마명을 입력하세요.'
       addLabel='테마 추가'
       onAdd={() => navigate('/demo/theme/new')}
     >
