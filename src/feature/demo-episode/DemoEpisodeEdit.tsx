@@ -26,6 +26,10 @@ interface EpisodeForm {
   audio_file: string;
   audioFile_dubbing: string;
   language: string[];
+  is_active: boolean;
+  is_searchable: boolean;
+  theme_color?: string;
+  sub_title?: string;
 }
 
 interface ProgramOption {
@@ -90,12 +94,16 @@ const DemoEpisodeEdit = () => {
           program_id: data.program_id == null ? null : Number(data.program_id),
           date: String(data.date ?? ''),
           created_at: String(data.created_at ?? ''),
-          duration: String(data.duration ?? data.durtaion ?? ''),
+          duration: String(data.duration ?? ''),
           audio_file: String(data.audio_file ?? ''),
           audioFile_dubbing: String(data.audioFile_dubbing ?? ''),
           language: Array.isArray(data.language)
             ? (data.language as string[])
             : [],
+          is_active: Boolean(data.is_active),
+          is_searchable: Boolean(data.is_searchable),
+          theme_color: String(data.theme_color ?? ''),
+          sub_title: String(data.sub_title ?? ''),
         });
         setIsDubbingEpisode(Boolean(data.audioFile_dubbing));
       }
@@ -128,6 +136,22 @@ const DemoEpisodeEdit = () => {
       language: exists
         ? episode.language.filter((item) => item !== lang)
         : [...episode.language, lang],
+    });
+  };
+
+  const handleToggleActive = () => {
+    if (!episode) return;
+    setEpisode({
+      ...episode,
+      is_active: !episode.is_active,
+    });
+  };
+
+  const handleToggleSearchable = () => {
+    if (!episode) return;
+    setEpisode({
+      ...episode,
+      is_searchable: !episode.is_searchable,
     });
   };
 
@@ -164,6 +188,16 @@ const DemoEpisodeEdit = () => {
           ? episode.audioFile_dubbing || null
           : null,
         language: episode.language,
+        is_active: episode.is_active,
+        is_searchable: episode.is_searchable,
+        theme_color:
+          episode.type === 'ai-music'
+            ? episode.theme_color?.trim() || null
+            : null,
+        sub_title:
+          episode.type === 'ai-music'
+            ? episode.sub_title?.trim() || null
+            : null,
       })
       .eq('id', episode.id);
     setSaving(false);
@@ -447,6 +481,72 @@ const DemoEpisodeEdit = () => {
                   placeholder='https://...'
                 />
               </FormField>
+            )}
+
+            <div className='grid grid-cols-2 gap-8'>
+              <FormField label='공개 여부'>
+                <button
+                  type='button'
+                  onClick={handleToggleActive}
+                  className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                    episode.is_active
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  {episode.is_active ? '공개' : '비공개'}
+                </button>
+              </FormField>
+
+              <FormField label='검색 가능'>
+                <button
+                  type='button'
+                  onClick={handleToggleSearchable}
+                  className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                    episode.is_searchable
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  {episode.is_searchable ? '가능' : '불가능'}
+                </button>
+              </FormField>
+            </div>
+
+            {episode.type === 'ai-music' && (
+              <div className='grid grid-cols-2 gap-8'>
+                <FormField label='테마 색상 (ai-music)'>
+                  <div className='flex gap-2'>
+                    <input
+                      type='color'
+                      name='theme_color'
+                      value={
+                        episode.theme_color ? episode.theme_color : '#FFFFFF'
+                      }
+                      onChange={handleChange}
+                      className='w-12 h-10 rounded-xl cursor-pointer'
+                    />
+                    <input
+                      type='text'
+                      name='theme_color'
+                      value={episode.theme_color || ''}
+                      onChange={handleChange}
+                      placeholder='#FFFFFF'
+                      className='flex-1 px-4 h-10 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-900'
+                    />
+                  </div>
+                </FormField>
+
+                <FormField label='부제목 (ai-music)'>
+                  <input
+                    name='sub_title'
+                    value={episode.sub_title || ''}
+                    onChange={handleChange}
+                    placeholder='부제목 입력'
+                    className='w-full px-4 h-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
+                  />
+                </FormField>
+              </div>
             )}
           </div>
         )}

@@ -44,7 +44,11 @@ const DemoBroadcastingEdit = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!broadcasting) return;
-    setBroadcasting({ ...broadcasting, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setBroadcasting({
+      ...broadcasting,
+      [name]: name === 'order' ? (value === '' ? null : Number(value)) : value,
+    });
   };
 
   const handleLangChange = (e: React.ChangeEvent<HTMLInputElement>) => {

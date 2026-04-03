@@ -6,7 +6,7 @@ interface Props {
 
 const FormLayout = ({ title, id, children }: Props) => {
   return (
-    <div className='p-10 b-10 flex flex-col h-full min-h-0 '>
+    <div className='p-10 pb-10 flex flex-col h-full min-h-0 '>
       <div className='flex items-center gap-3 mb-4'>
         <h1 className='text-3xl font-bold indent-1'>{title}</h1>
 

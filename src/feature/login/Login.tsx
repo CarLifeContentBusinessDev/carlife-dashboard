@@ -43,7 +43,7 @@ export default function LoginPopup({
         password: password,
       });
       if (supabaseError) {
-        setError('Supabase 로그인 실패: ' + supabaseError.message);
+        setError('로그인에 실패했습니다. 다시 시도해주세요.');
         setLoading(false);
         return;
       }

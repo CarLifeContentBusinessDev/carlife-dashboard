@@ -8,6 +8,8 @@ export interface Program {
   broadcasting_id: number;
   language: string[];
   is_sequential: boolean;
+  is_active: boolean;
+  is_searchable: boolean;
 }
 
 export interface Episode {
@@ -21,6 +23,10 @@ export interface Episode {
   audioFile_dubbing: string;
   language: string[];
   programs?: { title: string };
+  is_active: boolean;
+  is_searchable: boolean;
+  theme_color?: string;
+  sub_title?: string;
 }
 
 export interface Series {

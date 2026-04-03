@@ -34,6 +34,8 @@ const initialState = {
   category_id: '',
   broadcasting_id: '',
   is_sequential: false,
+  is_active: true,
+  is_searchable: true,
   language: [] as string[],
 };
 
@@ -119,6 +121,20 @@ const DemoProgramAdd = () => {
     }));
   };
 
+  const handleToggleActive = () => {
+    setForm((prev) => ({
+      ...prev,
+      is_active: !prev.is_active,
+    }));
+  };
+
+  const handleToggleSearchable = () => {
+    setForm((prev) => ({
+      ...prev,
+      is_searchable: !prev.is_searchable,
+    }));
+  };
+
   const handleLangToggle = (lang: string) => {
     setForm((prev) => {
       const exists = prev.language.includes(lang);
@@ -175,6 +191,8 @@ const DemoProgramAdd = () => {
           category_id: categoryId,
           broadcasting_id: broadcastingId,
           is_sequential: form.is_sequential,
+          is_active: form.is_active,
+          is_searchable: form.is_searchable,
           language: form.language,
         },
       ])
@@ -428,7 +446,7 @@ const DemoProgramAdd = () => {
           </FormField>
         </div>
 
-        <div className='grid grid-cols-2 gap-8'>
+        <div className='grid grid-cols-3 gap-8'>
           <FormField label='역순 재생'>
             <button
               type='button'
@@ -440,6 +458,34 @@ const DemoProgramAdd = () => {
               }`}
             >
               {form.is_sequential ? '사용' : '미사용'}
+            </button>
+          </FormField>
+
+          <FormField label='공개 여부'>
+            <button
+              type='button'
+              onClick={handleToggleActive}
+              className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                form.is_active
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+              }`}
+            >
+              {form.is_active ? '공개' : '비공개'}
+            </button>
+          </FormField>
+
+          <FormField label='검색 가능'>
+            <button
+              type='button'
+              onClick={handleToggleSearchable}
+              className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                form.is_searchable
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+              }`}
+            >
+              {form.is_searchable ? '가능' : '불가능'}
             </button>
           </FormField>
         </div>

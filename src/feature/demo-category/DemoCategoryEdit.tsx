@@ -65,7 +65,11 @@ const DemoCategoryEdit = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!category) return;
-    setCategory({ ...category, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setCategory({
+      ...category,
+      [name]: name === 'order' ? (value === '' ? null : Number(value)) : value,
+    });
   };
 
   const handleLangChange = (e: React.ChangeEvent<HTMLInputElement>) => {

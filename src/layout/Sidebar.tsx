@@ -11,20 +11,11 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`h-screen flex-shrink-0 bg-[#1B1E2F] shadow-md transition-all duration-300 overflow-y-scroll ${
+      className={`h-screen flex-shrink-0 bg-[#1B1E2F] shadow-md transition-all duration-300 flex flex-col ${
         isOpen ? 'w-80' : 'w-20'
       }`}
-      style={{
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-      }}
     >
-      <style>{`
-        aside::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-      <div className='flex justify-end my-3 px-3'>
+      <div className='flex justify-end my-3 px-3 flex-shrink-0'>
         <Button
           className='!border-none !px-4'
           onClick={() => setIsOpen((prev) => !prev)}
@@ -38,7 +29,15 @@ const Sidebar = () => {
         </Button>
       </div>
 
-      <nav className='mt-5 flex flex-col gap-1 pb-40'>
+      <nav
+        className='flex-1 overflow-y-auto mt-5 flex flex-col gap-1 pb-40'
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <style>{`
+          nav::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
         {MENU_GROUPS.map((group, index) => {
           const isActive = group.children
             ? group.children.some((item) => item.to === pathname)

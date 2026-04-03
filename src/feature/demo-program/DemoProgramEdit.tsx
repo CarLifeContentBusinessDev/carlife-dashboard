@@ -31,6 +31,8 @@ interface ProgramForm {
   broadcasting_id: number | null;
   language: string[];
   is_sequential: boolean;
+  is_active: boolean;
+  is_searchable: boolean;
 }
 
 interface SelectOption {
@@ -154,6 +156,22 @@ const DemoProgramEdit = () => {
     });
   };
 
+  const handleToggleActive = () => {
+    if (!program) return;
+    setProgram({
+      ...program,
+      is_active: !program.is_active,
+    });
+  };
+
+  const handleToggleSearchable = () => {
+    if (!program) return;
+    setProgram({
+      ...program,
+      is_searchable: !program.is_searchable,
+    });
+  };
+
   const handleSave = async () => {
     if (!program) return;
     if (!program.title.trim()) {
@@ -197,6 +215,8 @@ const DemoProgramEdit = () => {
         broadcasting_id: program.broadcasting_id,
         language: program.language,
         is_sequential: program.is_sequential,
+        is_active: program.is_active,
+        is_searchable: program.is_searchable,
       })
       .eq('id', program.id);
 
@@ -510,6 +530,34 @@ const DemoProgramEdit = () => {
                   }`}
                 >
                   {program.is_sequential ? '사용' : '미사용'}
+                </button>
+              </FormField>
+
+              <FormField label='공개 여부'>
+                <button
+                  type='button'
+                  onClick={handleToggleActive}
+                  className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                    program.is_active
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  {program.is_active ? '공개' : '비공개'}
+                </button>
+              </FormField>
+
+              <FormField label='검색 가능'>
+                <button
+                  type='button'
+                  onClick={handleToggleSearchable}
+                  className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                    program.is_searchable
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  {program.is_searchable ? '가능' : '불가능'}
                 </button>
               </FormField>
             </div>

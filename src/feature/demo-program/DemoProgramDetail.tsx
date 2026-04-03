@@ -14,6 +14,8 @@ const PROGRAM_FIELD_LABELS = {
   is_sequential: '역순 여부',
   order: '순위',
   created_at: '생성일',
+  is_active: 'status',
+  is_searchable: 'searchable',
 } as const;
 
 const PROGRAM_FIELD_ORDER = [
@@ -30,12 +32,23 @@ const PROGRAM_FIELD_ORDER = [
   'is_sequential',
   'order',
   'created_at',
+  'is_active',
+  'is_searchable',
 ];
 
 const PROGRAM_SUMMARY_FIELDS = [
   { key: 'created_at', label: '생성일' },
   { key: 'id', label: '프로그램 ID' },
   { key: 'type', label: '유형' },
+];
+
+const PROGRAM_HIDDEN_FIELDS = [
+  'is_live',
+  'is_liked',
+  'order_broadcasting',
+  'order_category',
+  'order_live',
+  'order_popular',
 ];
 
 const DemoProgramDetail = () => {
@@ -50,6 +63,7 @@ const DemoProgramDetail = () => {
       fieldLabels={PROGRAM_FIELD_LABELS}
       fieldOrder={PROGRAM_FIELD_ORDER}
       summaryFields={PROGRAM_SUMMARY_FIELDS}
+      hiddenFields={PROGRAM_HIDDEN_FIELDS}
     />
   );
 };

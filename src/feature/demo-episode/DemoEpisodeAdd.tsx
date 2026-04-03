@@ -30,6 +30,10 @@ const initialState = {
   audio_file: '',
   audioFile_dubbing: '',
   language: [] as string[],
+  is_active: true,
+  is_searchable: true,
+  theme_color: '',
+  sub_title: '',
 };
 
 const DemoEpisodeAdd = () => {
@@ -46,6 +50,20 @@ const DemoEpisodeAdd = () => {
   const [activeTab, setActiveTab] = useState(
     initLang === 'ko' ? 'basic' : 'localize'
   );
+
+  const handleToggleActive = () => {
+    setForm((prev) => ({
+      ...prev,
+      is_active: !prev.is_active,
+    }));
+  };
+
+  const handleToggleSearchable = () => {
+    setForm((prev) => ({
+      ...prev,
+      is_searchable: !prev.is_searchable,
+    }));
+  };
 
   const filteredPrograms = programs
     .filter((program) => {
@@ -139,6 +157,12 @@ const DemoEpisodeAdd = () => {
           ? form.audioFile_dubbing || null
           : null,
         language: form.language,
+        is_active: form.is_active,
+        is_searchable: form.is_searchable,
+        theme_color:
+          form.type === 'ai-music' ? form.theme_color.trim() || null : null,
+        sub_title:
+          form.type === 'ai-music' ? form.sub_title.trim() || null : null,
       },
     ]);
 
@@ -373,6 +397,70 @@ const DemoEpisodeAdd = () => {
             </FormField>
           )}
         </div>
+
+        <div className='grid grid-cols-2 gap-8'>
+          <FormField label='공개 여부'>
+            <button
+              type='button'
+              onClick={handleToggleActive}
+              className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                form.is_active
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+              }`}
+            >
+              {form.is_active ? '공개' : '비공개'}
+            </button>
+          </FormField>
+
+          <FormField label='검색 가능'>
+            <button
+              type='button'
+              onClick={handleToggleSearchable}
+              className={`w-fit px-4 h-10 rounded-full text-sm font-medium transition border ${
+                form.is_searchable
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+              }`}
+            >
+              {form.is_searchable ? '가능' : '불가능'}
+            </button>
+          </FormField>
+        </div>
+
+        {form.type === 'ai-music' && (
+          <div className='grid grid-cols-1 gap-8'>
+            <FormField label='테마 색상 (ai-music)'>
+              <div className='flex gap-2'>
+                <input
+                  type='color'
+                  name='theme_color'
+                  value={form.theme_color || '#6EFFCF'}
+                  onChange={handleChange}
+                  className='w-12 h-10 rounded-xl border border-gray-200 cursor-pointer'
+                />
+                <input
+                  type='text'
+                  name='theme_color'
+                  value={form.theme_color}
+                  onChange={handleChange}
+                  placeholder='#6EFFCF'
+                  className='flex-1 px-4 h-10 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-900'
+                />
+              </div>
+            </FormField>
+
+            <FormField label='부제목 (ai-music)'>
+              <input
+                name='sub_title'
+                value={form.sub_title}
+                onChange={handleChange}
+                placeholder='부제목 입력'
+                className='w-full px-4 h-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
+              />
+            </FormField>
+          </div>
+        )}
       </div>
 
       {error && <div className='text-red-500 text-sm mt-4'>{error}</div>}

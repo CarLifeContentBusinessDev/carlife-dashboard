@@ -1,4 +1,5 @@
 import DemoListLayout from '../../components/DemoListLayout';
+import Dropdown from '../../components/Dropdown';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import SortControls from '../../components/SortControls';
 import type { LanguageCode } from '../../constants/languages';
@@ -21,6 +22,9 @@ const DemoSeriesLayout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
+  const [sections, setSections] = useState<{ id: number; title: string }[]>([]);
+  const [selectedSection, setSelectedSection] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchSeries = async () => {
     setLoading(true);
@@ -41,15 +45,35 @@ const DemoSeriesLayout = () => {
 
   useEffect(() => {
     fetchSeries();
+    fetchAllSupabaseRows<{ id: number; title: string }>({
+      table: 'sections',
+      select: 'id, title',
+      orderColumn: 'id',
+    }).then(setSections);
   }, []);
 
-  const filteredSeries =
-    selectedLang === 'all'
-      ? series
-      : series.filter((ser) => {
-          const langs = parseLanguages(ser.language);
-          return langs.includes(selectedLang);
-        });
+  const sectionOptions = [
+    { value: 'all', label: '전체 섹션' },
+    ...sections.map((s) => ({ value: String(s.id), label: s.title })),
+  ];
+
+  const filteredSeries = series
+    .filter((ser) => {
+      if (selectedLang === 'all') return true;
+      return parseLanguages(ser.language).includes(selectedLang);
+    })
+    .filter((ser) => {
+      if (selectedSection === 'all') return true;
+      return String(ser.section_id) === selectedSection;
+    })
+    .filter((ser) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        ser.title?.toLowerCase().includes(q) ||
+        ser.subtitle?.toLowerCase().includes(q)
+      );
+    });
 
   const {
     sortKey,
@@ -81,6 +105,19 @@ const DemoSeriesLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
+      filterExtras={
+        <div className='flex items-center gap-2'>
+          <span className='text-sm text-gray-600 font-medium'>Section:</span>
+          <Dropdown
+            value={selectedSection}
+            options={sectionOptions}
+            onChange={setSelectedSection}
+          />
+        </div>
+      }
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      searchPlaceholder='시리즈명을 입력하세요.'
       addLabel='시리즈 추가'
       onAdd={() => navigate('/demo/series/new')}
     >

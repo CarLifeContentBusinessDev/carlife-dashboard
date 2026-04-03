@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import DemoListLayout from '../../components/DemoListLayout';
+import DemoListLayout, { type StatusFilter } from '../../components/DemoListLayout';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import { type LanguageCode } from '../../constants/languages';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +20,9 @@ const DemoEpisodeLayout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchEpisodes = async () => {
     setLoading(true);
@@ -41,13 +44,24 @@ const DemoEpisodeLayout = () => {
     fetchEpisodes();
   }, []);
 
-  const filteredEpisodes =
-    selectedLang === 'all'
-      ? episodes
-      : episodes.filter((ep) => {
-          const langs = parseLanguages(ep.language);
-          return langs.includes(selectedLang);
-        });
+  const filteredEpisodes = episodes
+    .filter((ep) => {
+      if (selectedLang === 'all') return true;
+      const langs = parseLanguages(ep.language);
+      return langs.includes(selectedLang);
+    })
+    .filter((ep) => {
+      if (statusFilter === 'all') return true;
+      return statusFilter === 'active' ? ep.is_active : !ep.is_active;
+    })
+    .filter((ep) => {
+      if (searchableFilter === 'all') return true;
+      return searchableFilter === 'active' ? ep.is_searchable : !ep.is_searchable;
+    })
+    .filter((ep) => {
+      if (!searchQuery) return true;
+      return ep.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
   const {
     sortKey,
@@ -78,6 +92,13 @@ const DemoEpisodeLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
+      statusFilter={statusFilter}
+      onStatusFilterChange={setStatusFilter}
+      searchableFilter={searchableFilter}
+      onSearchableFilterChange={setSearchableFilter}
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      searchPlaceholder='에피소드명을 입력하세요.'
       addLabel='에피소드 추가'
       onAdd={() => navigate('/demo/episode/new')}
     >

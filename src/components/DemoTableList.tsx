@@ -4,7 +4,7 @@ import usePagination from '../hook/usePagination';
 import { deleteRow } from '../utils/deleteRow';
 import ImageCell from './ImageCell';
 import LanguageBadge from './LanguageBadge';
-import Pagination from './Pagenation';
+import Pagination from './Pagination';
 import Table from './Table';
 
 interface DemoTableListProps {
@@ -37,8 +37,24 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
   }, [selectedLang, setPage]);
 
   const handleDelete = async (id: number) => {
-    const ok = await deleteRow(tableName, id);
-    if (ok && onDeleted) onDeleted();
+    const confirmed = window.confirm('정말 삭제하시겠습니까?');
+    if (!confirmed) return;
+
+    const result = await deleteRow(tableName, id);
+
+    if (result.success) {
+      if (onDeleted) onDeleted();
+      return;
+    }
+
+    if (result.isRlsError) {
+      alert(
+        `삭제 실패: ${result.message}\n\nSupabase RLS DELETE 정책이 필요합니다. ${tableName} 테이블에 authenticated 대상 DELETE policy를 추가해주세요.`
+      );
+      return;
+    }
+
+    alert('삭제 실패: ' + result.message);
   };
 
   const handleRowClick = (row: any) => {
@@ -101,6 +117,17 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
 
     // boolean 타입 처리
     if (typeof value === 'boolean') {
+      if (key === 'is_active' || key === 'is_searchable') {
+        return value ? (
+          <span className='inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border bg-emerald-100 text-emerald-700 border-emerald-200'>
+            Active
+          </span>
+        ) : (
+          <span className='inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border bg-red-100 text-red-700 border-red-200'>
+            Inactive
+          </span>
+        );
+      }
       return value ? 'O' : 'X';
     }
 

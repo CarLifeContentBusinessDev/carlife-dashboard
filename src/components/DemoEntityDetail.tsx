@@ -28,6 +28,8 @@ interface DisplayEntry {
   value: unknown;
   formatted: string;
   isImage: boolean;
+  isAudio: boolean;
+  isBadge: boolean;
   isWide: boolean;
 }
 
@@ -37,6 +39,7 @@ interface DisplayRow {
 }
 
 const LABEL_COLUMN_CLASS = 'grid-cols-[170px_1fr]';
+const BADGE_FIELDS = new Set(['is_active', 'is_searchable']);
 
 const hasRenderableValue = (value: unknown) => {
   if (value == null) return false;
@@ -147,8 +150,32 @@ const isImageField = (key: string, value: unknown) => {
   return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(value);
 };
 
+const isAudioField = (key: string, value: unknown) => {
+  if (typeof value !== 'string') return false;
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return false;
+
+  if (/\.(mp3|wav|m4a|aac|ogg|flac)(\?.*)?$/i.test(trimmedValue)) {
+    return true;
+  }
+
+  const normalizedKey = key.toLowerCase();
+  if (
+    normalizedKey.includes('audio') ||
+    normalizedKey.includes('voice') ||
+    normalizedKey.includes('sound')
+  ) {
+    return (
+      trimmedValue.startsWith('http://') || trimmedValue.startsWith('https://')
+    );
+  }
+
+  return false;
+};
+
 const isWideField = (entry: DisplayEntry) => {
   if (entry.isImage) return true;
+  if (entry.isAudio) return true;
 
   const normalizedKey = entry.key.toLowerCase();
   if (
@@ -183,7 +210,17 @@ const ImagePreview = ({ url }: { url: string }) => {
           </div>
         )}
       </div>
-      <div className='text-xs text-gray-400 break-all'>{url}</div>
+    </div>
+  );
+};
+
+const AudioPreview = ({ url }: { url: string }) => {
+  return (
+    <div className='w-full max-w-xl'>
+      <audio controls preload='metadata' className='w-full'>
+        <source src={url} />
+        브라우저에서 오디오 재생을 지원하지 않습니다.
+      </audio>
     </div>
   );
 };
@@ -195,13 +232,46 @@ const parseId = (rawId: string): string | number => {
 
 const getBadgeClassName = (value: string) => {
   const normalized = value.toLowerCase();
-  if (normalized.includes('active') || normalized.includes('활성')) {
-    return 'bg-blue-100 text-blue-700 border-blue-200';
+  if (normalized === 'active' || normalized === '활성') {
+    return 'bg-emerald-100 text-emerald-700 border-emerald-200';
   }
-  if (normalized.includes('inactive') || normalized.includes('비활성')) {
-    return 'bg-gray-100 text-gray-700 border-gray-200';
+  if (normalized === 'inactive' || normalized === '비활성') {
+    return 'bg-red-100 text-red-700 border-red-200';
   }
   return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+};
+
+const isBadgeField = (key: string) => BADGE_FIELDS.has(key);
+
+const formatBadgeValue = (value: unknown) => {
+  if (typeof value === 'boolean') {
+    return value ? 'Active' : 'Inactive';
+  }
+
+  if (typeof value === 'number') {
+    return value === 0 ? 'Inactive' : 'Active';
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (
+      ['active', 'true', '1', 'yes', 'y', 'on', '활성', '가능'].includes(
+        normalized
+      )
+    ) {
+      return 'Active';
+    }
+
+    if (
+      ['inactive', 'false', '0', 'no', 'n', 'off', '비활성', '불가능'].includes(
+        normalized
+      )
+    ) {
+      return 'Inactive';
+    }
+  }
+
+  return formatValue(value);
 };
 
 const resolveSummaryValue = (
@@ -304,7 +374,11 @@ const DemoEntityDetail = ({
   const displayRows = useMemo(() => {
     const displayEntries: DisplayEntry[] = entries.map(([key, value]) => {
       const isImage = isImageField(key, value);
-      const formatted = formatFieldValue(key, value);
+      const isAudio = isAudioField(key, value);
+      const isBadge = isBadgeField(key);
+      const formatted = isBadge
+        ? formatBadgeValue(value)
+        : formatFieldValue(key, value);
 
       return {
         key,
@@ -312,6 +386,8 @@ const DemoEntityDetail = ({
         value,
         formatted,
         isImage,
+        isAudio,
+        isBadge,
         isWide: false,
       };
     });
@@ -459,7 +535,21 @@ const DemoEntityDetail = ({
                             {entry.label}
                           </div>
                           <div className='px-4 py-3 text-sm bg-white whitespace-pre-wrap break-words min-w-0'>
-                            {entry.formatted}
+                            {entry.isBadge ? (
+                              <span
+                                className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${getBadgeClassName(
+                                  entry.formatted
+                                )}`}
+                              >
+                                {entry.formatted}
+                              </span>
+                            ) : entry.isImage ? (
+                              <ImagePreview url={String(entry.value)} />
+                            ) : entry.isAudio ? (
+                              <AudioPreview url={String(entry.value)} />
+                            ) : (
+                              entry.formatted
+                            )}
                           </div>
                         </div>
                       ))}
@@ -477,8 +567,18 @@ const DemoEntityDetail = ({
                       {entry.label}
                     </div>
                     <div className='px-4 py-4 text-sm whitespace-pre-wrap break-words bg-white min-w-0'>
-                      {entry.isImage ? (
+                      {entry.isBadge ? (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${getBadgeClassName(
+                            entry.formatted
+                          )}`}
+                        >
+                          {entry.formatted}
+                        </span>
+                      ) : entry.isImage ? (
                         <ImagePreview url={String(entry.value)} />
+                      ) : entry.isAudio ? (
+                        <AudioPreview url={String(entry.value)} />
                       ) : (
                         entry.formatted
                       )}

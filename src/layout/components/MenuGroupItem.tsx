@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import MenuButton from './MenuButton';
 import type { MenuChild } from '../../constants/sidebarMenus';
 
@@ -33,14 +34,27 @@ const MenuGroupItem = ({
 }: MenuGroupItemProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [floatingMenuPos, setFloatingMenuPos] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isSidebarOpen && isHovered && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setFloatingMenuPos({
+        top: rect.top,
+        left: rect.right,
+      });
+    }
+  }, [isSidebarOpen, isHovered]);
 
   return (
     <div
       className='relative'
       onMouseEnter={() => !isSidebarOpen && setIsHovered(true)}
-      onMouseLeave={() => !isSidebarOpen && setIsHovered(false)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <button
+        ref={buttonRef}
         type='button'
         aria-disabled={!isSidebarOpen}
         onClick={() => isSidebarOpen && setIsExpanded((prev) => !prev)}
@@ -81,17 +95,28 @@ const MenuGroupItem = ({
         </div>
       )}
 
-      {/* 사이드바 접혔을 때: 호버 시 플로팅 서브메뉴 */}
-      {!isSidebarOpen && isHovered && (
-        <div className='absolute left-full top-0 ml-1 w-48 bg-[#1B1E2F] z-50 rounded-md overflow-hidden'>
-          {items.map((item) => (
-            <MenuButton key={item.id} to={item.to} isOpen={true}>
-              {item.icon && item.icon}
-              <span>{item.label}</span>
-            </MenuButton>
-          ))}
-        </div>
-      )}
+      {/* 사이드바 접혔을 때: 호버 시 플로팅 서브메뉴 (포탈을 통해 렌더링) */}
+      {!isSidebarOpen &&
+        isHovered &&
+        createPortal(
+          <div
+            className='fixed w-48 bg-[#1B1E2F] z-[9999] rounded-r-md shadow-lg border border-gray-700 overflow-hidden'
+            style={{
+              top: `${floatingMenuPos.top}px`,
+              left: `${floatingMenuPos.left}px`,
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            {items.map((item) => (
+              <MenuButton key={item.id} to={item.to} isOpen={true}>
+                {item.icon && item.icon}
+                <span>{item.label}</span>
+              </MenuButton>
+            ))}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
