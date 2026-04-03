@@ -14,6 +14,10 @@ const EPISODE_FIELD_LABELS = {
   audioFile_dubbing: '더빙 오디오 파일',
   order: '순위',
   created_at: '생성일',
+  is_active: 'status',
+  is_searchable: 'searchable',
+  sub_title: 'AI 음악 부제',
+  theme_color: 'AI 음악 테마 색상',
 } as const;
 
 const EPISODE_FIELD_ORDER = [
@@ -30,12 +34,25 @@ const EPISODE_FIELD_ORDER = [
   'audioFile_dubbing',
   'order',
   'created_at',
+  'is_active',
+  'is_searchable',
+  'sub_title',
+  'theme_color',
 ];
 
 const EPISODE_SUMMARY_FIELDS = [
   { key: 'created_at', label: '생성일' },
   { key: 'id', label: '에피소드 ID' },
   { key: 'duration', label: '재생 시간' },
+];
+
+const EPISODE_HIDDEN_FIELDS = [
+  'is_live',
+  'listen_count',
+  'listened_at',
+  'listened_duration',
+  'order_recent',
+  'recent_series_id',
 ];
 
 const DemoEpisodeDetail = () => {
@@ -50,6 +67,7 @@ const DemoEpisodeDetail = () => {
       fieldLabels={EPISODE_FIELD_LABELS}
       fieldOrder={EPISODE_FIELD_ORDER}
       summaryFields={EPISODE_SUMMARY_FIELDS}
+      hiddenFields={EPISODE_HIDDEN_FIELDS}
     />
   );
 };

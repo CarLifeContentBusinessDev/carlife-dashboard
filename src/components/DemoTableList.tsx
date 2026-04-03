@@ -119,11 +119,11 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
     if (typeof value === 'boolean') {
       if (key === 'is_active' || key === 'is_searchable') {
         return value ? (
-          <span className='px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700'>
+          <span className='inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border bg-emerald-100 text-emerald-700 border-emerald-200'>
             Active
           </span>
         ) : (
-          <span className='px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500'>
+          <span className='inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border bg-red-100 text-red-700 border-red-200'>
             Inactive
           </span>
         );
