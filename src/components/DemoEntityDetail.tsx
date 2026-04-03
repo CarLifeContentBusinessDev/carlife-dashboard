@@ -155,6 +155,10 @@ const isAudioField = (key: string, value: unknown) => {
   const trimmedValue = value.trim();
   if (!trimmedValue) return false;
 
+  if (/\.(mp3|wav|m4a|aac|ogg|flac)(\?.*)?$/i.test(trimmedValue)) {
+    return true;
+  }
+
   const normalizedKey = key.toLowerCase();
   if (
     normalizedKey.includes('audio') ||
@@ -166,7 +170,7 @@ const isAudioField = (key: string, value: unknown) => {
     );
   }
 
-  return /\.(mp3|wav|m4a|aac|ogg|flac)(\?.*)?$/i.test(trimmedValue);
+  return false;
 };
 
 const isWideField = (entry: DisplayEntry) => {

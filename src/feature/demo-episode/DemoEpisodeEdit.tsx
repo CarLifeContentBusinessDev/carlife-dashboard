@@ -94,7 +94,7 @@ const DemoEpisodeEdit = () => {
           program_id: data.program_id == null ? null : Number(data.program_id),
           date: String(data.date ?? ''),
           created_at: String(data.created_at ?? ''),
-          duration: String(data.duration ?? data.duration ?? ''),
+          duration: String(data.duration ?? ''),
           audio_file: String(data.audio_file ?? ''),
           audioFile_dubbing: String(data.audioFile_dubbing ?? ''),
           language: Array.isArray(data.language)
