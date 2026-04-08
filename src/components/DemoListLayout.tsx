@@ -115,6 +115,8 @@ const DemoListLayout = ({
               />
             </div>
 
+            {filterExtras}
+
             <div className='flex flex-col gap-3'>
               {onStatusFilterChange && (
                 <RadioGroup
@@ -134,8 +136,6 @@ const DemoListLayout = ({
                 />
               )}
             </div>
-
-            {filterExtras}
           </div>
 
           {onSearchQueryChange && (

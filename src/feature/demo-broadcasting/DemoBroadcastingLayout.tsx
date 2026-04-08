@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import { type LanguageCode } from '../../constants/languages';
-import DemoListLayout from '../../components/DemoListLayout';
+import DemoListLayout, {
+  type StatusFilter,
+} from '../../components/DemoListLayout';
 import type { Broadcasting } from '../../types/demoContents';
 import parseLanguages from '../../utils/parseLanguages';
 import DemoBroadcastingList from './DemoBroadcastingList';
@@ -24,6 +26,9 @@ const DemoBroadcastingLayout = () => {
   const [programCounts, setProgramCounts] = useState<Record<number, number>>(
     {}
   );
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
+
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -128,6 +133,10 @@ const DemoBroadcastingLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
+      statusFilter={statusFilter}
+      onStatusFilterChange={setStatusFilter}
+      searchableFilter={searchableFilter}
+      onSearchableFilterChange={setSearchableFilter}
       searchQuery={searchQuery}
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='방송사명 또는 채널명을 입력하세요.'

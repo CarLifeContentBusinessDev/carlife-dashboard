@@ -7,22 +7,21 @@ interface DemoProgramListProps {
   onDeleted?: () => void;
 }
 
-const gridCols =
-  'minmax(40px,0.8fr) minmax(80px,1.1fr) minmax(80px,2fr) minmax(40px,1fr) minmax(40px,1.5fr) minmax(40px,1.5fr) minmax(80px,1.5fr) minmax(40px,1.5fr) minmax(40px,1.5fr) minmax(40px,0.8fr) minmax(140px,1fr)';
-
-const columns = [
-  { key: 'id', label: 'ID' },
-  { key: 'img_url', label: '썸네일' },
-  { key: 'title', label: 'title' },
-  { key: 'type', label: 'type' },
-  { key: 'categories.title', label: '카테고리' },
-  { key: 'broadcastingLabel', label: '방송사' },
-  { key: 'language', label: '국가' },
-  { key: 'is_active', label: 'Status' },
-  { key: 'is_searchable', label: 'Searchable' },
-  { key: 'is_sequential', label: '역순' },
-  { key: 'actions', label: '' },
+const columnDefs = [
+  { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
+  { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
+  { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
+  { key: 'type', label: 'type', width: 'minmax(40px,1fr)' },
+  { key: 'categories.title', label: '카테고리', width: 'minmax(40px,1.5fr)' },
+  { key: 'broadcastingLabel', label: '방송사', width: 'minmax(40px,1.5fr)' },
+  { key: 'language', label: '국가', width: 'minmax(80px,1fr)' },
+  { key: 'is_active', label: '상태', width: 'minmax(40px,1fr)' },
+  { key: 'is_searchable', label: '검색', width: 'minmax(40px,1fr)' },
+  { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
+
+const columns = columnDefs.map(({ key, label }) => ({ key, label }));
+const gridCols = columnDefs.map(({ width }) => width).join(' ');
 
 const DemoProgramList: React.FC<DemoProgramListProps> = ({
   programs,

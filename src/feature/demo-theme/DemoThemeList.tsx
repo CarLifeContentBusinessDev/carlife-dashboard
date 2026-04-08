@@ -7,18 +7,20 @@ interface DemoThemeListProps {
   onDeleted?: () => void;
 }
 
-const gridCols =
-  'minmax(40px,0.5fr) minmax(80px,2fr) minmax(80px,3fr) minmax(80px,2fr) minmax(120px,1fr) minmax(60px,1fr) minmax(140px,1fr)';
-
-const columns = [
-  { key: 'id', label: 'ID' },
-  { key: 'title', label: 'title' },
-  { key: 'subtitle', label: 'subtitle' },
-  { key: 'sections.title', label: '섹션' },
-  { key: 'order', label: '순서' },
-  { key: 'language', label: '국가' },
-  { key: 'actions', label: '' },
+const columnDefs = [
+  { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
+  { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
+  { key: 'subtitle', label: 'subtitle', width: 'minmax(80px,2fr)' },
+  { key: 'sections.title', label: '섹션', width: 'minmax(80px,1.5fr)' },
+  { key: 'order', label: '순서', width: 'minmax(40px,0.5fr)' },
+  { key: 'language', label: '국가', width: 'minmax(40px,0.5fr)' },
+  { key: 'is_active', label: '상태', width: 'minmax(40px,0.8fr)' },
+  { key: 'is_searchable', label: '검색', width: 'minmax(40px,0.8fr)' },
+  { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
+
+const columns = columnDefs.map(({ key, label }) => ({ key, label }));
+const gridCols = columnDefs.map(({ width }) => width).join(' ');
 
 const DemoThemeList: React.FC<DemoThemeListProps> = ({
   themes,
