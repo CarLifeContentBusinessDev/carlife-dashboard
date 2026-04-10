@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import usePagination from '../hook/usePagination';
 import { deleteRow } from '../utils/deleteRow';
+import { useAccessTokenStore } from '../store/useAccessTokenStore';
 import ImageCell from './ImageCell';
 import LanguageBadge from './LanguageBadge';
 import Pagination from './Pagination';
@@ -29,6 +31,7 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
   onDeleted,
 }) => {
   const navigate = useNavigate();
+  const { accessToken } = useAccessTokenStore();
   const { page, setPage, totalPages, pagedData } = usePagination(data);
 
   // 언어 변경 시 1페이지로 이동
@@ -37,6 +40,11 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
   }, [selectedLang, setPage]);
 
   const handleDelete = async (id: number) => {
+    if (!accessToken) {
+      toast.warn('관리자 로그인이 필요합니다.');
+      return;
+    }
+
     const confirmed = window.confirm('정말 삭제하시겠습니까?');
     if (!confirmed) return;
 
@@ -94,6 +102,10 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
             className='px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition text-sm'
             onClick={(e) => {
               e.stopPropagation();
+              if (!accessToken) {
+                toast.warn('관리자 로그인이 필요합니다.');
+                return;
+              }
               navigate(`${editPath}/${row.id}?lang=${selectedLang}`);
             }}
           >

@@ -37,49 +37,49 @@ export default function LoginPopup({
     setError('');
 
     try {
-      // supabase 로그인 시도
-      const { error: supabaseError } = await supabase.auth.signInWithPassword({
-        email: id,
-        password: password,
-      });
-      if (supabaseError) {
+      // Supabase 로그인
+      const { data: supabaseData, error: supabaseError } =
+        await supabase.auth.signInWithPassword({
+          email: id,
+          password: password,
+        });
+
+      if (supabaseError || !supabaseData.session) {
         setError('로그인에 실패했습니다. 다시 시도해주세요.');
         setLoading(false);
         return;
       }
 
-      // 상용 API 로그인
-      const res = await api.post<LoginApiResponse>(
-        'https://pickle.obigo.ai/admin/login',
-        {
-          adminId: id,
-          password: password,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const data = res.data;
-
-      if (data.resultCode === 'SUCCESS') {
-        localStorage.setItem('accessToken', data.data.accessToken);
-        localStorage.setItem('refreshToken', data.data.refreshToken);
-        console.log(localStorage.getItem('accessToken'));
-        if (remember) {
-          localStorage.setItem('rememberId', id);
-        } else {
-          localStorage.removeItem('rememberId');
-        }
-
-        if (onLoginSuccess) onLoginSuccess(data.data);
-
-        window.location.reload();
+      if (remember) {
+        localStorage.setItem('rememberId', id);
       } else {
-        setError(data.resultMessage || '로그인 실패');
+        localStorage.removeItem('rememberId');
       }
+
+      // Supabase 세션 토큰을 accessToken으로 사용 (데모 어드민 기능용)
+      const supabaseAccessToken = supabaseData.session.access_token;
+      localStorage.setItem('accessToken', supabaseAccessToken);
+
+      // pickle API 로그인 (Google Sheets 연동용, 실패해도 로그인은 완료)
+      try {
+        const res = await api.post<LoginApiResponse>(
+          'https://pickle.obigo.ai/admin/login',
+          { adminId: id, password: password },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+
+        const data = res.data;
+        if (data.resultCode === 'SUCCESS') {
+          localStorage.setItem('accessToken', data.data.accessToken);
+          localStorage.setItem('refreshToken', data.data.refreshToken);
+          if (onLoginSuccess) onLoginSuccess(data.data);
+        }
+      } catch {
+        // pickle API 연결 실패는 무시 (Google Sheets 기능만 제한됨)
+        console.warn('pickle API 연결 실패 - Google Sheets 기능을 사용할 수 없습니다.');
+      }
+
+      window.location.reload();
     } catch (err) {
       console.error(err);
       setError('서버와 연결할 수 없습니다.');

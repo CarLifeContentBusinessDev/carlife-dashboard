@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { supabase } from '../lib/supabase';
+import { useAccessTokenStore } from '../store/useAccessTokenStore';
 import LoadingOverlay from './LoadingOverlay';
 
 interface DemoEntityDetailProps {
@@ -306,6 +308,7 @@ const DemoEntityDetail = ({
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const lang = searchParams.get('lang') ?? 'all';
+  const { accessToken } = useAccessTokenStore();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -473,7 +476,13 @@ const DemoEntityDetail = ({
             </button>
             <button
               className='px-3 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition text-sm'
-              onClick={() => navigate(`${editPath}/${id}?lang=${lang}`)}
+              onClick={() => {
+                if (!accessToken) {
+                  toast.warn('관리자 로그인이 필요합니다.');
+                  return;
+                }
+                navigate(`${editPath}/${id}?lang=${lang}`);
+              }}
             >
               편집
             </button>

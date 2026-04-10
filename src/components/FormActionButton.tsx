@@ -1,3 +1,6 @@
+import { toast } from 'react-toastify';
+import { useAccessTokenStore } from '../store/useAccessTokenStore';
+
 interface FormActionsButtonProps {
   saving: boolean;
   error: string;
@@ -11,6 +14,15 @@ const FormActionsButton = ({
   onCancel,
   onSave,
 }: FormActionsButtonProps) => {
+  const { accessToken } = useAccessTokenStore();
+
+  const handleSave = () => {
+    if (!accessToken) {
+      toast.warn('관리자 로그인이 필요합니다.');
+      return;
+    }
+    onSave();
+  };
   return (
     <>
       <div className='flex justify-end gap-3 mt-auto'>
@@ -22,7 +34,7 @@ const FormActionsButton = ({
         </button>
 
         <button
-          onClick={onSave}
+          onClick={handleSave}
           disabled={saving}
           className='px-5 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2'
         >
