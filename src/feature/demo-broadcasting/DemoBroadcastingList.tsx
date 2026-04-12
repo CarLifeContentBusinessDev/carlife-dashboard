@@ -7,20 +7,22 @@ interface DemoBroadcastingListProps {
   onDeleted?: () => void;
 }
 
-const gridCols =
-  'minmax(40px,1fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,1fr) minmax(120px,1fr) minmax(60px,1fr) minmax(80px,1fr) minmax(100px,1fr) minmax(140px,1fr)';
-
-const columns = [
-  { key: 'id', label: 'ID' },
-  { key: 'title', label: 'title' },
-  { key: 'channel', label: 'channel' },
-  { key: 'frequency', label: 'frequency' },
-  { key: 'img_url', label: '썸네일' },
-  { key: 'order', label: '순위' },
-  { key: 'language', label: '국가' },
-  { key: 'programsCount', label: '프로그램 수' },
-  { key: 'actions', label: '' },
+const columnDefs = [
+  { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
+  { key: 'title', label: 'title', width: 'minmax(80px,1fr)' },
+  { key: 'channel', label: 'channel', width: 'minmax(80px,1fr)' },
+  { key: 'frequency', label: 'frequency', width: 'minmax(80px,1fr)' },
+  { key: 'img_url', label: '썸네일', width: 'minmax(120px,1fr)' },
+  { key: 'order', label: '순위', width: 'minmax(60px,0.5fr)' },
+  { key: 'language', label: '국가', width: 'minmax(80px,0.8fr)' },
+  { key: 'programsCount', label: '프로그램 수', width: 'minmax(100px,0.8fr)' },
+  { key: 'is_active', label: '상태', width: 'minmax(40px,0.8fr)' },
+  { key: 'is_searchable', label: '검색', width: 'minmax(40px,0.8fr)' },
+  { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
+
+const columns = columnDefs.map(({ key, label }) => ({ key, label }));
+const gridCols = columnDefs.map(({ width }) => width).join(' ');
 
 const DemoBroadcastingList: React.FC<DemoBroadcastingListProps> = ({
   broadcasting,

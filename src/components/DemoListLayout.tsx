@@ -1,6 +1,8 @@
+import { toast } from 'react-toastify';
 import Button from '../components/Button';
 import Dropdown from '../components/Dropdown';
 import { LANGUAGES, type LanguageCode } from '../constants/languages';
+import { useAccessTokenStore } from '../store/useAccessTokenStore';
 
 export type StatusFilter = 'all' | 'active' | 'inactive';
 
@@ -71,7 +73,7 @@ const DemoListLayout = ({
   onLangChange,
   languageOptions = LANGUAGES,
   addLabel,
-  onAdd,
+  onAdd: onAddProp,
   extraControls,
   statusFilter = 'all',
   onStatusFilterChange,
@@ -83,6 +85,16 @@ const DemoListLayout = ({
   searchPlaceholder = '검색어를 입력하세요.',
   children,
 }: DemoListLayoutProps) => {
+  const { accessToken } = useAccessTokenStore();
+
+  const onAdd = () => {
+    if (!accessToken) {
+      toast.warn('관리자 로그인이 필요합니다.');
+      return;
+    }
+    onAddProp();
+  };
+
   return (
     <div className='p-10 flex flex-col'>
       <h1 className='mb-4 indent-1' style={{ fontSize: '16px' }}>
@@ -115,6 +127,8 @@ const DemoListLayout = ({
               />
             </div>
 
+            {filterExtras}
+
             <div className='flex flex-col gap-3'>
               {onStatusFilterChange && (
                 <RadioGroup
@@ -134,8 +148,6 @@ const DemoListLayout = ({
                 />
               )}
             </div>
-
-            {filterExtras}
           </div>
 
           {onSearchQueryChange && (

@@ -7,18 +7,18 @@ interface DemoCategoryListProps {
   onDeleted?: () => void;
 }
 
-const gridCols =
-  'minmax(40px,1fr) minmax(120px,2fr) minmax(120px,2fr) minmax(60px,1fr) minmax(80px,2fr) minmax(100px,1fr) minmax(140px,1fr)';
-
-const columns = [
-  { key: 'id', label: 'id' },
-  { key: 'title', label: 'title' },
-  { key: 'img_url', label: 'thumbnail' },
-  { key: 'order', label: 'order' },
-  { key: 'language', label: 'language' },
-  { key: 'programsCount', label: '프로그램 수' },
-  { key: 'actions', label: '' },
+const columnDefs = [
+  { key: 'id', label: 'id', width: 'minmax(40px,0.5fr)' },
+  { key: 'title', label: 'title', width: 'minmax(80px,1.5fr)' },
+  { key: 'img_url', label: 'thumbnail', width: 'minmax(80px,1fr)' },
+  { key: 'order', label: '순서', width: 'minmax(40px,0.5fr)' },
+  { key: 'language', label: 'language', width: 'minmax(100px,1.5fr)' },
+  { key: 'programsCount', label: '프로그램 수', width: 'minmax(40px,1fr)' },
+  { key: 'actions', label: '', width: 'minmax(140px,0.5fr)' },
 ];
+
+const columns = columnDefs.map(({ key, label }) => ({ key, label }));
+const gridCols = columnDefs.map(({ width }) => width).join(' ');
 
 const DemoCategoryList: React.FC<DemoCategoryListProps> = ({
   categories,

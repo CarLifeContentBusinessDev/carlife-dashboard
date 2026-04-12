@@ -1,4 +1,6 @@
-import DemoListLayout from '../../components/DemoListLayout';
+import DemoListLayout, {
+  type StatusFilter,
+} from '../../components/DemoListLayout';
 import Dropdown from '../../components/Dropdown';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import SortControls from '../../components/SortControls';
@@ -24,6 +26,8 @@ const DemoThemeLayout = () => {
   const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
   const [sections, setSections] = useState<{ id: number; title: string }[]>([]);
   const [selectedSection, setSelectedSection] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchThemes = async () => {
@@ -114,6 +118,10 @@ const DemoThemeLayout = () => {
           />
         </div>
       }
+      statusFilter={statusFilter}
+      onStatusFilterChange={setStatusFilter}
+      searchableFilter={searchableFilter}
+      onSearchableFilterChange={setSearchableFilter}
       searchQuery={searchQuery}
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='테마명을 입력하세요.'
