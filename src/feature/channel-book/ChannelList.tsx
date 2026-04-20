@@ -53,8 +53,8 @@ const ChannelList = ({ data }: { data: usingChannelProps[] }) => {
     {
       key: 'interfaceUrl',
       label: 'interface_url',
-      width: '240px',
-      noDataWidth: '240px',
+      width: '400px',
+      noDataWidth: '400px',
       className: 'px-2 line-clamp-2 break-words flex-shrink-0',
     },
     {
@@ -74,8 +74,8 @@ const ChannelList = ({ data }: { data: usingChannelProps[] }) => {
     {
       key: 'channelName',
       label: '채널명',
-      width: '200px',
-      noDataWidth: '200px',
+      width: '280px',
+      noDataWidth: '280px',
       className: 'px-2 line-clamp-2 break-words flex-shrink-0',
     },
     {

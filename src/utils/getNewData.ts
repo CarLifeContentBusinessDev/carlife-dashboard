@@ -1,7 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type { usingChannelProps, usingDataProps } from '../types/type';
 import { api } from './api';
-import { getGoogleToken } from './auth';
+import { getGoogleToken, getSheetsClient } from './auth';
 import { getExcelData } from './updateExcel';
 
 export async function getNewData(
@@ -109,12 +109,17 @@ export async function getNewData(
           );
 
           const latestEpisode = episodeRes.data?.data?.dataList?.[0];
+          const totalEpisodeCount = Number(
+            episodeRes.data?.data?.pageInfo?.totalCount ?? 0
+          );
+          channel.episodeCount = totalEpisodeCount;
           channel.dispDtime = latestEpisode?.dispDtime ?? '';
         } catch (err) {
           console.error(
             `채널 ${channel.channelId}의 최근 에피소드 조회 실패:`,
             err
           );
+          channel.episodeCount = 0;
           channel.dispDtime = '';
         } finally {
           completed += 1;
@@ -137,78 +142,48 @@ export async function getNewData(
 export async function getNewDataWithExcel(
   setProgress?: (message: string) => void,
   apiInstance: AxiosInstance = api,
-  spreadsheetId?: string
+  spreadsheetId?: string,
+  sheetName?: string
 ): Promise<usingDataProps[]> {
-  const batchSize = 10000;
+  const targetSpreadsheetId = spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID;
+  const batchSize = 1000;
 
-  // 전체 진행률 계산 (엑셀 조회 20%, API 조회 60%, 변경 확인은 외부에서 20%)
-  const updateProgress = (
-    stage: string,
-    stageProgress: number,
-    stageWeight: number,
-    stageStart: number
-  ) => {
-    const overall = Math.round(
-      stageStart + (stageProgress * stageWeight) / 100
-    );
-    setProgress?.(`[전체 ${overall}%] ${stage}`);
-  };
+  // 1. 엑셀 B2 셀에서 총 개수 읽기 ("총 284168개" → 284168)
+  setProgress?.('개수 비교 중...');
+  await getGoogleToken();
+  const sheets = getSheetsClient();
+  const countRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: targetSpreadsheetId,
+    range: `${sheetName}!B2`,
+  });
 
-  updateProgress('엑셀 데이터 조회 중...', 0, 20, 0);
+  const rawCount = countRes.result.values?.[0]?.[0] as string | undefined;
+  const excelCount = rawCount ? Number(rawCount.replace(/[^0-9]/g, '')) : 0;
 
-  // 1. 첫 페이지 조회와 엑셀 데이터 조회를 병렬로 실행
-  const [firstRes, allExcelData] = await Promise.all([
-    apiInstance.get(`/admin/episode?page=1&size=1`),
-    getExcelData('', 'episode', undefined, spreadsheetId),
-  ]);
+  // 2. API 총 개수
+  const firstRes = await apiInstance.get('/admin/episode?page=1&size=1');
+  const apiCount: number = firstRes.data.data.pageInfo.totalCount;
 
-  const totalCount = firstRes.data.data.pageInfo.totalCount;
-  const totalPages = Math.ceil(totalCount / batchSize);
-
-  updateProgress('API 데이터 조회 중... 0%', 0, 60, 20);
-
-  // 2. 동시 연결 풀을 사용한 병렬 처리 (하나 완료되면 즉시 다음 시작)
-  const allApiData: usingDataProps[] = [];
-  let completedPages = 0;
-  const concurrentLimit = 15;
-
-  const fetchPage = async (page: number): Promise<usingDataProps[]> => {
-    try {
-      const res = await apiInstance.get(
-        `/admin/episode?page=${page}&size=${batchSize}`
-      );
-      completedPages++;
-      const stageProgress = Math.round((completedPages / totalPages) * 100);
-      updateProgress(
-        `API 데이터 조회 중... ${stageProgress}%`,
-        stageProgress,
-        60,
-        20
-      );
-      return res.data.data.dataList || [];
-    } catch (err) {
-      completedPages++;
-      console.error(`페이지 ${page} 조회 실패:`, err);
-      return [];
-    }
-  };
-
-  // 동시성 제한이 있는 병렬 실행
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-
-  for (let i = 0; i < pages.length; i += concurrentLimit) {
-    await getGoogleToken();
-
-    const chunk = pages.slice(i, i + concurrentLimit);
-    const results = await Promise.all(chunk.map((page) => fetchPage(page)));
-    results.forEach((data) => allApiData.push(...data));
+  // 3. 같으면 신규 없음
+  if (!excelCount || excelCount >= apiCount) {
+    return [];
   }
 
-  // 3. Excel에 없는 데이터만 필터링
-  const excelIds = new Set(allExcelData.map((item) => item.episodeId));
-  const newEpisodes = allApiData.filter(
-    (item) => !excelIds.has(item.episodeId)
-  );
+  // 4. 차이만큼만 API에서 가져오기 (API는 최신순 반환)
+  const newCount = apiCount - excelCount;
+  setProgress?.(`신규 에피소드 ${newCount}개 조회 중...`);
+
+  const newEpisodes: usingDataProps[] = [];
+  let page = 1;
+
+  while (newEpisodes.length < newCount) {
+    const res = await apiInstance.get(`/admin/episode?page=${page}&size=${batchSize}`);
+    const { dataList } = res.data.data;
+    const remaining = newCount - newEpisodes.length;
+    newEpisodes.push(...(dataList as usingDataProps[]).slice(0, remaining));
+    if ((dataList as usingDataProps[]).length < batchSize) break;
+    page++;
+  }
 
   return newEpisodes;
 }

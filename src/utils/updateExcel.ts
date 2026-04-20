@@ -96,7 +96,7 @@ export async function getExcelData(
     }
 
     const sheets = getSheetsClient();
-    const lastColumn = category === 'episode' ? 'M' : 'M';
+    const lastColumn = category === 'episode' ? 'M' : 'N';
     const range = `${targetSheet}!B${STARTROW}:${lastColumn}${totalRows}`;
 
     const response = await sheets.spreadsheets.values.get({
@@ -134,13 +134,14 @@ export async function getExcelData(
             channelName: String(row[2] ?? ''),
             vendorName: String(row[3] ?? ''),
             categoryName: String(row[4] ?? ''),
-            dispDtime: String(row[5] ?? ''),
-            channelTypeName: String(row[6] ?? ''),
-            likeCnt: Number(row[7] ?? 0),
-            listenCnt: Number(row[8] ?? 0),
-            createdAt: String(row[9] ?? ''),
-            interfaceUrl: String(row[10] ?? ''),
-            thumbnailUrl: String(row[11] ?? ''),
+            episodeCount: Number(row[5] ?? 0),
+            dispDtime: String(row[6] ?? ''),
+            channelTypeName: String(row[7] ?? ''),
+            likeCnt: Number(row[8] ?? 0),
+            listenCnt: Number(row[9] ?? 0),
+            createdAt: String(row[10] ?? ''),
+            interfaceUrl: String(row[11] ?? ''),
+            thumbnailUrl: String(row[12] ?? ''),
           }) as usingChannelProps
       );
     }
@@ -319,6 +320,7 @@ export async function addMissingRows(
             row.channelName,
             row.vendorName,
             row.categoryName,
+            row.episodeCount ?? 0,
             formatDateString(row.dispDtime),
             row.channelTypeName,
             row.likeCnt,
@@ -328,7 +330,7 @@ export async function addMissingRows(
             row.thumbnailUrl,
           ];
         });
-        lastColumn = 'M';
+        lastColumn = 'N';
       }
 
       const startRow = existingData.length + i + STARTROW;
@@ -390,11 +392,13 @@ export async function overwriteExcelData(
   _token: string,
   category: 'episode' | 'channel',
   sheetName?: string,
-  spreadsheetId?: string
+  spreadsheetId?: string,
+  startRow?: number
 ) {
   try {
     const targetSheet =
       sheetName || localStorage.getItem('sheetName') || 'Sheet1';
+    const targetStartRow = startRow ?? STARTROW;
     const sheets = getSheetsClient();
     let values;
     let lastColumn;
@@ -422,6 +426,7 @@ export async function overwriteExcelData(
         row.channelName,
         row.vendorName,
         row.categoryName,
+        row.episodeCount ?? 0,
         formatDateString(row.dispDtime),
         row.channelTypeName,
         row.likeCnt,
@@ -430,12 +435,12 @@ export async function overwriteExcelData(
         row.interfaceUrl,
         row.thumbnailUrl,
       ]);
-      lastColumn = 'M';
+      lastColumn = 'N';
     }
 
-    const range = `${targetSheet}!B${STARTROW}:${lastColumn}${STARTROW + values.length - 1}`;
+    const range = `${targetSheet}!B${targetStartRow}:${lastColumn}${targetStartRow + values.length - 1}`;
 
-    const clearRange = `${targetSheet}!B${STARTROW}:${lastColumn}${MAX_ROWS}`;
+    const clearRange = `${targetSheet}!B${targetStartRow}:${lastColumn}${MAX_ROWS}`;
     await sheets.spreadsheets.values.clear({
       spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
       range: clearRange,
@@ -463,7 +468,8 @@ export async function overwriteExcelData(
           newToken,
           category,
           sheetName,
-          spreadsheetId
+          spreadsheetId,
+          startRow
         );
       }
     }

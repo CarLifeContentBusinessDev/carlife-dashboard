@@ -7,11 +7,14 @@ import { getUsedRange } from './updateExcel';
 
 export async function getCurationExcelData(
   _token: string,
-  spreadsheetId: string
+  spreadsheetId: string,
+  sheetName?: string
 ): Promise<usingCurationExcelProps[]> {
   const batchSize = 1000;
   const allRows: (string | number)[][] = [];
-  let totalRows = await getUsedRange(undefined, spreadsheetId);
+  const targetSheetName =
+    sheetName || localStorage.getItem('sheetName') || 'Sheet1';
+  let totalRows = await getUsedRange(targetSheetName, spreadsheetId);
 
   if (totalRows === null || totalRows < 4) {
     totalRows = 4;
@@ -24,8 +27,7 @@ export async function getCurationExcelData(
     const startRow = i * batchSize + 4;
     const calculatedEndRow = startRow + batchSize - 1;
     const endRow = Math.min(calculatedEndRow, totalRows);
-    const sheetName = localStorage.getItem('sheetName');
-    const range = `${sheetName}!B${startRow}:W${endRow}`;
+    const range = `${targetSheetName}!B${startRow}:W${endRow}`;
 
     try {
       const response = await sheets.spreadsheets.values.get({
@@ -89,6 +91,83 @@ export async function getCurationExcelData(
         uploader: String(row[21] ?? ''),
       }) as usingCurationExcelProps
   );
+}
+
+export async function overwriteCurationExcelData(
+  data: usingCurationExcelProps[],
+  _token: string,
+  sheetName?: string,
+  spreadsheetId?: string
+): Promise<void> {
+  try {
+    const targetSheet =
+      sheetName || localStorage.getItem('sheetName') || 'Sheet1';
+    const sheets = getSheetsClient();
+
+    const values = (data as usingCurationExcelProps[]).map((row) => [
+      row.thumbnailTitle,
+      row.curationType,
+      row.curationName,
+      row.curationDesc,
+      row.activeState,
+      row.exhibitionState,
+      row.field,
+      row.section,
+      formatDateString(row.dispStartDtime),
+      formatDateString(row.dispEndDtime),
+      formatDateString(row.curationCreatedAt),
+      row.channelId,
+      row.episodeId,
+      row.usageYn,
+      row.channelName,
+      row.episodeName,
+      formatDateString(row.dispDtime),
+      formatDateString(row.createdAt),
+      formatPlayTime(row.playTime ?? 0),
+      row.likeCnt,
+      row.listenCnt,
+      row.uploader,
+    ]);
+
+    const STARTROW = 4;
+    const MAX_ROWS = 300000;
+    const lastColumn = 'W';
+
+    const range = `${targetSheet}!B${STARTROW}:${lastColumn}${STARTROW + values.length - 1}`;
+    const clearRange = `${targetSheet}!B${STARTROW}:${lastColumn}${MAX_ROWS}`;
+
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
+      range: clearRange,
+      resource: {},
+    });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
+      range,
+      valueInputOption: 'RAW',
+      resource: { values },
+    });
+
+    toast.success('큐레이션 데이터 덮어쓰기 완료!');
+  } catch (err) {
+    console.error('큐레이션 데이터 덮어쓰기 실패:', err);
+    toast.error('큐레이션 데이터 덮어쓰기 실패!');
+
+    if ((err as any)?.status === 401) {
+      const newToken = await getGoogleToken();
+      if (newToken) {
+        return overwriteCurationExcelData(
+          data,
+          newToken,
+          sheetName,
+          spreadsheetId
+        );
+      }
+    }
+
+    throw err;
+  }
 }
 
 export async function addMissingCurationRows(
