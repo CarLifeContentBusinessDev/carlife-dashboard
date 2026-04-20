@@ -12,6 +12,7 @@ import { fetchAllData } from '../../utils/fetchAllData';
 import { getNewDataWithExcel } from '../../utils/getNewData';
 import getSheetList from '../../utils/getSheetList';
 import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
+import { clearExcelRange, overwriteExcelData } from '../../utils/updateExcel';
 import { findChangedData, findUpdateData } from '../../utils/updateLogs';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
@@ -111,25 +112,6 @@ const EpisodeLayout = () => {
         apiInstance
       );
       const duplicateData = await findChangedData(allList);
-      // 전체 조회 시 Episode_Logs 비우기
-      if (loginToken) {
-        setProgress('기존 로그 데이터 초기화 중...');
-        try {
-          const logsSheetName = getSheetName('Episode_Logs');
-          // 로그 시트 초기화 (appendNewDataToTop의 overwrite 동작 사용)
-          await appendNewDataToTop(
-            [],
-            setProgress,
-            CATEGORY,
-            setLoading,
-            logsSheetName,
-            true, // overwrite
-            spreadsheetId
-          );
-        } catch (error) {
-          console.warn('Episode_Logs 초기화 실패:', error);
-        }
-      }
       setProgress('');
       setAllEpisodes(allList);
       setDuplicateAllEpisodes(duplicateData);
@@ -159,15 +141,30 @@ const EpisodeLayout = () => {
       const duplicateToSync =
         syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
 
-      await appendNewDataToTop(
-        dataToSync,
-        setProgress,
-        CATEGORY,
-        setExcelLoading,
-        currentSheet,
-        false, // 토스트 메시지 표시 안 함
-        spreadsheetId
-      );
+      if (syncPreviewMode === 'new') {
+        await appendNewDataToTop(
+          dataToSync,
+          setProgress,
+          CATEGORY,
+          setExcelLoading,
+          currentSheet,
+          false, // 토스트 메시지 표시 안 함
+          spreadsheetId
+        );
+      } else {
+        await overwriteExcelData(
+          dataToSync,
+          loginToken,
+          CATEGORY,
+          currentSheet,
+          spreadsheetId,
+          5
+        );
+
+        // 전체 동기화 시 로그 시트도 먼저 초기화
+        const logsSheetName = getSheetName('Episode_Logs');
+        await clearExcelRange('B4:M300000', logsSheetName, spreadsheetId);
+      }
 
       // Episode_Logs 시트에 변경된 데이터 추가
       if (duplicateToSync.length > 0) {
@@ -464,11 +461,6 @@ const EpisodeLayout = () => {
                 )}
               </h3>
               <div className='flex gap-8 items-center'>
-                <LoadingOverlay
-                  progress={progress}
-                  vertical={false}
-                  loading={excelLoading}
-                />
                 <select
                   value={selectedSheet}
                   onChange={(e) => handleSelectSheetDropdown(e.target.value)}

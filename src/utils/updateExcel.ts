@@ -392,11 +392,13 @@ export async function overwriteExcelData(
   _token: string,
   category: 'episode' | 'channel',
   sheetName?: string,
-  spreadsheetId?: string
+  spreadsheetId?: string,
+  startRow?: number
 ) {
   try {
     const targetSheet =
       sheetName || localStorage.getItem('sheetName') || 'Sheet1';
+    const targetStartRow = startRow ?? STARTROW;
     const sheets = getSheetsClient();
     let values;
     let lastColumn;
@@ -436,9 +438,9 @@ export async function overwriteExcelData(
       lastColumn = 'N';
     }
 
-    const range = `${targetSheet}!B${STARTROW}:${lastColumn}${STARTROW + values.length - 1}`;
+    const range = `${targetSheet}!B${targetStartRow}:${lastColumn}${targetStartRow + values.length - 1}`;
 
-    const clearRange = `${targetSheet}!B${STARTROW}:${lastColumn}${MAX_ROWS}`;
+    const clearRange = `${targetSheet}!B${targetStartRow}:${lastColumn}${MAX_ROWS}`;
     await sheets.spreadsheets.values.clear({
       spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
       range: clearRange,
@@ -466,7 +468,8 @@ export async function overwriteExcelData(
           newToken,
           category,
           sheetName,
-          spreadsheetId
+          spreadsheetId,
+          startRow
         );
       }
     }

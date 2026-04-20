@@ -30,8 +30,7 @@ const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
 ];
 
 const isImageUrl = (url: string) =>
-  /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ||
-  url.includes('thumbnail');
+  /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) || url.includes('thumbnail');
 
 const isAudioUrl = (url: string) =>
   /\.(mp3|wav|m4a|aac|ogg|flac)(\?.*)?$/i.test(url) ||
@@ -74,7 +73,12 @@ const renderValue = (key: keyof usingDataProps, value: string | number) => {
               }}
             />
           </div>
-          <a href={value} target='_blank' rel='noopener noreferrer' className='text-blue-500 text-xs underline break-all'>
+          <a
+            href={value}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-blue-500 text-xs underline break-all'
+          >
             {value}
           </a>
         </div>
@@ -87,7 +91,12 @@ const renderValue = (key: keyof usingDataProps, value: string | number) => {
           <audio controls preload='metadata' className='w-full'>
             <source src={value} />
           </audio>
-          <a href={value} target='_blank' rel='noopener noreferrer' className='text-blue-500 text-xs underline break-all'>
+          <a
+            href={value}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-blue-500 text-xs underline break-all'
+          >
             {value}
           </a>
         </div>
@@ -95,7 +104,12 @@ const renderValue = (key: keyof usingDataProps, value: string | number) => {
     }
 
     return (
-      <a href={value} target='_blank' rel='noopener noreferrer' className='text-blue-500 text-sm underline break-all'>
+      <a
+        href={value}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='text-blue-500 text-sm underline break-all'
+      >
         {value}
       </a>
     );
@@ -108,7 +122,9 @@ const ProdEpisodeDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const episode = (location.state as { episode?: usingDataProps; from?: string })?.episode;
+  const episode = (
+    location.state as { episode?: usingDataProps; from?: string }
+  )?.episode;
   const from = (location.state as { from?: string })?.from ?? '/';
 
   if (!episode) {
@@ -125,11 +141,11 @@ const ProdEpisodeDetail = () => {
     );
   }
 
-  const leftFields = FIELD_DEFS.filter((_, i) => i % 2 === 0);
-  const rightFields = FIELD_DEFS.filter((_, i) => i % 2 !== 0);
-  const pairs = leftFields.map((l, i) => [l, rightFields[i]]).filter(Boolean);
-
-  const wideKeys: (keyof usingDataProps)[] = ['thumbnailUrl', 'audioUrl', 'episodeName'];
+  const wideKeys: (keyof usingDataProps)[] = [
+    'thumbnailUrl',
+    'audioUrl',
+    'episodeName',
+  ];
 
   const narrowFields = FIELD_DEFS.filter((f) => !wideKeys.includes(f.key));
   const wideFields = FIELD_DEFS.filter((f) => wideKeys.includes(f.key));
@@ -190,7 +206,10 @@ const ProdEpisodeDetail = () => {
         <div className='grid grid-cols-1 gap-3'>
           {/* 좁은 필드 2열 페어 */}
           {narrowPairs.map((pair, pairIdx) => (
-            <div key={pairIdx} className='grid grid-cols-1 lg:grid-cols-2 gap-3'>
+            <div
+              key={pairIdx}
+              className='grid grid-cols-1 lg:grid-cols-2 gap-3'
+            >
               {pair.map((field) => (
                 <div
                   key={field.key}
@@ -200,7 +219,10 @@ const ProdEpisodeDetail = () => {
                     {field.label}
                   </div>
                   <div className='px-4 py-3 text-sm bg-white'>
-                    {renderValue(field.key, episode[field.key] as string | number)}
+                    {renderValue(
+                      field.key,
+                      episode[field.key] as string | number
+                    )}
                   </div>
                 </div>
               ))}
