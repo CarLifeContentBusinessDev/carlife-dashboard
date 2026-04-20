@@ -16,18 +16,12 @@ import { getNewCurationData } from '../../utils/getNewCuration';
 import getSheetList from '../../utils/getSheetList';
 import { mapCurationStatus } from '../../utils/statusMapper';
 import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
-import { addMissingCurationRows } from '../../utils/updateCuration';
-import CurationList from './CurationList';
+import { overwriteCurationExcelData } from '../../utils/updateCuration';
 import ProdCurationList from './ProdCurationList';
 
 const DATA_PAGE_SIZE = 10;
-type ActiveFilter = 'all' | 'Y' | 'N';
-type ExhibitionFilter =
-  | 'all'
-  | 'ACTIVE'
-  | 'ACTIVE_NONE_DISPLAY'
-  | 'INACTIVE'
-  | 'WAITING';
+const SYNC_PAGE_SIZE = 10;
+type SyncPreviewMode = 'new' | 'all' | null;
 
 type ProdCurationRow = usingCurationExcelProps & {
   curationId: number;
@@ -43,17 +37,18 @@ const CurationLayout = () => {
   const [prodPage, setProdPage] = useState(1);
   const [prodTotalPages, setProdTotalPages] = useState(0);
   const [prodTotalCount, setProdTotalCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
-  const [exhibitionFilter, setExhibitionFilter] =
-    useState<ExhibitionFilter>('all');
   const [newCurations, setNewCurations] = useState<usingCurationExcelProps[]>(
     []
   );
+  const [allCurations, setAllCurations] = useState<usingCurationExcelProps[]>(
+    []
+  );
+  const [syncPreviewMode, setSyncPreviewMode] = useState<SyncPreviewMode>(null);
+  const [syncPage, setSyncPage] = useState(1);
+  const [syncTotalPages, setSyncTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
-  const [allLoading, setAllLoading] = useState(false);
   const [progress, setProgress] = useState('');
-  const [syncCompleted, setSyncCompleted] = useState(false);
   const [sheetList, setSheetList] = useState<{ id: string; name: string }[]>(
     []
   );
@@ -105,32 +100,14 @@ const CurationLayout = () => {
     }
   }, [defaultSheetName, isStaging, loginToken, sheetStorageKey, spreadsheetId]);
 
-  const fetchProdCurationPage = async (
-    page: number,
-    nextActiveFilter: ActiveFilter,
-    nextExhibitionFilter: ExhibitionFilter
-  ) => {
+  const fetchProdCurationPage = async (page: number) => {
     if (!loginToken) return;
 
     setProdLoading(true);
 
     try {
-      const queryParams = new URLSearchParams({
-        page: String(page),
-        size: String(DATA_PAGE_SIZE),
-        periodType: 'ALL',
-      });
-
-      if (nextActiveFilter !== 'all') {
-        queryParams.set('usageYn', nextActiveFilter);
-      }
-
-      if (nextExhibitionFilter !== 'all') {
-        queryParams.set('status', nextExhibitionFilter);
-      }
-
       const listRes = await apiInstance.get(
-        `/admin/curation?${queryParams.toString()}`
+        `/admin/curation?page=${page}&size=${DATA_PAGE_SIZE}&periodType=ALL`
       );
 
       const { dataList, pageInfo } = listRes.data.data as {
@@ -180,13 +157,17 @@ const CurationLayout = () => {
 
   useEffect(() => {
     setProdPage(1);
-    fetchProdCurationPage(1, activeFilter, exhibitionFilter);
+    fetchProdCurationPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaging, loginToken, activeFilter, exhibitionFilter]);
+  }, [isStaging, loginToken]);
 
   const handleProdPageChange = (page: number) => {
     setProdPage(page);
-    fetchProdCurationPage(page, activeFilter, exhibitionFilter);
+    fetchProdCurationPage(page);
+  };
+
+  const handleSyncPageChange = (page: number) => {
+    setSyncPage(page);
   };
 
   const handleSelectSheetDropdown = (value: string) => {
@@ -194,24 +175,74 @@ const CurationLayout = () => {
     localStorage.setItem(sheetStorageKey, value);
   };
 
-  const handleUpdateExcel = async () => {
+  const handleLoadAllCurations = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
 
-    const result = window.confirm(
-      `${selectedSheet || '선택된'} 시트에 누락된 데이터를 추가합니다.`
-    );
+    const currentSheet = localStorage.getItem(sheetStorageKey) || selectedSheet;
+    if (!currentSheet) {
+      return toast.warn('시트를 먼저 선택해주세요!');
+    }
 
-    if (result) {
-      setAllLoading(true);
+    try {
+      setLoading(true);
+      setAllCurations([]);
+      setNewCurations([]);
+      setSyncPreviewMode(null);
+      setSyncPage(1);
+
       const allData = await fetchAllCurationData(apiInstance);
-      await addMissingCurationRows(
-        allData,
-        loginToken,
-        setProgress,
-        spreadsheetId
+      setAllCurations(allData);
+      setSyncTotalPages(Math.ceil(allData.length / SYNC_PAGE_SIZE));
+      setSyncPreviewMode('all');
+      toast.info(
+        `${allData.length}개의 전체 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
       );
+    } catch (error) {
+      console.error('전체 큐레이션 조회 실패:', error);
+    } finally {
+      setLoading(false);
       setProgress('');
-      setAllLoading(false);
+    }
+  };
+
+  const handleSearchNew = async (token: string) => {
+    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
+
+    const currentSheet = localStorage.getItem(sheetStorageKey) || selectedSheet;
+    if (!currentSheet) {
+      return toast.warn('시트를 먼저 선택해주세요!');
+    }
+
+    try {
+      setLoading(true);
+      setNewCurations([]);
+      setAllCurations([]);
+      setSyncPreviewMode(null);
+      setSyncPage(1);
+
+      const newList = await getNewCurationData(
+        token,
+        setProgress,
+        apiInstance,
+        spreadsheetId,
+        currentSheet
+      );
+      setNewCurations(newList);
+      setSyncTotalPages(Math.ceil(newList.length / SYNC_PAGE_SIZE));
+      setSyncPreviewMode('new');
+
+      if (newList.length === 0) {
+        toast.info('추가할 신규 큐레이션이 없습니다.');
+      } else {
+        toast.info(
+          `${newList.length}개의 신규 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
+        );
+      }
+    } catch (error) {
+      console.error('신규 큐레이션 탐지 실패:', error);
+    } finally {
+      setLoading(false);
+      setProgress('');
     }
   };
 
@@ -223,36 +254,53 @@ const CurationLayout = () => {
       return toast.warn('시트를 먼저 선택해주세요!');
     }
 
+    if (!syncPreviewMode) {
+      return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
+    }
+
+    const previewData = syncPreviewMode === 'new' ? newCurations : allCurations;
+
+    if (syncPreviewMode === 'new' && previewData.length === 0) {
+      return toast.info('동기화할 신규 데이터가 없습니다.');
+    }
+
+    const confirmMessage =
+      syncPreviewMode === 'new'
+        ? `${currentSheet} 시트에 신규 ${previewData.length}건을 추가합니다. 계속하시겠습니까?`
+        : `${currentSheet} 시트의 기존 데이터를 삭제하고 ${previewData.length}건으로 전체 재적재합니다. 계속하시겠습니까?`;
+
+    const confirmed = window.confirm(confirmMessage);
+    if (!confirmed) {
+      return;
+    }
+
     try {
-      await appendNewCurationToExcel(
-        newCurations,
-        setProgress,
-        setExcelLoading,
-        currentSheet,
-        spreadsheetId
-      );
+      setExcelLoading(true);
+
+      if (syncPreviewMode === 'new') {
+        await appendNewCurationToExcel(
+          previewData,
+          setProgress,
+          setExcelLoading,
+          currentSheet,
+          spreadsheetId
+        );
+      } else {
+        await overwriteCurationExcelData(
+          previewData,
+          loginToken,
+          currentSheet,
+          spreadsheetId
+        );
+      }
+
       await updateSheetSyncTime(defaultSheetName, spreadsheetId);
-      setSyncCompleted(true);
     } catch (error) {
       console.error('Excel 동기화 실패:', error);
     } finally {
       setExcelLoading(false);
       setProgress('');
     }
-  };
-
-  const handleSearchNew = async (token: string) => {
-    setLoading(true);
-    setSyncCompleted(false);
-    const newList = await getNewCurationData(
-      token,
-      setProgress,
-      apiInstance,
-      spreadsheetId
-    );
-    setProgress('');
-    setNewCurations(newList);
-    setLoading(false);
   };
 
   return (
@@ -295,125 +343,13 @@ const CurationLayout = () => {
                 <span className='font-extrabold'>{prodTotalCount}</span>개
               </h3>
 
-              <div className='flex items-center gap-8'>
-                <div className='flex items-center gap-3'>
-                  <span className='text-sm text-gray-600 font-medium'>
-                    활성 상태:
-                  </span>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationActiveFilter'
-                      value='all'
-                      checked={activeFilter === 'all'}
-                      onChange={() => setActiveFilter('all')}
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>All</span>
-                  </label>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationActiveFilter'
-                      value='Y'
-                      checked={activeFilter === 'Y'}
-                      onChange={() => setActiveFilter('Y')}
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>Y</span>
-                  </label>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationActiveFilter'
-                      value='N'
-                      checked={activeFilter === 'N'}
-                      onChange={() => setActiveFilter('N')}
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>N</span>
-                  </label>
-                </div>
-
-                <div className='flex items-center gap-3'>
-                  <span className='text-sm text-gray-600 font-medium'>
-                    전시 상태:
-                  </span>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationExhibitionFilter'
-                      value='all'
-                      checked={exhibitionFilter === 'all'}
-                      onChange={() => setExhibitionFilter('all')}
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>All</span>
-                  </label>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationExhibitionFilter'
-                      value='ACTIVE'
-                      checked={exhibitionFilter === 'ACTIVE'}
-                      onChange={() => setExhibitionFilter('ACTIVE')}
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>게시 중</span>
-                  </label>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationExhibitionFilter'
-                      value='ACTIVE_NONE_DISPLAY'
-                      checked={exhibitionFilter === 'ACTIVE_NONE_DISPLAY'}
-                      onChange={() =>
-                        setExhibitionFilter('ACTIVE_NONE_DISPLAY')
-                      }
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>게시 대기</span>
-                  </label>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationExhibitionFilter'
-                      value='INACTIVE'
-                      checked={exhibitionFilter === 'INACTIVE'}
-                      onChange={() => setExhibitionFilter('INACTIVE')}
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>게시 종료</span>
-                  </label>
-
-                  <label className='flex items-center gap-1.5 cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='curationExhibitionFilter'
-                      value='WAITING'
-                      checked={exhibitionFilter === 'WAITING'}
-                      onChange={() => setExhibitionFilter('WAITING')}
-                      className='accent-point-color w-4 h-4 cursor-pointer'
-                    />
-                    <span className='text-sm text-gray-700'>게시 예약</span>
-                  </label>
-                </div>
-
-                <button
-                  onClick={() => handleProdPageChange(prodPage)}
-                  className='cursor-pointer'
-                  disabled={prodLoading}
-                >
-                  <img src='/redo.svg' alt='새로고침' width={22} height={22} />
-                </button>
-              </div>
+              <button
+                onClick={() => handleProdPageChange(prodPage)}
+                className='cursor-pointer'
+                disabled={prodLoading}
+              >
+                <img src='/redo.svg' alt='새로고침' width={22} height={22} />
+              </button>
             </div>
 
             <LoadingOverlay loading={prodLoading}>
@@ -439,38 +375,60 @@ const CurationLayout = () => {
         {/* 탭 2: Excel 동기화 */}
         {activeTab === 'sync' && (
           <div className='flex-1 p-8 flex flex-col min-h-0'>
-            <div className='flex gap-2 mb-4 flex-shrink-0'>
-              <Button onClick={handleUpdateExcel}>
-                전체 큐레이션 시트로 변환
-              </Button>
-              <Button
-                href={
-                  isStaging
-                    ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=1243772316#gid=1243772316`
-                    : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=991347809#gid=991347809`
-                }
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                Excel 바로가기
-              </Button>
-              <LoadingOverlay
-                progress={progress}
-                vertical={false}
-                loading={allLoading}
-              ></LoadingOverlay>
-            </div>
-            <div className='flex justify-between items-center flex-shrink-0'>
-              <h3 className='text-point-color font-semibold'>
-                새로운 큐레이션 총{' '}
-                <span className='font-extrabold'>{newCurations.length}</span>개
-              </h3>
-              <div className='flex gap-8 items-center'>
+            <div className='flex justify-between items-center gap-2 mb-4 flex-shrink-0'>
+              <div className='flex gap-2'>
+                <Button onClick={() => handleSearchNew(loginToken)}>
+                  신규 조회
+                </Button>
+                <Button onClick={handleLoadAllCurations}>전체 조회</Button>
+                <Button
+                  href={
+                    isStaging
+                      ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=1243772316#gid=1243772316`
+                      : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=991347809#gid=991347809`
+                  }
+                  target='_blank'
+                  rel='noopener noreferrer'
+                >
+                  Excel 바로가기
+                </Button>
+              </div>
+              <div className='flex gap-2 items-center'>
                 <LoadingOverlay
                   progress={progress}
                   vertical={false}
                   loading={excelLoading}
                 />
+                <Button onClick={handleSyncExcel} disabled={!syncPreviewMode}>
+                  동기화 실행
+                </Button>
+              </div>
+            </div>
+            <div className='flex justify-between items-center flex-shrink-0'>
+              <h3 className='text-point-color font-semibold'>
+                {syncPreviewMode === 'all' && (
+                  <>
+                    전체 동기화 대상 총{' '}
+                    <span className='font-extrabold'>
+                      {allCurations.length}
+                    </span>
+                    개
+                  </>
+                )}
+                {syncPreviewMode === 'new' && (
+                  <>
+                    신규 동기화 대상 총{' '}
+                    <span className='font-extrabold'>
+                      {newCurations.length}
+                    </span>
+                    개
+                  </>
+                )}
+                {syncPreviewMode === null && (
+                  <>신규/전체 조회 후 결과를 확인하고 동기화를 실행하세요.</>
+                )}
+              </h3>
+              <div className='flex gap-8 items-center'>
                 <select
                   value={selectedSheet}
                   onChange={(e) => handleSelectSheetDropdown(e.target.value)}
@@ -489,27 +447,61 @@ const CurationLayout = () => {
                       </option>
                     ))}
                 </select>
-                <button
-                  onClick={() => handleSearchNew(loginToken)}
-                  className='cursor-pointer'
-                >
-                  <img src='/redo.svg' alt='재검색' width={22} height={22} />
-                </button>
-                <Button
-                  onClick={handleSyncExcel}
-                  disabled={excelLoading || syncCompleted}
-                >
-                  {syncCompleted ? 'Excel 동기화 완료' : 'Excel 동기화'}
-                </Button>
               </div>
             </div>
             <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
               <LoadingOverlay progress={progress} loading={loading}>
-                새로운 큐레이션 목록을 불러오는 중입니다.
+                큐레이션 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!loading && <CurationList data={newCurations} />}
+              {!loading && syncPreviewMode && (
+                <>
+                  <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    {syncPreviewMode === 'new' ? (
+                      <ProdCurationList
+                        data={
+                          newCurations
+                            .slice(
+                              (syncPage - 1) * SYNC_PAGE_SIZE,
+                              syncPage * SYNC_PAGE_SIZE
+                            )
+                            .map((item, idx) => ({
+                              ...item,
+                              curationId: idx,
+                            })) as any
+                        }
+                        isStaging={isStaging}
+                      />
+                    ) : (
+                      <ProdCurationList
+                        data={
+                          allCurations
+                            .slice(
+                              (syncPage - 1) * SYNC_PAGE_SIZE,
+                              syncPage * SYNC_PAGE_SIZE
+                            )
+                            .map((item, idx) => ({
+                              ...item,
+                              curationId: idx,
+                            })) as any
+                        }
+                        isStaging={isStaging}
+                      />
+                    )}
+                  </div>
+                  <Pagination
+                    page={syncPage}
+                    totalPages={syncTotalPages}
+                    onChange={handleSyncPageChange}
+                  />
+                </>
+              )}
+              {!loading && !syncPreviewMode && (
+                <div className='flex items-center justify-center h-full text-gray-500'>
+                  신규/전체 조회를 먼저 실행해주세요.
+                </div>
+              )}
             </div>
           </div>
         )}

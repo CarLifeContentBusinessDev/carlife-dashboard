@@ -109,12 +109,17 @@ export async function getNewData(
           );
 
           const latestEpisode = episodeRes.data?.data?.dataList?.[0];
+          const totalEpisodeCount = Number(
+            episodeRes.data?.data?.pageInfo?.totalCount ?? 0
+          );
+          channel.episodeCount = totalEpisodeCount;
           channel.dispDtime = latestEpisode?.dispDtime ?? '';
         } catch (err) {
           console.error(
             `채널 ${channel.channelId}의 최근 에피소드 조회 실패:`,
             err
           );
+          channel.episodeCount = 0;
           channel.dispDtime = '';
         } finally {
           completed += 1;

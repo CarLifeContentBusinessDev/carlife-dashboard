@@ -24,6 +24,7 @@ export interface usingChannelProps {
   interfaceType: string;
   categoryId: number;
   categoryName: string;
+  episodeCount?: number;
   vendorName: string;
   likeCnt: number;
   listenCnt: number;

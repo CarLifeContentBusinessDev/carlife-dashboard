@@ -84,6 +84,10 @@ export async function fetchAllData(
           );
 
           const episodes = episodeRes.data.data.dataList;
+          const totalEpisodeCount = Number(
+            episodeRes.data?.data?.pageInfo?.totalCount ?? 0
+          );
+          channel.episodeCount = totalEpisodeCount;
 
           if (episodes && episodes.length > 0) {
             channel.dispDtime = episodes[0].dispDtime || '';
@@ -98,6 +102,7 @@ export async function fetchAllData(
             return [];
           }
           console.error(`채널 ${channel.channelId}의 에피소드 조회 실패:`, err);
+          channel.episodeCount = 0;
           channel.dispDtime = '';
         }
       }

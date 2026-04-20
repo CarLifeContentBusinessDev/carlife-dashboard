@@ -12,7 +12,6 @@ import { fetchAllData } from '../../utils/fetchAllData';
 import { getNewDataWithExcel } from '../../utils/getNewData';
 import getSheetList from '../../utils/getSheetList';
 import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
-import { addMissingRows } from '../../utils/updateExcel';
 import { findChangedData, findUpdateData } from '../../utils/updateLogs';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
@@ -33,11 +32,18 @@ const EpisodeLayout = () => {
   const [usageFilter, setUsageFilter] = useState<'all' | 'Y' | 'N'>('all');
   const [newEpi, setNewEpi] = useState<usingDataProps[]>([]);
   const [duplicateNewEpi, setDuplicateNewEpi] = useState<usingDataProps[]>([]);
+  const [allEpisodes, setAllEpisodes] = useState<usingDataProps[]>([]);
+  const [duplicateAllEpisodes, setDuplicateAllEpisodes] = useState<
+    usingDataProps[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
-  const [allLoading, setAllLoading] = useState(false);
   const [progress, setProgress] = useState('');
-  const [syncCompleted, setSyncCompleted] = useState(false);
+  const [syncPreviewMode, setSyncPreviewMode] = useState<'new' | 'all' | null>(
+    null
+  );
+  const [syncPage, setSyncPage] = useState(1);
+  const [syncTotalPages, setSyncTotalPages] = useState(0);
   const [sheetList, setSheetList] = useState<{ id: string; name: string }[]>(
     []
   );
@@ -95,51 +101,50 @@ const EpisodeLayout = () => {
     localStorage.setItem(sheetStorageKey, value);
   };
 
-  const handleUpdateExcel = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
-    const result = window.confirm(
-      `${selectedSheet || '선택된'} 시트에 누락된 데이터를 추가합니다.`
-    );
-    if (result) {
-      const currentSheet =
-        localStorage.getItem(sheetStorageKey) || selectedSheet;
-      if (!currentSheet) {
-        return toast.warn('시트를 먼저 선택해주세요!');
-      }
-
-      const allData = await fetchAllData(
+  const handleLoadAllEpisodes = async () => {
+    setLoading(true);
+    try {
+      const allList = await fetchAllData(
         CATEGORY,
         setProgress,
         undefined,
         apiInstance
       );
-      const duplicateData = await findChangedData(allData);
-      await addMissingRows(
-        allData,
-        loginToken,
-        setProgress,
-        CATEGORY,
-        setAllLoading,
-        spreadsheetId,
-        currentSheet
-      );
-
-      localStorage.setItem(sheetStorageKey, getSheetName('Episode_Logs'));
-      setSelectedSheet(getSheetName('Episode_Logs'));
-      await addMissingRows(
-        duplicateData,
-        loginToken,
-        setProgress,
-        CATEGORY,
-        setAllLoading,
-        spreadsheetId,
-        getSheetName('Episode_Logs')
-      );
+      const duplicateData = await findChangedData(allList);
+      // 전체 조회 시 Episode_Logs 비우기
+      if (loginToken) {
+        setProgress('기존 로그 데이터 초기화 중...');
+        try {
+          const logsSheetName = getSheetName('Episode_Logs');
+          // 로그 시트 초기화 (appendNewDataToTop의 overwrite 동작 사용)
+          await appendNewDataToTop(
+            [],
+            setProgress,
+            CATEGORY,
+            setLoading,
+            logsSheetName,
+            true, // overwrite
+            spreadsheetId
+          );
+        } catch (error) {
+          console.warn('Episode_Logs 초기화 실패:', error);
+        }
+      }
+      setProgress('');
+      setAllEpisodes(allList);
+      setDuplicateAllEpisodes(duplicateData);
+      setSyncPreviewMode('all');
+      setSyncPage(1);
+      setSyncTotalPages(Math.ceil(allList.length / SYNC_PAGE_SIZE));
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSyncExcel = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
+    if (!syncPreviewMode)
+      return toast.warn('신규/전체 조회를 먼저 실행해주세요!');
 
     // 선택된 시트에 새 데이터 추가
     const currentSheet = localStorage.getItem(sheetStorageKey) || selectedSheet;
@@ -150,8 +155,12 @@ const EpisodeLayout = () => {
     try {
       setExcelLoading(true);
 
+      const dataToSync = syncPreviewMode === 'new' ? newEpi : allEpisodes;
+      const duplicateToSync =
+        syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
+
       await appendNewDataToTop(
-        newEpi,
+        dataToSync,
         setProgress,
         CATEGORY,
         setExcelLoading,
@@ -161,16 +170,16 @@ const EpisodeLayout = () => {
       );
 
       // Episode_Logs 시트에 변경된 데이터 추가
-      if (duplicateNewEpi.length > 0) {
+      if (duplicateToSync.length > 0) {
         setProgress(
-          `Episode_Logs 시트에 변경된 데이터 ${duplicateNewEpi.length}개 추가 중...`
+          `Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`
         );
 
         localStorage.setItem(sheetStorageKey, getSheetName('Episode_Logs'));
         setSelectedSheet(getSheetName('Episode_Logs'));
 
         await appendNewDataToTop(
-          duplicateNewEpi,
+          duplicateToSync,
           setProgress,
           CATEGORY,
           setExcelLoading,
@@ -184,9 +193,8 @@ const EpisodeLayout = () => {
 
       // 모든 작업 완료 후 통합 토스트 메시지
       toast.success(
-        `새로운 에피소드 ${newEpi.length}개, 변경된 에피소드 ${duplicateNewEpi.length}개 \n 동기화에 성공했습니다!`
+        `에피소드 ${dataToSync.length}개, 변경된 에피소드 ${duplicateToSync.length}개 \n 동기화에 성공했습니다!`
       );
-      setSyncCompleted(true);
     } catch (error) {
       console.error('Excel 동기화 실패:', error);
     } finally {
@@ -196,6 +204,11 @@ const EpisodeLayout = () => {
   };
 
   const PROD_PAGE_SIZE = 10;
+  const SYNC_PAGE_SIZE = 10;
+
+  const handleSyncPageChange = (page: number) => {
+    setSyncPage(page);
+  };
 
   const fetchProdPage = async (page: number, filter: 'all' | 'Y' | 'N') => {
     if (!loginToken) return;
@@ -235,17 +248,22 @@ const EpisodeLayout = () => {
 
   const handleSearchNew = async () => {
     setLoading(true);
-    setSyncCompleted(false);
-    const newList = await getNewDataWithExcel(
-      setProgress,
-      apiInstance,
-      spreadsheetId
-    );
-    const duplicateNewData = await findUpdateData(newList, setProgress);
-    setProgress('');
-    setNewEpi(newList);
-    setDuplicateNewEpi(duplicateNewData);
-    setLoading(false);
+    try {
+      const newList = await getNewDataWithExcel(
+        setProgress,
+        apiInstance,
+        spreadsheetId
+      );
+      const duplicateNewData = await findUpdateData(newList, setProgress);
+      setProgress('');
+      setNewEpi(newList);
+      setDuplicateNewEpi(duplicateNewData);
+      setSyncPreviewMode('new');
+      setSyncPage(1);
+      setSyncTotalPages(Math.ceil(newList.length / SYNC_PAGE_SIZE));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredProdData = prodData.filter((ep) => {
@@ -386,31 +404,64 @@ const EpisodeLayout = () => {
         {/* 탭 2: Excel 동기화 */}
         {activeTab === 'sync' && (
           <div className='flex-1 p-8 flex flex-col min-h-0'>
-            <div className='flex gap-2 mb-4 flex-shrink-0'>
-              <Button onClick={handleUpdateExcel}>
-                전체 에피소드 시트로 변환
-              </Button>
-              <Button
-                href={
-                  isStaging
-                    ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=418216794#gid=418216794`
-                    : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=1925187377#gid=1925187377`
-                }
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                Excel 바로가기
-              </Button>
-              <LoadingOverlay
-                progress={progress}
-                vertical={false}
-                loading={allLoading}
-              />
+            <div className='flex justify-between items-center gap-2 mb-4 flex-shrink-0'>
+              <div className='flex gap-2 items-center'>
+                <Button
+                  onClick={() => handleSearchNew()}
+                  disabled={excelLoading || loading}
+                >
+                  신규 조회
+                </Button>
+                <Button
+                  onClick={handleLoadAllEpisodes}
+                  disabled={excelLoading || loading}
+                >
+                  전체 조회
+                </Button>
+                <Button
+                  href={
+                    isStaging
+                      ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=418216794#gid=418216794`
+                      : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=1925187377#gid=1925187377`
+                  }
+                  target='_blank'
+                  rel='noopener noreferrer'
+                >
+                  Excel 바로가기
+                </Button>
+              </div>
+              <div className='flex gap-2 items-center'>
+                <LoadingOverlay
+                  progress={progress}
+                  vertical={false}
+                  loading={excelLoading}
+                />
+                <Button
+                  onClick={handleSyncExcel}
+                  disabled={!syncPreviewMode || excelLoading || loading}
+                >
+                  동기화 실행
+                </Button>
+              </div>
             </div>
-            <div className='flex justify-between items-center flex-shrink-0'>
+            <div className='flex justify-between items-center flex-shrink-0 mb-4'>
               <h3 className='text-point-color font-semibold'>
-                새로운 에피소드 총{' '}
-                <span className='font-extrabold'>{newEpi.length}</span>개
+                {syncPreviewMode === 'all' && (
+                  <>
+                    전체 동기화 대상 총{' '}
+                    <span className='font-extrabold'>{allEpisodes.length}</span>
+                    개
+                  </>
+                )}
+                {syncPreviewMode === 'new' && (
+                  <>
+                    신규 동기화 대상 총{' '}
+                    <span className='font-extrabold'>{newEpi.length}</span>개
+                  </>
+                )}
+                {syncPreviewMode === null && (
+                  <>신규/전체 조회 후 결과를 확인하고 동기화를 실행하세요.</>
+                )}
               </h3>
               <div className='flex gap-8 items-center'>
                 <LoadingOverlay
@@ -421,6 +472,7 @@ const EpisodeLayout = () => {
                 <select
                   value={selectedSheet}
                   onChange={(e) => handleSelectSheetDropdown(e.target.value)}
+                  disabled={excelLoading || loading}
                   className='w-fit appearance-none border border-gray-300 px-4 py-2 pr-10 rounded-lg bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition cursor-pointer'
                 >
                   <option value=''>시트 선택</option>
@@ -436,35 +488,46 @@ const EpisodeLayout = () => {
                       </option>
                     ))}
                 </select>
-                <button
-                  onClick={() => handleSearchNew()}
-                  className='cursor-pointer'
-                >
-                  <img src='/redo.svg' alt='재검색' width={22} height={22} />
-                </button>
-                <Button
-                  onClick={handleSyncExcel}
-                  disabled={excelLoading || syncCompleted}
-                >
-                  {syncCompleted ? 'Excel 동기화 완료' : 'Excel 동기화'}
-                </Button>
               </div>
             </div>
-            <div className='w-full flex-1 gap-4 flex flex-col mt-4 min-h-0'>
+            <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
               <LoadingOverlay progress={progress} loading={loading}>
-                새로운 에피소드 목록을 불러오는 중입니다.
+                에피소드 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-
-              {!loading && <EpisodeList data={newEpi} />}
-
-              <h2 className='mt-6 text-point-color font-semibold flex-shrink-0'>
-                변경된 에피소드 총{' '}
-                <span className='font-extrabold'>{duplicateNewEpi.length}</span>
-                개
-              </h2>
-              {!loading && <EpisodeList data={duplicateNewEpi} />}
+              {!loading && syncPreviewMode && (
+                <>
+                  <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    {syncPreviewMode === 'new' && (
+                      <EpisodeList
+                        data={newEpi.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
+                      />
+                    )}
+                    {syncPreviewMode === 'all' && (
+                      <EpisodeList
+                        data={allEpisodes.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
+                      />
+                    )}
+                  </div>
+                  <Pagination
+                    page={syncPage}
+                    totalPages={syncTotalPages}
+                    onChange={handleSyncPageChange}
+                  />
+                </>
+              )}
+              {!loading && !syncPreviewMode && (
+                <div className='flex items-center justify-center h-full text-gray-500'>
+                  신규/전체 조회를 먼저 실행해주세요.
+                </div>
+              )}
             </div>
           </div>
         )}

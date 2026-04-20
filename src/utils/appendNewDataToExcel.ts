@@ -140,6 +140,7 @@ export async function appendNewDataToTop(
         row.channelName,
         row.vendorName,
         row.categoryName,
+        row.episodeCount ?? 0,
         excelDateTime(row.dispDtime),
         row.channelTypeName,
         row.likeCnt,

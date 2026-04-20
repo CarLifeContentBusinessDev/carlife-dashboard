@@ -13,11 +13,11 @@ import { fetchAllData } from '../../utils/fetchAllData';
 import { getNewData } from '../../utils/getNewData';
 import getSheetList from '../../utils/getSheetList';
 import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
-import { addMissingRows } from '../../utils/updateExcel';
-import ChannelList from './ChannelList';
+import { overwriteExcelData } from '../../utils/updateExcel';
 import ProdChannelList from './ProdChannelList.tsx';
 
 const CATEGORY = 'channel';
+type SyncPreviewMode = 'new' | 'all' | null;
 
 const sortChannelsByCreatedAtDesc = (channels: usingChannelProps[]) => {
   return [...channels].sort((a, b) => {
@@ -47,9 +47,11 @@ const ChannelLayout = () => {
   const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
     null
   );
+  const [syncPreviewMode, setSyncPreviewMode] = useState<SyncPreviewMode>(null);
+  const [syncPage, setSyncPage] = useState(1);
+  const [syncTotalPages, setSyncTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
-  const [allLoading, setAllLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [sheetList, setSheetList] = useState<{ id: string; name: string }[]>(
     []
@@ -62,7 +64,6 @@ const ChannelLayout = () => {
     localStorage.getItem(sheetStorageKey) || defaultSheetName
   );
   const [addData, setAddData] = useState<usingChannelProps[]>([]);
-  const [syncLoaded, setSyncLoaded] = useState(false);
 
   const apiInstance = isStaging ? stgApi : api;
 
@@ -197,29 +198,6 @@ const ChannelLayout = () => {
     }
   };
 
-  const fetchInitialSyncData = async () => {
-    cancelOngoingWork();
-    abortControllerRef.current = new AbortController();
-
-    try {
-      setLoading(true);
-      const data = await fetchAllData(
-        CATEGORY,
-        setProgress,
-        abortControllerRef.current.signal,
-        apiInstance
-      );
-
-      setAddData(sortChannelsByCreatedAtDesc(data));
-      setSyncLoaded(true);
-    } catch (error) {
-      console.error('초기 채널 데이터 조회 실패:', error);
-    } finally {
-      setLoading(false);
-      setProgress('');
-    }
-  };
-
   useEffect(() => {
     setProdPage(1);
     fetchProdPage(1, usageFilter);
@@ -227,19 +205,20 @@ const ChannelLayout = () => {
   }, [isStaging, loginToken, usageFilter]);
 
   useEffect(() => {
-    if (activeTab === 'sync' && !syncLoaded && newChannels === null) {
-      fetchInitialSyncData();
-    }
-
     return () => {
       cancelOngoingWork();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, syncLoaded, newChannels]);
+  }, []);
 
   const handleProdPageChange = (page: number) => {
     setProdPage(page);
     fetchProdPage(page, usageFilter);
+  };
+
+  const SYNC_PAGE_SIZE = 10;
+
+  const handleSyncPageChange = (page: number) => {
+    setSyncPage(page);
   };
 
   const handleSelectSheetDropdown = (value: string) => {
@@ -247,15 +226,20 @@ const ChannelLayout = () => {
     localStorage.setItem(sheetStorageKey, value);
   };
 
-  const handleUpdateExcel = async () => {
+  const handleLoadAllChannels = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
-    const result = window.confirm(
-      `${selectedSheet || '선택된'} 시트에 누락된 데이터를 추가합니다.`
-    );
-    if (result) {
-      cancelOngoingWork();
-      setAddData([]);
+    const currentSheet = localStorage.getItem(sheetStorageKey) || selectedSheet;
+    if (!currentSheet) {
+      return toast.warn('시트를 먼저 선택해주세요!');
+    }
 
+    cancelOngoingWork();
+    setNewChannels(null);
+    setAddData([]);
+    setSyncPreviewMode(null);
+
+    try {
+      setLoading(true);
       const allData = await fetchAllData(
         CATEGORY,
         setProgress,
@@ -263,40 +247,118 @@ const ChannelLayout = () => {
         apiInstance
       );
 
-      await addMissingRows(
-        allData,
-        loginToken,
-        setProgress,
-        CATEGORY,
-        setAllLoading,
-        spreadsheetId
+      const sortedAllData = sortChannelsByCreatedAtDesc(allData);
+      setAddData(sortedAllData);
+      setSyncTotalPages(Math.ceil(sortedAllData.length / SYNC_PAGE_SIZE));
+      setSyncPage(1);
+      setSyncPreviewMode('all');
+      toast.info(
+        `${sortedAllData.length}개의 전체 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
       );
+    } catch (error) {
+      console.error('전체 채널·도서 조회 실패:', error);
+    } finally {
+      setLoading(false);
+      setProgress('');
     }
   };
 
-  const handleSyncExcel = async () => {
+  const handleSearchNew = async (token: string, accessToken: string) => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
-    if (!newChannels) return toast.warn('먼저 새로운 채널을 검색해주세요!');
 
     const currentSheet = localStorage.getItem(sheetStorageKey) || selectedSheet;
     if (!currentSheet) {
       return toast.warn('시트를 먼저 선택해주세요!');
     }
 
-    cancelOngoingWork();
-    setAddData([]);
+    try {
+      setLoading(true);
+      setNewChannels(null);
+      setAddData([]);
+      setSyncPreviewMode(null);
+      setSyncPage(1);
+      cancelOngoingWork();
+
+      const newList = await getNewData(
+        token,
+        accessToken,
+        setProgress,
+        CATEGORY,
+        apiInstance,
+        spreadsheetId
+      );
+
+      const sortedNewList = sortChannelsByCreatedAtDesc(newList);
+      setNewChannels(sortedNewList);
+      setSyncTotalPages(Math.ceil(sortedNewList.length / SYNC_PAGE_SIZE));
+      setSyncPreviewMode('new');
+
+      if (sortedNewList.length === 0) {
+        toast.info('추가할 신규 채널·도서가 없습니다.');
+      } else {
+        toast.info(
+          `${sortedNewList.length}개의 신규 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
+        );
+      }
+    } catch (error) {
+      console.error('신규 채널·도서 탐지 실패:', error);
+    } finally {
+      setLoading(false);
+      setProgress('');
+    }
+  };
+
+  const handleSyncExcel = async () => {
+    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
+
+    const currentSheet = localStorage.getItem(sheetStorageKey) || selectedSheet;
+    if (!currentSheet) {
+      return toast.warn('시트를 먼저 선택해주세요!');
+    }
+
+    if (!syncPreviewMode) {
+      return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
+    }
+
+    const previewData =
+      syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
+
+    if (syncPreviewMode === 'new' && previewData.length === 0) {
+      return toast.info('동기화할 신규 데이터가 없습니다.');
+    }
+
+    const confirmMessage =
+      syncPreviewMode === 'new'
+        ? `${currentSheet} 시트에 신규 ${previewData.length}건을 추가합니다. 계속하시겠습니까?`
+        : `${currentSheet} 시트의 기존 데이터를 삭제하고 ${previewData.length}건으로 전체 재적재합니다. 계속하시겠습니까?`;
+
+    const confirmed = window.confirm(confirmMessage);
+    if (!confirmed) {
+      return;
+    }
 
     try {
       setExcelLoading(true);
-      await appendNewDataToTop(
-        newChannels,
-        setProgress,
-        CATEGORY,
-        setExcelLoading,
-        currentSheet,
-        true,
-        spreadsheetId
-      );
+
+      if (syncPreviewMode === 'new') {
+        await appendNewDataToTop(
+          previewData,
+          setProgress,
+          CATEGORY,
+          setExcelLoading,
+          currentSheet,
+          true,
+          spreadsheetId
+        );
+      } else {
+        await overwriteExcelData(
+          previewData,
+          loginToken,
+          CATEGORY,
+          currentSheet,
+          spreadsheetId
+        );
+      }
 
       await updateSheetSyncTime(defaultSheetName, spreadsheetId);
     } catch (error) {
@@ -305,26 +367,6 @@ const ChannelLayout = () => {
       setExcelLoading(false);
       setProgress('');
     }
-  };
-
-  const handleSearchNew = async (token: string, accessToken: string) => {
-    setNewChannels(null);
-    cancelOngoingWork();
-
-    setLoading(true);
-    setAddData([]);
-    const newList = await getNewData(
-      token,
-      accessToken,
-      setProgress,
-      CATEGORY,
-      apiInstance,
-      spreadsheetId
-    );
-
-    setProgress('');
-    setNewChannels(sortChannelsByCreatedAtDesc(newList));
-    setLoading(false);
   };
 
   return (
@@ -449,41 +491,59 @@ const ChannelLayout = () => {
         {/* 탭 2: Excel 동기화 */}
         {activeTab === 'sync' && (
           <div className='flex-1 p-8 flex flex-col min-h-0'>
-            <div className='flex gap-2 mb-4 flex-shrink-0'>
-              <Button onClick={handleUpdateExcel}>
-                전체 채널·도서 시트로 변환
-              </Button>
-              <Button
-                href={
-                  isStaging
-                    ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=902383353#gid=902383353`
-                    : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=934666118#gid=934666118`
-                }
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                Excel 바로가기
-              </Button>
-              <LoadingOverlay
-                progress={progress}
-                vertical={false}
-                loading={allLoading}
-              ></LoadingOverlay>
-            </div>
-            <div className='flex justify-between items-center flex-shrink-0'>
-              <h3 className='text-point-color font-semibold'>
-                새로운 채널·도서 총{' '}
-                <span className='font-extrabold'>
-                  {newChannels?.length ?? 0}
-                </span>
-                개
-              </h3>
-              <div className='flex gap-8 items-center'>
+            <div className='flex justify-between items-center gap-2 mb-4 flex-shrink-0'>
+              <div className='flex gap-2'>
+                <Button
+                  onClick={() => handleSearchNew(loginToken, accessToken)}
+                >
+                  신규 조회
+                </Button>
+                <Button onClick={handleLoadAllChannels}>전체 조회</Button>
+                <Button
+                  href={
+                    isStaging
+                      ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=902383353#gid=902383353`
+                      : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=934666118#gid=934666118`
+                  }
+                  target='_blank'
+                  rel='noopener noreferrer'
+                >
+                  Excel 바로가기
+                </Button>
+              </div>
+              <div className='flex gap-2 items-center'>
                 <LoadingOverlay
                   progress={progress}
                   vertical={false}
                   loading={excelLoading}
                 />
+                <Button onClick={handleSyncExcel} disabled={!syncPreviewMode}>
+                  동기화 실행
+                </Button>
+              </div>
+            </div>
+            <div className='flex justify-between items-center flex-shrink-0'>
+              <h3 className='text-point-color font-semibold'>
+                {syncPreviewMode === 'all' && (
+                  <>
+                    전체 동기화 대상 총{' '}
+                    <span className='font-extrabold'>{addData.length}</span>개
+                  </>
+                )}
+                {syncPreviewMode === 'new' && (
+                  <>
+                    신규 동기화 대상 총{' '}
+                    <span className='font-extrabold'>
+                      {newChannels?.length ?? 0}
+                    </span>
+                    개
+                  </>
+                )}
+                {syncPreviewMode === null && (
+                  <>신규/전체 조회 후 결과를 확인하고 동기화를 실행하세요.</>
+                )}
+              </h3>
+              <div className='flex gap-8 items-center'>
                 <select
                   value={selectedSheet}
                   onChange={(e) => handleSelectSheetDropdown(e.target.value)}
@@ -502,13 +562,6 @@ const ChannelLayout = () => {
                       </option>
                     ))}
                 </select>
-                <button
-                  onClick={() => handleSearchNew(loginToken, accessToken)}
-                  className='cursor-pointer'
-                >
-                  <img src='/redo.svg' alt='재검색' width={22} height={22} />
-                </button>
-                <Button onClick={handleSyncExcel}>Excel 동기화</Button>
               </div>
             </div>
             <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
@@ -517,11 +570,43 @@ const ChannelLayout = () => {
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!loading && newChannels === null && (
-                <ChannelList data={addData} />
+              {!loading && syncPreviewMode && (
+                <>
+                  <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    {syncPreviewMode === 'new' && (
+                      <ProdChannelList
+                        data={(newChannels || []).slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
+                        episodeCountByChannelId={{}}
+                        latestEpisodeUploadByChannelId={{}}
+                        isStaging={isStaging}
+                      />
+                    )}
+                    {syncPreviewMode === 'all' && (
+                      <ProdChannelList
+                        data={addData.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
+                        episodeCountByChannelId={{}}
+                        latestEpisodeUploadByChannelId={{}}
+                        isStaging={isStaging}
+                      />
+                    )}
+                  </div>
+                  <Pagination
+                    page={syncPage}
+                    totalPages={syncTotalPages}
+                    onChange={handleSyncPageChange}
+                  />
+                </>
               )}
-              {!loading && newChannels !== null && (
-                <ChannelList data={newChannels} />
+              {!loading && !syncPreviewMode && (
+                <div className='flex items-center justify-center h-full text-gray-500'>
+                  신규/전체 조회를 먼저 실행해주세요.
+                </div>
               )}
             </div>
           </div>

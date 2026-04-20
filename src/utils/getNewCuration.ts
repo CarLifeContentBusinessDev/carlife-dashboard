@@ -9,27 +9,21 @@ import { api } from './api';
 import { mapCurationStatus } from './statusMapper';
 import { getCurationExcelData } from './updateCuration';
 
-function findMaxEpisodeIdInExcel(excelData: usingCurationExcelProps[]): number {
-  if (excelData.length === 0) return 0;
-
-  return excelData.reduce((maxId, item) => {
-    const currentId = item.episodeId ?? 0;
-    return currentId > maxId ? currentId : maxId;
-  }, 0);
-}
-
 export async function getNewCurationData(
   token: string,
   setProgress: (message: string) => void,
   apiInstance: AxiosInstance = api,
-  spreadsheetId?: string
+  spreadsheetId?: string,
+  sheetName?: string
 ): Promise<usingCurationExcelProps[]> {
   const excelData = await getCurationExcelData(
     token,
-    spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID
+    spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
+    sheetName
   );
-
-  const maxEpisodeId = findMaxEpisodeIdInExcel(excelData);
+  const existingEpisodeIds = new Set(
+    excelData.map((item) => item.episodeId ?? 0).filter((id) => id > 0)
+  );
 
   const size = 100;
   const firstRes = await apiInstance.get(
@@ -145,7 +139,7 @@ export async function getNewCurationData(
     if (episodeId === 0) {
       return !existingCurationNames.has(item.curationName);
     }
-    return episodeId > maxEpisodeId;
+    return !existingEpisodeIds.has(episodeId);
   });
 
   return newEpisodes;
