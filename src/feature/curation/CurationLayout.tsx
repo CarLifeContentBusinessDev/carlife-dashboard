@@ -37,12 +37,8 @@ const CurationLayout = () => {
   const [prodPage, setProdPage] = useState(1);
   const [prodTotalPages, setProdTotalPages] = useState(0);
   const [prodTotalCount, setProdTotalCount] = useState(0);
-  const [newCurations, setNewCurations] = useState<usingCurationExcelProps[]>(
-    []
-  );
-  const [allCurations, setAllCurations] = useState<usingCurationExcelProps[]>(
-    []
-  );
+  const [newCurations, setNewCurations] = useState<ProdCurationRow[]>([]);
+  const [allCurations, setAllCurations] = useState<ProdCurationRow[]>([]);
   const [syncPreviewMode, setSyncPreviewMode] = useState<SyncPreviewMode>(null);
   const [syncPage, setSyncPage] = useState(1);
   const [syncTotalPages, setSyncTotalPages] = useState(0);
@@ -191,7 +187,7 @@ const CurationLayout = () => {
       setSyncPage(1);
 
       const allData = await fetchAllCurationData(apiInstance);
-      setAllCurations(allData);
+      setAllCurations(allData as ProdCurationRow[]);
       setSyncTotalPages(Math.ceil(allData.length / SYNC_PAGE_SIZE));
       setSyncPreviewMode('all');
       toast.info(
@@ -227,7 +223,7 @@ const CurationLayout = () => {
         spreadsheetId,
         currentSheet
       );
-      setNewCurations(newList);
+      setNewCurations(newList as ProdCurationRow[]);
       setSyncTotalPages(Math.ceil(newList.length / SYNC_PAGE_SIZE));
       setSyncPreviewMode('new');
 
@@ -460,32 +456,18 @@ const CurationLayout = () => {
                   <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
                     {syncPreviewMode === 'new' ? (
                       <ProdCurationList
-                        data={
-                          newCurations
-                            .slice(
-                              (syncPage - 1) * SYNC_PAGE_SIZE,
-                              syncPage * SYNC_PAGE_SIZE
-                            )
-                            .map((item, idx) => ({
-                              ...item,
-                              curationId: idx,
-                            })) as any
-                        }
+                        data={newCurations.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
                         isStaging={isStaging}
                       />
                     ) : (
                       <ProdCurationList
-                        data={
-                          allCurations
-                            .slice(
-                              (syncPage - 1) * SYNC_PAGE_SIZE,
-                              syncPage * SYNC_PAGE_SIZE
-                            )
-                            .map((item, idx) => ({
-                              ...item,
-                              curationId: idx,
-                            })) as any
-                        }
+                        data={allCurations.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
                         isStaging={isStaging}
                       />
                     )}
