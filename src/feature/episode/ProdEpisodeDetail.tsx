@@ -4,14 +4,15 @@ import formatDateString from '../../utils/formatDateString';
 import { formatPlayTime } from '../../utils/formatPlayTime';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
-  { key: 'episodeId', label: '에피소드 ID' },
-  { key: 'usageYn', label: '활성화' },
+  // { key: 'episodeId', label: '에피소드 ID' },
+  // { key: 'usageYn', label: '활성화' },
   { key: 'channelId', label: '채널 ID' },
   { key: 'channelName', label: '채널명' },
   { key: 'episodeName', label: '에피소드명' },
   { key: 'dispDtime', label: '게시일자' },
   { key: 'createdAt', label: '등록일자' },
   { key: 'playTime', label: '에피소드 시간' },
+  { key: 'usageYn', label: '상태' },
   { key: 'likeCnt', label: '좋아요수' },
   { key: 'listenCnt', label: '청취수' },
   { key: 'thumbnailUrl', label: '썸네일 URL' },
@@ -62,14 +63,6 @@ const renderValue = (key: keyof usingDataProps, value: string | number) => {
               }}
             />
           </div>
-          <a
-            href={value}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='text-blue-500 text-xs underline break-all'
-          >
-            {value}
-          </a>
         </div>
       );
     }
@@ -80,14 +73,6 @@ const renderValue = (key: keyof usingDataProps, value: string | number) => {
           <audio controls preload='metadata' className='w-full'>
             <source src={value} />
           </audio>
-          <a
-            href={value}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='text-blue-500 text-xs underline break-all'
-          >
-            {value}
-          </a>
         </div>
       );
     }
@@ -165,34 +150,23 @@ const ProdEpisodeDetail = () => {
           </button>
         </div>
 
-        {/* 요약 배너 */}
-        <div className='rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3'>
-          <div className='flex flex-wrap items-center gap-x-6 gap-y-2 text-sm'>
-            <div className='flex items-center gap-2'>
-              <span className='font-semibold text-gray-700'>에피소드 ID:</span>
-              <span className='text-gray-800'>{episode.episodeId}</span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <span className='font-semibold text-gray-700'>활성화:</span>
-              <span
-                className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${
-                  episode.usageYn === 'Y'
-                    ? 'bg-green-100 text-green-700 border-green-200'
-                    : 'bg-red-100 text-red-700 border-red-200'
-                }`}
-              >
-                {episode.usageYn === 'Y' ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <span className='font-semibold text-gray-700'>채널명:</span>
-              <span className='text-gray-800'>{episode.channelName}</span>
-            </div>
-          </div>
-        </div>
-
         {/* 필드 그리드 */}
         <div className='grid grid-cols-1 gap-3'>
+          {/* 넓은 필드 (에피소드명, 썸네일, 오디오) */}
+          {wideFields.map((field) => (
+            <div
+              key={field.key}
+              className='grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden'
+            >
+              <div className='px-4 py-4 bg-gray-50 font-semibold text-sm text-gray-600'>
+                {field.label}
+              </div>
+              <div className='px-4 py-4 text-sm bg-white break-words min-w-0'>
+                {renderValue(field.key, episode[field.key] as string | number)}
+              </div>
+            </div>
+          ))}
+
           {/* 좁은 필드 2열 페어 */}
           {narrowPairs.map((pair, pairIdx) => (
             <div
@@ -215,21 +189,6 @@ const ProdEpisodeDetail = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          ))}
-
-          {/* 넓은 필드 (에피소드명, 썸네일, 오디오) */}
-          {wideFields.map((field) => (
-            <div
-              key={field.key}
-              className='grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden'
-            >
-              <div className='px-4 py-4 bg-gray-50 font-semibold text-sm text-gray-600'>
-                {field.label}
-              </div>
-              <div className='px-4 py-4 text-sm bg-white break-words min-w-0'>
-                {renderValue(field.key, episode[field.key] as string | number)}
-              </div>
             </div>
           ))}
         </div>

@@ -17,7 +17,7 @@ import { fetchAllData } from '../../utils/fetchAllData';
 import { getNewDataWithExcel } from '../../utils/getNewData';
 import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
 import { clearExcelRange, overwriteExcelData } from '../../utils/updateExcel';
-import { findChangedData, findUpdateData } from '../../utils/updateLogs';
+import { findChangedData } from '../../utils/updateLogs';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
 
@@ -36,13 +36,15 @@ const EpisodeLayout = () => {
   const [prodTotalPages, setProdTotalPages] = useState(0);
   const [prodTotalCount, setProdTotalCount] = useState(0);
   const [prodSearchQuery, setProdSearchQuery] = useState('');
-  const [usageFilter, setUsageFilter] = useState<'all' | 'Y' | 'N'>('all');
+  const [usageFilter, setUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
 
   // 동기화 탭
   const [newEpi, setNewEpi] = useState<usingDataProps[]>([]);
   const [duplicateNewEpi, setDuplicateNewEpi] = useState<usingDataProps[]>([]);
   const [allEpisodes, setAllEpisodes] = useState<usingDataProps[]>([]);
-  const [duplicateAllEpisodes, setDuplicateAllEpisodes] = useState<usingDataProps[]>([]);
+  const [duplicateAllEpisodes, setDuplicateAllEpisodes] = useState<
+    usingDataProps[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
   const [progress, setProgress] = useState('');
@@ -57,13 +59,20 @@ const EpisodeLayout = () => {
   } = useSyncState();
 
   const defaultSheetName = isStaging ? 'stg_에피소드 DB' : '에피소드 DB';
-  const storageKey = isStaging ? 'sheetName:episode:stg' : 'sheetName:episode:prod';
-  const { sheetList, selectedSheet, setSelectedSheet, handleSelectSheet } =
-    useSheetSelection({ isStaging, loginToken, spreadsheetId, defaultSheetName, storageKey });
+  const storageKey = isStaging
+    ? 'sheetName:episode:stg'
+    : 'sheetName:episode:prod';
+  const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
+    isStaging,
+    loginToken,
+    spreadsheetId,
+    defaultSheetName,
+    storageKey,
+  });
 
   const getSheetName = (name: string) => (isStaging ? `stg_${name}` : name);
 
-  const fetchProdPage = async (page: number, filter: 'all' | 'Y' | 'N') => {
+  const fetchProdPage = async (page: number, filter: 'All' | 'Y' | 'N') => {
     if (!loginToken) return;
     setProdLoading(true);
     try {
@@ -71,7 +80,7 @@ const EpisodeLayout = () => {
         page: String(page),
         size: String(PROD_PAGE_SIZE),
       });
-      if (filter !== 'all') params.set('usageYn', filter);
+      if (filter !== 'All') params.set('usageYn', filter);
       const res = await apiInstance.get(`/admin/episode?${params.toString()}`);
       const { dataList, pageInfo } = res.data.data;
       setProdData(dataList);
@@ -98,11 +107,16 @@ const EpisodeLayout = () => {
   const handleSearchNew = async () => {
     setLoading(true);
     try {
-      const newList = await getNewDataWithExcel(setProgress, apiInstance, spreadsheetId);
-      const duplicateNewData = await findUpdateData(newList, setProgress);
+      const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
+      const newList = await getNewDataWithExcel(
+        setProgress,
+        apiInstance,
+        spreadsheetId,
+        currentSheet
+      );
       setProgress('');
       setNewEpi(newList);
-      setDuplicateNewEpi(duplicateNewData);
+      setDuplicateNewEpi([]);
       setSyncPreviewMode('new');
       setSyncTotalPages(Math.ceil(newList.length / SYNC_PAGE_SIZE));
     } finally {
@@ -113,7 +127,12 @@ const EpisodeLayout = () => {
   const handleLoadAllEpisodes = async () => {
     setLoading(true);
     try {
-      const allList = await fetchAllData(CATEGORY, setProgress, undefined, apiInstance);
+      const allList = await fetchAllData(
+        CATEGORY,
+        setProgress,
+        undefined,
+        apiInstance
+      );
       const duplicateData = await findChangedData(allList);
       setProgress('');
       setAllEpisodes(allList);
@@ -127,7 +146,8 @@ const EpisodeLayout = () => {
 
   const handleSyncExcel = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
-    if (!syncPreviewMode) return toast.warn('신규/전체 조회를 먼저 실행해주세요!');
+    if (!syncPreviewMode)
+      return toast.warn('신규/전체 조회를 먼저 실행해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
@@ -139,23 +159,40 @@ const EpisodeLayout = () => {
 
       if (syncPreviewMode === 'new') {
         await appendNewDataToTop(
-          dataToSync, setProgress, CATEGORY, setExcelLoading, currentSheet, false, spreadsheetId
+          dataToSync,
+          setProgress,
+          CATEGORY,
+          setExcelLoading,
+          currentSheet,
+          false,
+          spreadsheetId
         );
       } else {
         await overwriteExcelData(
-          dataToSync, loginToken, CATEGORY, currentSheet, spreadsheetId, 5
+          dataToSync,
+          loginToken,
+          CATEGORY,
+          currentSheet,
+          spreadsheetId,
+          5
         );
         const logsSheetName = getSheetName('Episode_Logs');
         await clearExcelRange('B4:M300000', logsSheetName, spreadsheetId);
       }
 
       if (duplicateToSync.length > 0) {
-        setProgress(`Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`);
         const logsSheet = getSheetName('Episode_Logs');
-        localStorage.setItem(storageKey, logsSheet);
-        setSelectedSheet(logsSheet);
+        setProgress(
+          `Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`
+        );
         await appendNewDataToTop(
-          duplicateToSync, setProgress, CATEGORY, setExcelLoading, logsSheet, false, spreadsheetId
+          duplicateToSync,
+          setProgress,
+          CATEGORY,
+          setExcelLoading,
+          logsSheet,
+          false,
+          spreadsheetId
         );
       }
 
@@ -171,9 +208,10 @@ const EpisodeLayout = () => {
     }
   };
 
-  const filteredProdData = prodData.filter((ep) =>
-    !prodSearchQuery ||
-    ep.episodeName?.toLowerCase().includes(prodSearchQuery.toLowerCase())
+  const filteredProdData = prodData.filter(
+    (ep) =>
+      !prodSearchQuery ||
+      ep.episodeName?.toLowerCase().includes(prodSearchQuery.toLowerCase())
   );
   const isSearchFiltered = prodSearchQuery.trim().length > 0;
 
@@ -233,7 +271,10 @@ const EpisodeLayout = () => {
             </LoadingOverlay>
             {!prodLoading && (
               <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                <ProdEpisodeList data={filteredProdData} isStaging={isStaging} />
+                <ProdEpisodeList
+                  data={filteredProdData}
+                  isStaging={isStaging}
+                />
               </div>
             )}
             <Pagination
@@ -282,7 +323,10 @@ const EpisodeLayout = () => {
                 <>
                   <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
                     <EpisodeList
-                      data={(syncPreviewMode === 'new' ? newEpi : allEpisodes).slice(
+                      data={(syncPreviewMode === 'new'
+                        ? newEpi
+                        : allEpisodes
+                      ).slice(
                         (syncPage - 1) * SYNC_PAGE_SIZE,
                         syncPage * SYNC_PAGE_SIZE
                       )}

@@ -1,4 +1,4 @@
-type UsageFilter = 'all' | 'Y' | 'N';
+type UsageFilter = 'All' | 'Y' | 'N';
 
 interface UsageFilterRadioProps {
   name: string;
@@ -9,7 +9,7 @@ interface UsageFilterRadioProps {
 const UsageFilterRadio = ({ name, value, onChange }: UsageFilterRadioProps) => (
   <div className='flex items-center gap-3'>
     <span className='text-sm text-gray-600 font-medium'>활성화:</span>
-    {(['all', 'Y', 'N'] as const).map((option) => (
+    {(['All', 'Y', 'N'] as const).map((option) => (
       <label key={option} className='flex items-center gap-1.5 cursor-pointer'>
         <input
           type='radio'
