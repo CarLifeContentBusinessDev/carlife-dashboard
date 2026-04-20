@@ -3,6 +3,7 @@ import type { usingChannelProps, usingDataProps } from '../types/type';
 import { api } from './api';
 import { getGoogleToken, getSheetsClient } from './auth';
 import { getExcelData } from './updateExcel';
+import { buildSheetRange } from './sheetRange';
 
 export async function getNewData(
   token: string,
@@ -145,7 +146,8 @@ export async function getNewDataWithExcel(
   spreadsheetId?: string,
   sheetName?: string
 ): Promise<usingDataProps[]> {
-  const targetSpreadsheetId = spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID;
+  const targetSpreadsheetId =
+    spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID;
   const batchSize = 1000;
 
   // 1. 엑셀 B2 셀에서 총 개수 읽기 ("총 284168개" → 284168)
@@ -154,7 +156,7 @@ export async function getNewDataWithExcel(
   const sheets = getSheetsClient();
   const countRes = await sheets.spreadsheets.values.get({
     spreadsheetId: targetSpreadsheetId,
-    range: `${sheetName}!B2`,
+    range: buildSheetRange(sheetName || 'Sheet1', 'B2'),
   });
 
   const rawCount = countRes.result.values?.[0]?.[0] as string | undefined;
@@ -177,7 +179,9 @@ export async function getNewDataWithExcel(
   let page = 1;
 
   while (newEpisodes.length < newCount) {
-    const res = await apiInstance.get(`/admin/episode?page=${page}&size=${batchSize}`);
+    const res = await apiInstance.get(
+      `/admin/episode?page=${page}&size=${batchSize}`
+    );
     const { dataList } = res.data.data;
     const remaining = newCount - newEpisodes.length;
     newEpisodes.push(...(dataList as usingDataProps[]).slice(0, remaining));

@@ -3,6 +3,7 @@ import type { usingChannelProps, usingDataProps } from '../types/type';
 import { getGoogleToken, getSheetsClient } from './auth';
 import formatDateString from './formatDateString';
 import { formatPlayTime, parsePlayTime } from './formatPlayTime';
+import { buildSheetRange } from './sheetRange';
 
 const MAX_ROWS = 300000;
 const STARTROW = 4;
@@ -40,7 +41,7 @@ export async function getUsedRange(
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
-      range: `${targetSheet}!D1:D${MAX_ROWS}`,
+      range: buildSheetRange(targetSheet, `D1:D${MAX_ROWS}`),
     });
 
     const values = response.result.values;
@@ -97,7 +98,10 @@ export async function getExcelData(
 
     const sheets = getSheetsClient();
     const lastColumn = category === 'episode' ? 'M' : 'N';
-    const range = `${targetSheet}!B${STARTROW}:${lastColumn}${totalRows}`;
+    const range = buildSheetRange(
+      targetSheet,
+      `B${STARTROW}:${lastColumn}${totalRows}`
+    );
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadSheetId || import.meta.env.VITE_SPREADSHEET_ID,
@@ -170,7 +174,10 @@ export async function getExcelLastData({
     const sheetName = localStorage.getItem('sheetName') || 'Sheet1';
     const sheets = getSheetsClient();
     const LASTCOLUMN = 'M';
-    const range = `${sheetName}!B${STARTROW}:${LASTCOLUMN}${STARTROW}`;
+    const range = buildSheetRange(
+      sheetName,
+      `B${STARTROW}:${LASTCOLUMN}${STARTROW}`
+    );
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
@@ -393,15 +400,46 @@ export async function overwriteExcelData(
   category: 'episode' | 'channel',
   sheetName?: string,
   spreadsheetId?: string,
-  startRow?: number
+  startRow?: number,
+  setProgress?: (msg: string) => void
 ) {
+  const WRITE_BATCH_SIZE = 10000;
+  const targetSpreadsheetId =
+    spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID;
+  const targetSheet =
+    sheetName || localStorage.getItem('sheetName') || 'Sheet1';
+  const targetStartRow = startRow ?? STARTROW;
+
   try {
-    const targetSheet =
-      sheetName || localStorage.getItem('sheetName') || 'Sheet1';
-    const targetStartRow = startRow ?? STARTROW;
     const sheets = getSheetsClient();
-    let values;
-    let lastColumn;
+
+    // 1. 시트 ID와 현재 행 수 조회
+    setProgress?.('시트 정보 조회 중...');
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId: targetSpreadsheetId,
+    });
+    const sheetMeta = meta.result.sheets?.find(
+      (s) => s.properties?.title === targetSheet
+    );
+    const sheetId = sheetMeta?.properties?.sheetId;
+    const currentRowCount = sheetMeta?.properties?.gridProperties?.rowCount ?? 0;
+    if (sheetId === undefined || sheetId === null) {
+      throw new Error(`시트를 찾을 수 없습니다: ${targetSheet}`);
+    }
+
+    // 2. 기존 데이터 영역을 비움
+    setProgress?.('기존 데이터 영역 초기화 중...');
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: targetSpreadsheetId,
+      range: buildSheetRange(
+        targetSheet,
+        `B${targetStartRow}:${category === 'episode' ? 'M' : 'N'}${MAX_ROWS}`
+      ),
+      resource: {},
+    });
+
+    // 3. 데이터 포맷
+    let values: (string | number)[][];
 
     if (category === 'episode') {
       values = (data as usingDataProps[]).map((row) => [
@@ -418,7 +456,6 @@ export async function overwriteExcelData(
         row.audioUrl,
         row.channelId,
       ]);
-      lastColumn = 'M';
     } else {
       values = (data as usingChannelProps[]).map((row) => [
         row.channelId,
@@ -435,31 +472,54 @@ export async function overwriteExcelData(
         row.interfaceUrl,
         row.thumbnailUrl,
       ]);
-      lastColumn = 'N';
     }
 
-    const range = `${targetSheet}!B${targetStartRow}:${lastColumn}${targetStartRow + values.length - 1}`;
+    // 4. 필요한 행 수만큼 시트 확장
+    const requiredLastRow = Math.max(targetStartRow, targetStartRow + values.length - 1);
+    if (requiredLastRow > currentRowCount) {
+      setProgress?.('시트 행 확장 중...');
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: targetSpreadsheetId,
+        resource: {
+          requests: [
+            {
+              updateSheetProperties: {
+                properties: {
+                  sheetId,
+                  gridProperties: {
+                    rowCount: requiredLastRow + 100,
+                  },
+                },
+                fields: 'gridProperties.rowCount',
+              },
+            },
+          ],
+        },
+      });
+    }
 
-    const clearRange = `${targetSheet}!B${targetStartRow}:${lastColumn}${MAX_ROWS}`;
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
-      range: clearRange,
-      resource: {},
-    });
+    // 5. 정확한 범위에 배치 쓰기
+    //    - 전체 재적재는 append보다 update가 안정적이다.
+    for (let i = 0; i < values.length; i += WRITE_BATCH_SIZE) {
+      const batch = values.slice(i, i + WRITE_BATCH_SIZE);
+      const percent = Math.round(((i + batch.length) / values.length) * 100);
+      setProgress?.(`데이터 쓰기 중... ${percent}%`);
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
-      range,
-      valueInputOption: 'RAW',
-      resource: { values },
-    });
+      const batchStartRow = targetStartRow + i;
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: targetSpreadsheetId,
+        range: buildSheetRange(targetSheet, `B${batchStartRow}`),
+        valueInputOption: 'RAW',
+        resource: { values: batch },
+      });
+    }
 
     toast.success('데이터 덮어쓰기 완료!');
   } catch (err) {
     console.error('데이터 덮어쓰기 실패:', err);
     toast.error('데이터 덮어쓰기 실패!');
 
-    // 토큰 만료 시 재시도
     if ((err as any)?.status === 401) {
       const newToken = await getGoogleToken();
       if (newToken) {
@@ -469,7 +529,8 @@ export async function overwriteExcelData(
           category,
           sheetName,
           spreadsheetId,
-          startRow
+          startRow,
+          setProgress
         );
       }
     }
@@ -491,7 +552,7 @@ export async function clearExcelRange(
     const targetSheet =
       sheetName || localStorage.getItem('sheetName') || 'Sheet1';
     const sheets = getSheetsClient();
-    const fullRange = `${targetSheet}!${range}`;
+    const fullRange = buildSheetRange(targetSheet, range);
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId: spreadSheetId || import.meta.env.VITE_SPREADSHEET_ID,

@@ -151,9 +151,15 @@ const EpisodeLayout = () => {
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
+    const dataToSync = syncPreviewMode === 'new' ? newEpi : allEpisodes;
+
+    if (syncPreviewMode === 'all') {
+      const confirmMessage = `${currentSheet} 시트의 기존 데이터를 삭제하고 ${dataToSync.length}건으로 전체 재적재합니다. 계속하시겠습니까?`;
+      if (!window.confirm(confirmMessage)) return;
+    }
+
     try {
       setExcelLoading(true);
-      const dataToSync = syncPreviewMode === 'new' ? newEpi : allEpisodes;
       const duplicateToSync =
         syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
 
@@ -174,7 +180,8 @@ const EpisodeLayout = () => {
           CATEGORY,
           currentSheet,
           spreadsheetId,
-          5
+          4,
+          setProgress
         );
         const logsSheetName = getSheetName('Episode_Logs');
         await clearExcelRange('B4:M300000', logsSheetName, spreadsheetId);
