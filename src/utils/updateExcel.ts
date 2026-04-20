@@ -5,7 +5,6 @@ import formatDateString from './formatDateString';
 import { formatPlayTime, parsePlayTime } from './formatPlayTime';
 import { buildSheetRange } from './sheetRange';
 
-const MAX_ROWS = 300000;
 const STARTROW = 4;
 
 const resolveSheetName = (
@@ -41,7 +40,7 @@ export async function getUsedRange(
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
-      range: buildSheetRange(targetSheet, `D1:D${MAX_ROWS}`),
+      range: buildSheetRange(targetSheet, `D1:D`),
     });
 
     const values = response.result.values;
@@ -434,7 +433,7 @@ export async function overwriteExcelData(
       spreadsheetId: targetSpreadsheetId,
       range: buildSheetRange(
         targetSheet,
-        `B${targetStartRow}:${category === 'episode' ? 'M' : 'N'}${MAX_ROWS}`
+        `B${targetStartRow}:${category === 'episode' ? 'M' : 'N'}`
       ),
       resource: {},
     });
