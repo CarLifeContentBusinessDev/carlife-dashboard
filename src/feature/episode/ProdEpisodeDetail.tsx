@@ -1,18 +1,7 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { usingDataProps } from '../../types/type';
 import formatDateString from '../../utils/formatDateString';
-
-const formatPlayTime = (seconds: number): string => {
-  if (!seconds && seconds !== 0) return '';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const parts: string[] = [];
-  if (h > 0) parts.push(`${h}시간`);
-  if (m > 0) parts.push(`${m}분`);
-  if (s > 0 || parts.length === 0) parts.push(`${s}초`);
-  return parts.join(' ');
-};
+import { formatPlayTime } from '../../utils/formatPlayTime';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   { key: 'episodeId', label: '에피소드 ID' },

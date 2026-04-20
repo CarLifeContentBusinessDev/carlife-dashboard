@@ -2,20 +2,10 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { usingCurationExcelProps } from '../../types/type';
 import formatDateString from '../../utils/formatDateString';
+import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
 
 type ProdCurationRow = usingCurationExcelProps & {
   curationId: number;
-};
-
-const normalizeUsageYn = (value: unknown): 'Y' | 'N' | '' => {
-  const normalized = String(value ?? '')
-    .trim()
-    .toUpperCase();
-
-  if (['Y', 'YES', 'TRUE', '1', 'ACTIVE'].includes(normalized)) return 'Y';
-  if (['N', 'NO', 'FALSE', '0', 'INACTIVE'].includes(normalized)) return 'N';
-
-  return '';
 };
 
 const getExhibitionBadgeClass = (value: string): string => {

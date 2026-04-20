@@ -8,23 +8,13 @@ import type {
 } from '../../types/type';
 import formatDateString from '../../utils/formatDateString';
 import { api, stgApi } from '../../utils/api';
+import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
 import { mapCurationStatus } from '../../utils/statusMapper';
 
 const EPISODE_PAGE_SIZE = 10;
 
 type CurationSummaryState = usingCurationExcelProps & {
   curationId: number;
-};
-
-const normalizeUsageYn = (value: unknown): 'Y' | 'N' | '' => {
-  const normalized = String(value ?? '')
-    .trim()
-    .toUpperCase();
-
-  if (['Y', 'YES', 'TRUE', '1', 'ACTIVE'].includes(normalized)) return 'Y';
-  if (['N', 'NO', 'FALSE', '0', 'INACTIVE'].includes(normalized)) return 'N';
-
-  return '';
 };
 
 const renderUsageBadge = (value: unknown) => {

@@ -4,6 +4,7 @@ import Pagination from '../../components/Pagination';
 import type { usingChannelProps, usingDataProps } from '../../types/type';
 import formatDateString from '../../utils/formatDateString';
 import { api, stgApi } from '../../utils/api';
+import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
 
 const EPISODE_PAGE_SIZE = 10;
 
@@ -46,17 +47,6 @@ const EPISODE_COLUMNS: EpisodeColumn[] = [
 const isImageUrl = (url: string) =>
   /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ||
   url.toLowerCase().includes('thumbnail');
-
-const normalizeUsageYn = (value: unknown): 'Y' | 'N' | '' => {
-  const normalized = String(value ?? '')
-    .trim()
-    .toUpperCase();
-
-  if (['Y', 'YES', 'TRUE', '1', 'ACTIVE'].includes(normalized)) return 'Y';
-  if (['N', 'NO', 'FALSE', '0', 'INACTIVE'].includes(normalized)) return 'N';
-
-  return '';
-};
 
 const formatFieldValue = (
   key: keyof usingChannelProps,

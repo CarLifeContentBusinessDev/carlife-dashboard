@@ -139,7 +139,7 @@ const ChannelLayout = () => {
       targetIds.map(async (channelId) => {
         try {
           const res = await apiInstance.get(
-            `/admin/episode?page=1&size=30&channelId=${channelId}&withPlaylists=Y`
+            `/admin/episode?page=1&size=1&channelId=${channelId}&withPlaylists=Y`
           );
 
           const totalCount = Number(res.data?.data?.pageInfo?.totalCount ?? 0);
@@ -176,6 +176,8 @@ const ChannelLayout = () => {
   const fetchProdPage = async (page: number, filter: 'all' | 'Y' | 'N') => {
     if (!loginToken) return;
 
+    cancelOngoingWork();
+    abortControllerRef.current = new AbortController();
     setProdLoading(true);
 
     try {
@@ -184,7 +186,9 @@ const ChannelLayout = () => {
           ? `page=${page}&size=${PAGE_SIZE}`
           : `usageYn=${filter}&page=${page}&size=${PAGE_SIZE}`;
 
-      const res = await apiInstance.get(`/admin/channel?${query}`);
+      const res = await apiInstance.get(`/admin/channel?${query}`, {
+        signal: abortControllerRef.current.signal,
+      });
       const { dataList, pageInfo } = res.data.data;
 
       setProdData(dataList);

@@ -2,29 +2,8 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { usingDataProps } from '../../types/type';
 import formatDateString from '../../utils/formatDateString';
-
-const normalizeUsageYn = (value: unknown): 'Y' | 'N' | '' => {
-  const normalized = String(value ?? '')
-    .trim()
-    .toUpperCase();
-
-  if (['Y', 'YES', 'TRUE', '1', 'ACTIVE'].includes(normalized)) return 'Y';
-  if (['N', 'NO', 'FALSE', '0', 'INACTIVE'].includes(normalized)) return 'N';
-
-  return '';
-};
-
-const formatPlayTime = (seconds: number): string => {
-  if (!seconds && seconds !== 0) return '';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const parts: string[] = [];
-  if (h > 0) parts.push(`${h}시간`);
-  if (m > 0) parts.push(`${m}분`);
-  if (s > 0 || parts.length === 0) parts.push(`${s}초`);
-  return parts.join(' ');
-};
+import { formatPlayTime } from '../../utils/formatPlayTime';
+import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
 
 const COLUMNS = [
   { key: 'episodeId', label: '에피소드 ID', width: '110px' },
