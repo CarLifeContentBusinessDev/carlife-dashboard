@@ -3,6 +3,7 @@ import type { usingChannelProps, usingDataProps } from '../types/type';
 import { getGoogleToken, getSheetsClient } from './auth';
 import formatDateString from './formatDateString';
 import { formatPlayTime } from './formatPlayTime';
+import { buildSheetRange } from './sheetRange';
 
 const STARTROW = 4;
 
@@ -167,7 +168,7 @@ export async function appendNewDataToTop(
       );
       const batchData = allNewValues.slice(batchStart, batchEnd);
       const startRow = STARTROW + batchStart;
-      const range = `${sheetName}!B${startRow}`;
+      const range = buildSheetRange(sheetName, `B${startRow}`);
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
@@ -242,7 +243,7 @@ async function isSheetEmpty(
     const sheets = getSheetsClient();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!B${STARTROW}:B${STARTROW}`,
+      range: buildSheetRange(sheetName, `B${STARTROW}:B${STARTROW}`),
     });
     const values = response.result.values;
     return !values || values.length === 0;

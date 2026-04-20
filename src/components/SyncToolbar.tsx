@@ -36,7 +36,7 @@ const SyncToolbar = ({
       </Button>
     </div>
     <div className='flex gap-2 items-center'>
-      <LoadingOverlay progress={progress} vertical={false} loading={excelLoading} />
+      <LoadingOverlay progress={progress} vertical={false} loading={excelLoading || loading} />
       <Button
         onClick={onSync}
         disabled={!syncPreviewMode || excelLoading || loading}

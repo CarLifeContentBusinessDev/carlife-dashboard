@@ -151,11 +151,19 @@ const EpisodeLayout = () => {
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
+    const dataToSync = syncPreviewMode === 'new' ? newEpi : allEpisodes;
+
+    if (syncPreviewMode === 'all') {
+      const confirmMessage = `${currentSheet} 시트의 기존 데이터를 삭제하고 ${dataToSync.length}건으로 전체 재적재합니다. 계속하시겠습니까?`;
+      if (!window.confirm(confirmMessage)) return;
+    }
+
     try {
       setExcelLoading(true);
-      const dataToSync = syncPreviewMode === 'new' ? newEpi : allEpisodes;
       const duplicateToSync =
         syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
+      const shouldAppendLogs =
+        syncPreviewMode === 'new' && duplicateToSync.length > 0;
 
       if (syncPreviewMode === 'new') {
         await appendNewDataToTop(
@@ -174,13 +182,14 @@ const EpisodeLayout = () => {
           CATEGORY,
           currentSheet,
           spreadsheetId,
-          5
+          4,
+          setProgress
         );
         const logsSheetName = getSheetName('Episode_Logs');
         await clearExcelRange('B4:M300000', logsSheetName, spreadsheetId);
       }
 
-      if (duplicateToSync.length > 0) {
+      if (shouldAppendLogs) {
         const logsSheet = getSheetName('Episode_Logs');
         setProgress(
           `Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`
@@ -197,8 +206,9 @@ const EpisodeLayout = () => {
       }
 
       await updateSheetSyncTime(defaultSheetName, spreadsheetId);
+      const syncedLogCount = shouldAppendLogs ? duplicateToSync.length : 0;
       toast.success(
-        `에피소드 ${dataToSync.length}개, 변경된 에피소드 ${duplicateToSync.length}개 \n 동기화에 성공했습니다!`
+        `에피소드 ${dataToSync.length}개, 변경된 에피소드 ${syncedLogCount}개 \n 동기화에 성공했습니다!`
       );
     } catch (error) {
       console.error('Excel 동기화 실패:', error);
