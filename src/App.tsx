@@ -10,6 +10,7 @@ import DemoBroadcastingAdd from './feature/demo-broadcasting/DemoBroadcastingAdd
 import EpisodeLayout from './feature/episode/EpisodeLayout';
 import ProdEpisodeDetail from './feature/episode/ProdEpisodeDetail';
 import ProdChannelDetail from './feature/channel-book/ProdChannelDetail';
+import ProdCurationDetail from './feature/curation/ProdCurationDetail';
 import Layout from './layout/Layout';
 import DemoProgramLayout from './feature/demo-program/DemoProgramLayout';
 import DemoProgramEdit from './feature/demo-program/DemoProgramEdit';
@@ -38,6 +39,7 @@ function App() {
           <Route index element={<EpisodeLayout />} />
           <Route path='/episode/detail/:id' element={<ProdEpisodeDetail />} />
           <Route path='/channel/detail/:id' element={<ProdChannelDetail />} />
+          <Route path='/curation/detail/:id' element={<ProdCurationDetail />} />
           <Route path='/channel-book-list' element={<ChannelLayout />} />
           <Route path='/curation-list' element={<CurationLayout />} />{' '}
           <Route path='/stg/episode-list' element={<EpisodeLayout />} />
@@ -48,6 +50,10 @@ function App() {
           <Route
             path='/stg/channel/detail/:id'
             element={<ProdChannelDetail />}
+          />
+          <Route
+            path='/stg/curation/detail/:id'
+            element={<ProdCurationDetail />}
           />
           <Route path='/stg/channel-book-list' element={<ChannelLayout />} />
           <Route path='/stg/curation-list' element={<CurationLayout />} />
