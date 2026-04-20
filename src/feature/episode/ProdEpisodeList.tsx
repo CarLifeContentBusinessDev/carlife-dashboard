@@ -3,6 +3,17 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import type { usingDataProps } from '../../types/type';
 import formatDateString from '../../utils/formatDateString';
 
+const normalizeUsageYn = (value: unknown): 'Y' | 'N' | '' => {
+  const normalized = String(value ?? '')
+    .trim()
+    .toUpperCase();
+
+  if (['Y', 'YES', 'TRUE', '1', 'ACTIVE'].includes(normalized)) return 'Y';
+  if (['N', 'NO', 'FALSE', '0', 'INACTIVE'].includes(normalized)) return 'N';
+
+  return '';
+};
+
 const formatPlayTime = (seconds: number): string => {
   if (!seconds && seconds !== 0) return '';
   const h = Math.floor(seconds / 3600);
@@ -34,18 +45,20 @@ const COLUMNS = [
 
 const getCellContent = (ep: usingDataProps, key: string): React.ReactNode => {
   switch (key) {
-    case 'usageYn':
+    case 'usageYn': {
+      const usageYn = normalizeUsageYn(ep.usageYn);
       return (
         <span
           className={`px-2 py-0.5 rounded text-xs font-bold ${
-            ep.usageYn === 'Y'
+            usageYn === 'Y'
               ? 'bg-green-100 text-green-700'
               : 'bg-red-100 text-red-700'
           }`}
         >
-          {ep.usageYn}
+          {usageYn || '-'}
         </span>
       );
+    }
     case 'dispDtime':
       return formatDateString(ep.dispDtime);
     case 'createdAt':
@@ -56,7 +69,10 @@ const getCellContent = (ep: usingDataProps, key: string): React.ReactNode => {
     case 'note':
       return '';
     default:
-      return (ep as unknown as Record<string, unknown>)[key] as React.ReactNode ?? '';
+      return (
+        ((ep as unknown as Record<string, unknown>)[key] as React.ReactNode) ??
+        ''
+      );
   }
 };
 
@@ -65,13 +81,18 @@ interface ProdEpisodeListProps {
   isStaging?: boolean;
 }
 
-const ProdEpisodeList: React.FC<ProdEpisodeListProps> = ({ data, isStaging }) => {
+const ProdEpisodeList: React.FC<ProdEpisodeListProps> = ({
+  data,
+  isStaging,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleRowClick = (ep: usingDataProps) => {
     const basePath = isStaging ? '/stg/episode/detail' : '/episode/detail';
-    navigate(`${basePath}/${ep.episodeId}`, { state: { episode: ep, from: location.pathname } });
+    navigate(`${basePath}/${ep.episodeId}`, {
+      state: { episode: ep, from: location.pathname },
+    });
   };
 
   return (

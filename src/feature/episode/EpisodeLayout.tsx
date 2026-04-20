@@ -30,6 +30,7 @@ const EpisodeLayout = () => {
   const [prodTotalPages, setProdTotalPages] = useState(0);
   const [prodTotalCount, setProdTotalCount] = useState(0);
   const [prodSearchQuery, setProdSearchQuery] = useState('');
+  const [usageFilter, setUsageFilter] = useState<'all' | 'Y' | 'N'>('all');
   const [newEpi, setNewEpi] = useState<usingDataProps[]>([]);
   const [duplicateNewEpi, setDuplicateNewEpi] = useState<usingDataProps[]>([]);
   const [loading, setLoading] = useState(false);
@@ -196,13 +197,20 @@ const EpisodeLayout = () => {
 
   const PROD_PAGE_SIZE = 10;
 
-  const fetchProdPage = async (page: number) => {
+  const fetchProdPage = async (page: number, filter: 'all' | 'Y' | 'N') => {
     if (!loginToken) return;
     setProdLoading(true);
     try {
-      const res = await apiInstance.get(
-        `/admin/episode?page=${page}&size=${PROD_PAGE_SIZE}`
-      );
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(PROD_PAGE_SIZE),
+      });
+
+      if (filter !== 'all') {
+        params.set('usageYn', filter);
+      }
+
+      const res = await apiInstance.get(`/admin/episode?${params.toString()}`);
       const { dataList, pageInfo } = res.data.data;
       setProdData(dataList);
       setProdTotalCount(pageInfo.totalCount);
@@ -216,14 +224,14 @@ const EpisodeLayout = () => {
 
   const handleProdPageChange = (page: number) => {
     setProdPage(page);
-    fetchProdPage(page);
+    fetchProdPage(page, usageFilter);
   };
 
   useEffect(() => {
     setProdPage(1);
-    fetchProdPage(1);
+    fetchProdPage(1, usageFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaging, loginToken]);
+  }, [isStaging, loginToken, usageFilter]);
 
   const handleSearchNew = async () => {
     setLoading(true);
@@ -239,6 +247,15 @@ const EpisodeLayout = () => {
     setDuplicateNewEpi(duplicateNewData);
     setLoading(false);
   };
+
+  const filteredProdData = prodData.filter((ep) => {
+    if (!prodSearchQuery) return true;
+    return ep.episodeName
+      ?.toLowerCase()
+      .includes(prodSearchQuery.toLowerCase());
+  });
+
+  const isSearchFiltered = prodSearchQuery.trim().length > 0;
 
   return (
     <div className='p-10 flex flex-col h-full'>
@@ -275,10 +292,60 @@ const EpisodeLayout = () => {
           <div className='flex-1 p-8 flex flex-col'>
             <div className='flex justify-between items-center flex-shrink-0 mb-4'>
               <h3 className='text-point-color font-semibold'>
-                에피소드 총{' '}
-                <span className='font-extrabold'>{prodTotalCount}</span>개
+                {isSearchFiltered ? '조회 결과 ' : '에피소드 총 '}
+                <span className='font-extrabold'>
+                  {isSearchFiltered ? filteredProdData.length : prodTotalCount}
+                </span>
+                개
+                {isSearchFiltered && (
+                  <span className='ml-2 text-gray-500 text-sm'>
+                    (전체 {prodTotalCount}개)
+                  </span>
+                )}
               </h3>
-              <div className='flex gap-4 items-center'>
+              <div className='flex gap-6 items-center'>
+                <div className='flex items-center gap-3'>
+                  <span className='text-sm text-gray-600 font-medium'>
+                    활성화:
+                  </span>
+
+                  <label className='flex items-center gap-1.5 cursor-pointer'>
+                    <input
+                      type='radio'
+                      name='usageFilter'
+                      value='all'
+                      checked={usageFilter === 'all'}
+                      onChange={() => setUsageFilter('all')}
+                      className='accent-point-color w-4 h-4 cursor-pointer'
+                    />
+                    <span className='text-sm text-gray-700'>All</span>
+                  </label>
+
+                  <label className='flex items-center gap-1.5 cursor-pointer'>
+                    <input
+                      type='radio'
+                      name='usageFilter'
+                      value='Y'
+                      checked={usageFilter === 'Y'}
+                      onChange={() => setUsageFilter('Y')}
+                      className='accent-point-color w-4 h-4 cursor-pointer'
+                    />
+                    <span className='text-sm text-gray-700'>Y</span>
+                  </label>
+
+                  <label className='flex items-center gap-1.5 cursor-pointer'>
+                    <input
+                      type='radio'
+                      name='usageFilter'
+                      value='N'
+                      checked={usageFilter === 'N'}
+                      onChange={() => setUsageFilter('N')}
+                      className='accent-point-color w-4 h-4 cursor-pointer'
+                    />
+                    <span className='text-sm text-gray-700'>N</span>
+                  </label>
+                </div>
+
                 <input
                   type='text'
                   value={prodSearchQuery}
@@ -303,15 +370,7 @@ const EpisodeLayout = () => {
             {!prodLoading && (
               <div className='overflow-x-scroll episode-table-scroll pb-1'>
                 <ProdEpisodeList
-                  data={
-                    prodSearchQuery
-                      ? prodData.filter((ep) =>
-                          ep.episodeName
-                            ?.toLowerCase()
-                            .includes(prodSearchQuery.toLowerCase())
-                        )
-                      : prodData
-                  }
+                  data={filteredProdData}
                   isStaging={isStaging}
                 />
               </div>
