@@ -8,6 +8,7 @@ import DemoBroadcastingEdit from './feature/demo-broadcasting/DemoBroadcastingEd
 import DemoCategoryAdd from './feature/demo-category/DemoCategoryAdd';
 import DemoBroadcastingAdd from './feature/demo-broadcasting/DemoBroadcastingAdd';
 import EpisodeLayout from './feature/episode/EpisodeLayout';
+import ProdEpisodeDetail from './feature/episode/ProdEpisodeDetail';
 import Layout from './layout/Layout';
 import DemoProgramLayout from './feature/demo-program/DemoProgramLayout';
 import DemoProgramEdit from './feature/demo-program/DemoProgramEdit';
@@ -34,9 +35,11 @@ function App() {
       <Routes>
         <Route path='/' element={<Layout />}>
           <Route index element={<EpisodeLayout />} />
+          <Route path='/episode/detail/:id' element={<ProdEpisodeDetail />} />
           <Route path='/channel-book-list' element={<ChannelLayout />} />
           <Route path='/curation-list' element={<CurationLayout />} />{' '}
           <Route path='/stg/episode-list' element={<EpisodeLayout />} />
+          <Route path='/stg/episode/detail/:id' element={<ProdEpisodeDetail />} />
           <Route path='/stg/channel-book-list' element={<ChannelLayout />} />
           <Route path='/stg/curation-list' element={<CurationLayout />} />
           <Route path='/demo'>
