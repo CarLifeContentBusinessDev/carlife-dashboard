@@ -40,6 +40,7 @@ const ChannelLayout = () => {
   const [prodPage, setProdPage] = useState(1);
   const [prodTotalPages, setProdTotalPages] = useState(0);
   const [prodTotalCount, setProdTotalCount] = useState(0);
+  const [prodSearchQuery, setProdSearchQuery] = useState('');
   const [episodeCountByChannelId, setEpisodeCountByChannelId] = useState<
     Record<number, number>
   >({});
@@ -304,6 +305,13 @@ const ChannelLayout = () => {
     }
   };
 
+  const filteredProdData = prodData.filter(
+    (ch) =>
+      !prodSearchQuery ||
+      ch.channelName?.toLowerCase().includes(prodSearchQuery.toLowerCase())
+  );
+  const isSearchFiltered = prodSearchQuery.trim().length > 0;
+
   const excelHref = isStaging
     ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=902383353#gid=902383353`
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=934666118#gid=934666118`;
@@ -323,14 +331,29 @@ const ChannelLayout = () => {
           <div className='flex-1 p-8 flex flex-col'>
             <div className='flex justify-between items-center flex-shrink-0 mb-4'>
               <h3 className='text-point-color font-semibold'>
-                채널·도서 총{' '}
-                <span className='font-extrabold'>{prodTotalCount}</span>개
+                {isSearchFiltered ? '조회 결과 ' : ' 채널·도서 총 '}
+                <span className='font-extrabold'>
+                  {isSearchFiltered ? filteredProdData.length : prodTotalCount}
+                </span>
+                개
+                {isSearchFiltered && (
+                  <span className='ml-2 text-gray-500 text-sm'>
+                    (전체 {prodTotalCount}개)
+                  </span>
+                )}
               </h3>
               <div className='flex items-center gap-6'>
                 <UsageFilterRadio
                   name='channelUsageFilter'
                   value={usageFilter}
                   onChange={setUsageFilter}
+                />
+                <input
+                  type='text'
+                  value={prodSearchQuery}
+                  onChange={(e) => setProdSearchQuery(e.target.value)}
+                  placeholder='채널명 검색'
+                  className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
                 />
                 <button
                   onClick={() => handleProdPageChange(prodPage)}
@@ -349,7 +372,7 @@ const ChannelLayout = () => {
             {!prodLoading && (
               <div className='overflow-x-scroll episode-table-scroll pb-1'>
                 <ProdChannelList
-                  data={prodData}
+                  data={filteredProdData}
                   episodeCountByChannelId={episodeCountByChannelId}
                   latestEpisodeUploadByChannelId={
                     latestEpisodeUploadByChannelId
