@@ -422,7 +422,8 @@ export async function overwriteExcelData(
       (s) => s.properties?.title === targetSheet
     );
     const sheetId = sheetMeta?.properties?.sheetId;
-    const currentRowCount = sheetMeta?.properties?.gridProperties?.rowCount ?? 0;
+    const currentRowCount =
+      sheetMeta?.properties?.gridProperties?.rowCount ?? 0;
     if (sheetId === undefined || sheetId === null) {
       throw new Error(`시트를 찾을 수 없습니다: ${targetSheet}`);
     }
@@ -475,7 +476,10 @@ export async function overwriteExcelData(
     }
 
     // 4. 필요한 행 수만큼 시트 확장
-    const requiredLastRow = Math.max(targetStartRow, targetStartRow + values.length - 1);
+    const requiredLastRow = Math.max(
+      targetStartRow,
+      targetStartRow + values.length - 1
+    );
     if (requiredLastRow > currentRowCount) {
       setProgress?.('시트 행 확장 중...');
       await sheets.spreadsheets.batchUpdate({
