@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import usePagination from '../hook/usePagination';
-import { deleteRow } from '../utils/deleteRow';
-import { useAccessTokenStore } from '../store/useAccessTokenStore';
-import ImageCell from './ImageCell';
-import LanguageBadge from './LanguageBadge';
-import Pagination from './Pagination';
-import Table from './Table';
+import usePagination from '../../hook/usePagination';
+import { deleteRow } from '../../utils/excel/deleteRow';
+import { useAccessTokenStore } from '../../store/useAccessTokenStore';
+import ImageCell from '../table/ImageCell';
+import LanguageBadge from '../language/LanguageBadge';
+import Pagination from '../common/Pagination';
+import Table from '../table/Table';
 
 interface DemoTableListProps {
   data: any[];

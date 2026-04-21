@@ -1,23 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import LoadingOverlay from '../../components/LoadingOverlay';
-import Pagination from '../../components/Pagination';
-import SheetSelector from '../../components/SheetSelector';
-import SyncCountHeader from '../../components/SyncCountHeader';
-import SyncToolbar from '../../components/SyncToolbar';
-import TabHeader from '../../components/TabHeader';
-import UsageFilterRadio from '../../components/UsageFilterRadio';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
+import Pagination from '../../components/common/Pagination';
+import SheetSelector from '../../components/filter/SheetSelector';
+import SyncCountHeader from '../../components/sync/SyncCountHeader';
+import SyncToolbar from '../../components/sync/SyncToolbar';
+import TabHeader from '../../components/common/TabHeader';
+import UsageFilterRadio from '../../components/filter/UsageFilterRadio';
 import { useSheetSelection } from '../../hook/useSheetSelection';
 import { useStagingEnv } from '../../hook/useStagingEnv';
 import { useSyncState, SYNC_PAGE_SIZE } from '../../hook/useSyncState';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
 import type { usingDataProps } from '../../types/type';
-import { appendNewDataToTop } from '../../utils/appendNewDataToExcel';
-import { fetchAllData } from '../../utils/fetchAllData';
-import { getNewDataWithExcel } from '../../utils/getNewData';
-import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
-import { clearExcelRange, overwriteExcelData } from '../../utils/updateExcel';
-import { findChangedData } from '../../utils/updateLogs';
+import { appendNewDataToTop } from '../../utils/excel/appendNewDataToExcel';
+import { fetchAllData } from '../../utils/api/fetchAllData';
+import { getNewDataWithExcel } from '../../utils/excel/getNewData';
+import { updateSheetSyncTime } from '../../utils/excel/updateSheetSyncTime';
+import {
+  clearExcelRange,
+  overwriteExcelData,
+} from '../../utils/excel/updateExcel';
+import { findChangedData } from '../../utils/excel/updateLogs';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
 

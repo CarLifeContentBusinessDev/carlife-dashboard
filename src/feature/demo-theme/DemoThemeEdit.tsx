@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import FormActionsButton from '../../components/FormActionButton';
-import FormField from '../../components/FormField';
-import FormLayout from '../../components/FormLayout';
-import FormTabs from '../../components/FormTabs';
-import { ThumbnailPreview } from '../../components/ThumbnailPreview';
+import FormActionsButton from '../../components/form/FormActionButton';
+import FormField from '../../components/form/FormField';
+import FormLayout from '../../components/form/FormLayout';
+import FormTabs from '../../components/form/FormTabs';
+import { ThumbnailPreview } from '../../components/table/ThumbnailPreview';
 import { supabase } from '../../lib/supabase';
 
 const LANG_OPTIONS = [

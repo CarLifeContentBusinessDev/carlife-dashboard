@@ -1,4 +1,4 @@
-import type { SyncPreviewMode } from '../hook/useSyncState';
+import type { SyncPreviewMode } from '../../hook/useSyncState';
 
 interface SyncCountHeaderProps {
   syncPreviewMode: SyncPreviewMode;

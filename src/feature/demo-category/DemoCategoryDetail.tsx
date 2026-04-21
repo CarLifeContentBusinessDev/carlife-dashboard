@@ -1,4 +1,4 @@
-import DemoEntityDetail from '../../components/DemoEntityDetail';
+import DemoEntityDetail from '../../components/demo/DemoEntityDetail';
 
 const CATEGORY_FIELD_LABELS = {
   id: 'ID',

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import LoadingOverlay from '../../components/LoadingOverlay';
-import Pagination from '../../components/Pagination';
-import SheetSelector from '../../components/SheetSelector';
-import SyncCountHeader from '../../components/SyncCountHeader';
-import SyncToolbar from '../../components/SyncToolbar';
-import TabHeader from '../../components/TabHeader';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
+import Pagination from '../../components/common/Pagination';
+import SheetSelector from '../../components/filter/SheetSelector';
+import SyncCountHeader from '../../components/sync/SyncCountHeader';
+import SyncToolbar from '../../components/sync/SyncToolbar';
+import TabHeader from '../../components/common/TabHeader';
 import { useSheetSelection } from '../../hook/useSheetSelection';
 import { useStagingEnv } from '../../hook/useStagingEnv';
 import { useSyncState, SYNC_PAGE_SIZE } from '../../hook/useSyncState';
@@ -14,14 +14,14 @@ import type {
   curationListItemProps,
   usingCurationExcelProps,
 } from '../../types/type';
-import { appendNewCurationToExcel } from '../../utils/appendNewCurationToExcel';
-import { fetchAllCurationData } from '../../utils/fetchAllData';
-import { getNewCurationData } from '../../utils/getNewCuration';
-import { mapCurationStatus } from '../../utils/statusMapper';
-import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
-import { overwriteCurationExcelData } from '../../utils/updateCuration';
+import { appendNewCurationToExcel } from '../../utils/excel/appendNewCurationToExcel';
+import { fetchAllCurationData } from '../../utils/api/fetchAllData';
+import { getNewCurationData } from '../../utils/excel/getNewCuration';
+import { mapCurationStatus } from '../../utils/format/statusMapper';
+import { updateSheetSyncTime } from '../../utils/excel/updateSheetSyncTime';
+import { overwriteCurationExcelData } from '../../utils/excel/updateCuration';
 import ProdCurationList from './ProdCurationList';
-import UsageFilterRadio from '../../components/UsageFilterRadio';
+import UsageFilterRadio from '../../components/filter/UsageFilterRadio';
 
 const DATA_PAGE_SIZE = 10;
 

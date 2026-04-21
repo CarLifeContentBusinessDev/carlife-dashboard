@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../utils/api';
+import { api } from '../../utils/api/api';
 import { supabase } from '../../lib/supabase';
 import type { LoginResponseData } from '../../type';
 
@@ -76,7 +76,9 @@ export default function LoginPopup({
         }
       } catch {
         // pickle API 연결 실패는 무시 (Google Sheets 기능만 제한됨)
-        console.warn('pickle API 연결 실패 - Google Sheets 기능을 사용할 수 없습니다.');
+        console.warn(
+          'pickle API 연결 실패 - Google Sheets 기능을 사용할 수 없습니다.'
+        );
       }
 
       window.location.reload();

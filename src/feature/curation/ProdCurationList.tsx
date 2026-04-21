@@ -1,8 +1,8 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { usingCurationExcelProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
-import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
+import formatDateString from '../../utils/format/formatDateString';
+import { normalizeUsageYn } from '../../utils/format/normalizeUsageYn';
 
 type ProdCurationRow = usingCurationExcelProps & {
   curationId: number;

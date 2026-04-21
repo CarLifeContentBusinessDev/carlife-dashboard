@@ -1,8 +1,8 @@
 import { toast } from 'react-toastify';
-import Button from '../components/Button';
-import Dropdown from '../components/Dropdown';
-import { LANGUAGES, type LanguageCode } from '../constants/languages';
-import { useAccessTokenStore } from '../store/useAccessTokenStore';
+import Button from '../common/Button';
+import Dropdown from '../common/Dropdown';
+import { LANGUAGES, type LanguageCode } from '../../constants/languages';
+import { useAccessTokenStore } from '../../store/useAccessTokenStore';
 
 export type StatusFilter = 'all' | 'active' | 'inactive';
 

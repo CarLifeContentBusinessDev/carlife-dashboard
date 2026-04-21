@@ -1,6 +1,6 @@
-import Button from './Button';
-import LoadingOverlay from './LoadingOverlay';
-import type { SyncPreviewMode } from '../hook/useSyncState';
+import Button from '../common/Button';
+import LoadingOverlay from '../common/LoadingOverlay';
+import type { SyncPreviewMode } from '../../hook/useSyncState';
 
 interface SyncToolbarProps {
   onSearchNew: () => void;
@@ -36,7 +36,11 @@ const SyncToolbar = ({
       </Button>
     </div>
     <div className='flex gap-2 items-center'>
-      <LoadingOverlay progress={progress} vertical={false} loading={excelLoading || loading} />
+      <LoadingOverlay
+        progress={progress}
+        vertical={false}
+        loading={excelLoading || loading}
+      />
       <Button
         onClick={onSync}
         disabled={!syncPreviewMode || excelLoading || loading}

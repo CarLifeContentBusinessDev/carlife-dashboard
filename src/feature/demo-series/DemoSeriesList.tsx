@@ -1,5 +1,5 @@
 import React from 'react';
-import DemoTableList from '../../components/DemoTableList';
+import DemoTableList from '../../components/demo/DemoTableList';
 
 interface DemoSeriesListProps {
   series: any[];

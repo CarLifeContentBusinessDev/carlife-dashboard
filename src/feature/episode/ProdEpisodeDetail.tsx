@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { usingDataProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
-import { formatPlayTime } from '../../utils/formatPlayTime';
-import { api, stgApi } from '../../utils/api';
+import formatDateString from '../../utils/format/formatDateString';
+import { formatPlayTime } from '../../utils/format/formatPlayTime';
+import { api, stgApi } from '../../utils/api/api';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },

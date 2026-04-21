@@ -1,4 +1,4 @@
-import { useLoginTokenStore } from '../store/useLoginTokenStore';
+import { useLoginTokenStore } from '../../store/useLoginTokenStore';
 
 // Google OAuth 설정
 

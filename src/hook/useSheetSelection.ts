@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import getSheetList from '../utils/getSheetList';
+import getSheetList from '../utils/api/getSheetList';
 
 interface UseSheetSelectionParams {
   isStaging: boolean;
@@ -16,7 +16,9 @@ export function useSheetSelection({
   defaultSheetName,
   storageKey,
 }: UseSheetSelectionParams) {
-  const [sheetList, setSheetList] = useState<{ id: string; name: string }[]>([]);
+  const [sheetList, setSheetList] = useState<{ id: string; name: string }[]>(
+    []
+  );
   const [selectedSheet, setSelectedSheet] = useState(
     localStorage.getItem(storageKey) || defaultSheetName
   );

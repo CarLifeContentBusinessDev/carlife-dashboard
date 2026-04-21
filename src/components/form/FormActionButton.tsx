@@ -1,5 +1,5 @@
 import { toast } from 'react-toastify';
-import { useAccessTokenStore } from '../store/useAccessTokenStore';
+import { useAccessTokenStore } from '../../store/useAccessTokenStore';
 
 interface FormActionsButtonProps {
   saving: boolean;

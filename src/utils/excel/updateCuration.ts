@@ -1,8 +1,8 @@
 import { toast } from 'react-toastify';
-import type { usingCurationExcelProps } from '../types/type';
-import { getGoogleToken, getSheetsClient } from './auth';
-import formatDateString from './formatDateString';
-import { formatPlayTime, parsePlayTime } from './formatPlayTime';
+import type { usingCurationExcelProps } from '../../types/type';
+import { getGoogleToken, getSheetsClient } from '../auth/auth';
+import formatDateString from '../format/formatDateString';
+import { formatPlayTime, parsePlayTime } from '../format/formatPlayTime';
 import { getUsedRange } from './updateExcel';
 
 export async function getCurationExcelData(

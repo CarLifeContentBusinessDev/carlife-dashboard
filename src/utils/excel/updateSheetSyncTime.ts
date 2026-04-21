@@ -1,4 +1,4 @@
-import { getGoogleToken, getSheetsClient } from './auth';
+import { getGoogleToken, getSheetsClient } from '../auth/auth';
 
 const formatSyncTime = (date: Date) => {
   const yy = String(date.getFullYear() % 100).padStart(2, '0');

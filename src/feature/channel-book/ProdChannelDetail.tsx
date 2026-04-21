@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Pagination from '../../components/Pagination';
+import Pagination from '../../components/common/Pagination';
 import type { usingChannelProps, usingDataProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
-import { api, stgApi } from '../../utils/api';
-import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
+import formatDateString from '../../utils/format/formatDateString';
+import { api, stgApi } from '../../utils/api/api';
+import { normalizeUsageYn } from '../../utils/format/normalizeUsageYn';
 
 const EPISODE_PAGE_SIZE = 10;
 

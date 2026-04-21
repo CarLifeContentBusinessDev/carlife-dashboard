@@ -1,9 +1,9 @@
 import { getExcelData, getUsedRange } from './updateExcel';
-import type { usingChannelProps, usingDataProps } from '../types/type';
+import type { usingChannelProps, usingDataProps } from '../../types/type';
 import { toast } from 'react-toastify';
-import formatDateString from './formatDateString';
-import { formatPlayTime } from './formatPlayTime';
-import { getSheetsClient } from './auth';
+import formatDateString from '../format/formatDateString';
+import { formatPlayTime } from '../format/formatPlayTime';
+import { getSheetsClient } from '../auth/auth';
 
 const spreadsheetId = import.meta.env.VITE_SPREADSHEET_ID;
 const STARTROW = 4;

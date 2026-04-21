@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingOverlay from '../../components/LoadingOverlay';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
 import {
   LANGUAGES,
   LANG_COLUMN_MAP,
   type LanguageCode,
 } from '../../constants/languages';
-import DemoListLayout from '../../components/DemoListLayout';
-import SortControls from '../../components/SortControls';
+import DemoListLayout from '../../components/demo/DemoListLayout';
+import SortControls from '../../components/table/SortControls';
 import DemoCategoryList from './DemoCategoryList';
-import fetchAllSupabaseRows from '../../utils/fetchAllSupabaseRows';
+import fetchAllSupabaseRows from '../../utils/api/fetchAllSupabaseRows';
 import useListSort from '../../hook/useListSort';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [

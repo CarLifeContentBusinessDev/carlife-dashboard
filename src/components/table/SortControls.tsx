@@ -1,5 +1,5 @@
-import Dropdown from './Dropdown';
-import type { SortDirection, SortOption } from '../hook/useListSort';
+import Dropdown from '../common/Dropdown';
+import type { SortDirection, SortOption } from '../../hook/useListSort';
 
 interface SortControlsProps<K extends string> {
   sortKey: K;
