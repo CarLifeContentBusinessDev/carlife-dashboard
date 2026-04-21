@@ -1,13 +1,13 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { usingDataProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
-import { formatPlayTime } from '../../utils/formatPlayTime';
-import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
+import formatDateString from '../../utils/format/formatDateString';
+import { formatPlayTime } from '../../utils/format/formatPlayTime';
+import { normalizeUsageYn } from '../../utils/format/normalizeUsageYn';
 
 const COLUMNS = [
   { key: 'episodeId', label: '에피소드 ID', width: '110px' },
-  { key: 'usageYn', label: '활성화', width: '70px' },
+  { key: 'usageYn', label: '활성 상태', width: '70px' },
   { key: 'channelName', label: '채널명', width: '160px' },
   { key: 'episodeName', label: '에피소드명', width: '360px' },
   { key: 'dispDtime', label: '게시일자', width: '160px' },

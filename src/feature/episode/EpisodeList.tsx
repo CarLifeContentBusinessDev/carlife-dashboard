@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { usingDataProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
+import formatDateString from '../../utils/format/formatDateString';
 
 interface HeaderColumnProps {
   label: string;
@@ -52,7 +52,7 @@ const EpisodeList = ({ data }: { data: usingDataProps[] }) => {
     },
     {
       key: 'usageYn',
-      label: '활성화',
+      label: '활성 상태',
       width: '80px',
       noDataWidth: '80px',
       className: 'px-3 truncate flex-shrink-0',

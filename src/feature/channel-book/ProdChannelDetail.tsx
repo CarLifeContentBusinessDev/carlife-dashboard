@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Pagination from '../../components/Pagination';
+import Pagination from '../../components/common/Pagination';
 import type { usingChannelProps, usingDataProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
-import { api, stgApi } from '../../utils/api';
-import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
+import formatDateString from '../../utils/format/formatDateString';
+import { api, stgApi } from '../../utils/api/api';
+import { normalizeUsageYn } from '../../utils/format/normalizeUsageYn';
 
 const EPISODE_PAGE_SIZE = 10;
 
@@ -14,14 +14,14 @@ const CHANNEL_FIELD_DEFS: Array<{
 }> = [
   { key: 'thumbnailUrl', label: '썸네일' },
   { key: 'channelName', label: '채널명' },
-  { key: 'usageYn', label: '활성화' },
   { key: 'vendorName', label: '제작사명' },
+  { key: 'usageYn', label: '활성 상태' },
   { key: 'categoryName', label: '카테고리' },
   { key: 'channelTypeName', label: '채널 타입' },
+  { key: 'createdAt', label: '등록일' },
   { key: 'likeCnt', label: '좋아요수' },
   { key: 'listenCnt', label: '재생 요청 수' },
   { key: 'dispDtime', label: '최근 에피소드 업로드일' },
-  { key: 'createdAt', label: '등록일' },
   { key: 'interfaceUrl', label: 'RSS URL' },
 ];
 
@@ -35,7 +35,7 @@ interface EpisodeColumn {
 
 const EPISODE_COLUMNS: EpisodeColumn[] = [
   { key: 'episodeId', label: '에피소드 ID', width: '90px' },
-  { key: 'usageYn', label: '활성화', width: '70px' },
+  { key: 'usageYn', label: '활성 상태', width: '70px' },
   { key: 'episodeName', label: '에피소드명', minWidth: '280px', isFlex: true },
   { key: 'dispDtime', label: '게시일자', width: '180px' },
   { key: 'createdAt', label: '등록일자', width: '180px' },
@@ -158,14 +158,15 @@ const ProdChannelDetail = () => {
   const apiInstance = isStaging ? stgApi : api;
   const channelId = Number(id);
 
-  const fetchEpisodes = async (page: number) => {
+  const fetchEpisodes = async (page: number, signal?: AbortSignal) => {
     if (!id || Number.isNaN(channelId)) return;
 
     setLoading(true);
 
     try {
       const res = await apiInstance.get(
-        `/admin/episode?page=${page}&size=${EPISODE_PAGE_SIZE}&channelId=${channelId}&withPlaylists=Y`
+        `/admin/episode?page=${page}&size=${EPISODE_PAGE_SIZE}&channelId=${channelId}&withPlaylists=Y`,
+        { signal }
       );
 
       const { dataList, pageInfo } = res.data.data;
@@ -174,7 +175,12 @@ const ProdChannelDetail = () => {
       setEpisodeTotalPages(
         Math.ceil((pageInfo?.totalCount ?? 0) / EPISODE_PAGE_SIZE)
       );
-    } catch (error) {
+    } catch (error: unknown) {
+      if (
+        (error as { name?: string }).name === 'CanceledError' ||
+        (error as { name?: string }).name === 'AbortError'
+      )
+        return;
       console.error('채널 에피소드 조회 실패:', error);
       setEpisodes([]);
       setEpisodeTotalCount(0);
@@ -185,8 +191,10 @@ const ProdChannelDetail = () => {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     setEpisodePage(1);
-    fetchEpisodes(1);
+    fetchEpisodes(1, controller.signal);
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isStaging]);
 
@@ -298,7 +306,10 @@ const ProdChannelDetail = () => {
                 {episodes.map((episode) => (
                   <div
                     key={episode.episodeId}
-                    className='flex items-center border-b border-gray-200 py-3 w-full'
+                    className='flex items-center border-b border-gray-200 py-3 w-full cursor-pointer hover:bg-gray-50'
+                    onClick={() =>
+                      navigate(`/episode/detail/${episode.episodeId}`)
+                    }
                   >
                     {EPISODE_COLUMNS.map((col) => (
                       <div

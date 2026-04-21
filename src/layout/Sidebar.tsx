@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import Button from '../components/Button';
+import Button from '../components/common/Button';
 import { MENU_GROUPS } from '../constants/sidebarMenus';
 import MenuGroupItem from './components/MenuGroupItem';
 import MenuButton from './components/MenuButton';

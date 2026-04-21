@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingOverlay from '../../components/LoadingOverlay';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
 import { type LanguageCode } from '../../constants/languages';
 import DemoListLayout, {
   type StatusFilter,
-} from '../../components/DemoListLayout';
+} from '../../components/demo/DemoListLayout';
 import type { Broadcasting } from '../../types/demoContents';
-import parseLanguages from '../../utils/parseLanguages';
+import parseLanguages from '../../utils/format/parseLanguages';
 import DemoBroadcastingList from './DemoBroadcastingList';
-import fetchAllSupabaseRows from '../../utils/fetchAllSupabaseRows';
-import SortControls from '../../components/SortControls';
+import fetchAllSupabaseRows from '../../utils/api/fetchAllSupabaseRows';
+import SortControls from '../../components/table/SortControls';
 import useListSort from '../../hook/useListSort';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [

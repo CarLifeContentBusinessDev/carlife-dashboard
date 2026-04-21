@@ -1,5 +1,5 @@
-import type { usingDataProps } from '../types/type';
-import { api } from './api';
+import type { usingDataProps } from '../../types/type';
+import { api } from '../api/api';
 import { getExcelData } from './updateExcel';
 
 export async function findChangedData(allData: usingDataProps[]) {

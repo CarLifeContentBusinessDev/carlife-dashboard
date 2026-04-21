@@ -1,25 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'react-toastify';
-import LoadingOverlay from '../../components/LoadingOverlay';
-import Pagination from '../../components/Pagination';
-import SheetSelector from '../../components/SheetSelector';
-import SyncCountHeader from '../../components/SyncCountHeader';
-import SyncToolbar from '../../components/SyncToolbar';
-import TabHeader from '../../components/TabHeader';
-import UsageFilterRadio from '../../components/UsageFilterRadio';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
+import Pagination from '../../components/common/Pagination';
+import SheetSelector from '../../components/filter/SheetSelector';
+import SyncCountHeader from '../../components/sync/SyncCountHeader';
+import SyncToolbar from '../../components/sync/SyncToolbar';
+import TabHeader from '../../components/common/TabHeader';
+import UsageFilterRadio from '../../components/filter/UsageFilterRadio';
+import { useProdPagination } from '../../hook/useProdPagination';
 import { useSheetSelection } from '../../hook/useSheetSelection';
 import { useStagingEnv } from '../../hook/useStagingEnv';
 import { useSyncState, SYNC_PAGE_SIZE } from '../../hook/useSyncState';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
 import type { usingDataProps } from '../../types/type';
-import { appendNewDataToTop } from '../../utils/appendNewDataToExcel';
-import { fetchAllData } from '../../utils/fetchAllData';
-import { getNewDataWithExcel } from '../../utils/getNewData';
-import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
-import { clearExcelRange, overwriteExcelData } from '../../utils/updateExcel';
-import { findChangedData } from '../../utils/updateLogs';
+import { appendNewDataToTop } from '../../utils/excel/appendNewDataToExcel';
+import { fetchAllData } from '../../utils/api/fetchAllData';
+import { getNewDataWithExcel } from '../../utils/excel/getNewData';
+import { updateSheetSyncTime } from '../../utils/excel/updateSheetSyncTime';
+import {
+  clearExcelRange,
+  overwriteExcelData,
+} from '../../utils/excel/updateExcel';
+import { findChangedData } from '../../utils/excel/updateLogs';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
+import { SyncEmptyState } from '../../components/sync/SyncEmptyState';
 
 const CATEGORY = 'episode';
 const PROD_PAGE_SIZE = 10;
@@ -28,15 +33,6 @@ const EpisodeLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
-
-  // 데이터 조회 탭
-  const [prodData, setProdData] = useState<usingDataProps[]>([]);
-  const [prodLoading, setProdLoading] = useState(false);
-  const [prodPage, setProdPage] = useState(1);
-  const [prodTotalPages, setProdTotalPages] = useState(0);
-  const [prodTotalCount, setProdTotalCount] = useState(0);
-  const [prodSearchQuery, setProdSearchQuery] = useState('');
-  const [usageFilter, setUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
 
   // 동기화 탭
   const [newEpi, setNewEpi] = useState<usingDataProps[]>([]);
@@ -72,37 +68,36 @@ const EpisodeLayout = () => {
 
   const getSheetName = (name: string) => (isStaging ? `stg_${name}` : name);
 
-  const fetchProdPage = async (page: number, filter: 'All' | 'Y' | 'N') => {
-    if (!loginToken) return;
-    setProdLoading(true);
-    try {
+  const {
+    prodData,
+    prodLoading,
+    prodPage,
+    prodTotalPages,
+    prodTotalCount,
+    prodSearchQuery,
+    setProdSearchQuery,
+    usageFilter,
+    handleProdPageChange,
+    handleSearch,
+    handleUsageFilterChange,
+  } = useProdPagination<usingDataProps>({
+    fetcher: async ({ page, filter, keyword, signal }) => {
       const params = new URLSearchParams({
         page: String(page),
         size: String(PROD_PAGE_SIZE),
       });
       if (filter !== 'All') params.set('usageYn', filter);
-      const res = await apiInstance.get(`/admin/episode?${params.toString()}`);
+      if (keyword.trim()) params.set('keyword', keyword.trim());
+      const res = await apiInstance.get(`/admin/episode?${params.toString()}`, {
+        signal,
+      });
       const { dataList, pageInfo } = res.data.data;
-      setProdData(dataList);
-      setProdTotalCount(pageInfo.totalCount);
-      setProdTotalPages(Math.ceil(pageInfo.totalCount / PROD_PAGE_SIZE));
-    } catch (e) {
-      console.error('에피소드 데이터 조회 실패:', e);
-    } finally {
-      setProdLoading(false);
-    }
-  };
-
-  const handleProdPageChange = (page: number) => {
-    setProdPage(page);
-    fetchProdPage(page, usageFilter);
-  };
-
-  useEffect(() => {
-    setProdPage(1);
-    fetchProdPage(1, usageFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaging, loginToken, usageFilter]);
+      return { dataList, totalCount: pageInfo.totalCount };
+    },
+    deps: [isStaging, loginToken],
+    pageSize: PROD_PAGE_SIZE,
+    enabled: !!loginToken,
+  });
 
   const handleSearchNew = async () => {
     setLoading(true);
@@ -218,13 +213,6 @@ const EpisodeLayout = () => {
     }
   };
 
-  const filteredProdData = prodData.filter(
-    (ep) =>
-      !prodSearchQuery ||
-      ep.episodeName?.toLowerCase().includes(prodSearchQuery.toLowerCase())
-  );
-  const isSearchFiltered = prodSearchQuery.trim().length > 0;
-
   const excelHref = isStaging
     ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=418216794#gid=418216794`
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=1925187377#gid=1925187377`;
@@ -241,32 +229,25 @@ const EpisodeLayout = () => {
           <div className='flex-1 p-8 flex flex-col'>
             <div className='flex justify-between items-center flex-shrink-0 mb-4'>
               <h3 className='text-point-color font-semibold'>
-                {isSearchFiltered ? '조회 결과 ' : '에피소드 총 '}
-                <span className='font-extrabold'>
-                  {isSearchFiltered ? filteredProdData.length : prodTotalCount}
-                </span>
-                개
-                {isSearchFiltered && (
-                  <span className='ml-2 text-gray-500 text-sm'>
-                    (전체 {prodTotalCount}개)
-                  </span>
-                )}
+                에피소드 총{' '}
+                <span className='font-extrabold'>{prodTotalCount}</span>개
               </h3>
               <div className='flex gap-6 items-center'>
                 <UsageFilterRadio
                   name='usageFilter'
                   value={usageFilter}
-                  onChange={setUsageFilter}
+                  onChange={handleUsageFilterChange}
                 />
                 <input
                   type='text'
                   value={prodSearchQuery}
                   onChange={(e) => setProdSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder='에피소드명 검색'
                   className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
                 />
                 <button
-                  onClick={() => handleProdPageChange(prodPage)}
+                  onClick={handleSearch}
                   className='cursor-pointer'
                   disabled={prodLoading}
                 >
@@ -281,10 +262,7 @@ const EpisodeLayout = () => {
             </LoadingOverlay>
             {!prodLoading && (
               <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                <ProdEpisodeList
-                  data={filteredProdData}
-                  isStaging={isStaging}
-                />
+                <ProdEpisodeList data={prodData} isStaging={isStaging} />
               </div>
             )}
             <Pagination
@@ -349,11 +327,10 @@ const EpisodeLayout = () => {
                   />
                 </>
               )}
-              {!loading && !syncPreviewMode && (
-                <div className='flex items-center justify-center h-full text-gray-500'>
-                  신규/전체 조회를 먼저 실행해주세요.
-                </div>
-              )}
+              <SyncEmptyState
+                loading={loading}
+                syncPreviewMode={!!syncPreviewMode}
+              />
             </div>
           </div>
         )}

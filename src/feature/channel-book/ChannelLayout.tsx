@@ -1,24 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import LoadingOverlay from '../../components/LoadingOverlay';
-import Pagination from '../../components/Pagination';
-import SheetSelector from '../../components/SheetSelector';
-import SyncCountHeader from '../../components/SyncCountHeader';
-import SyncToolbar from '../../components/SyncToolbar';
-import TabHeader from '../../components/TabHeader';
-import UsageFilterRadio from '../../components/UsageFilterRadio';
+import LoadingOverlay from '../../components/common/LoadingOverlay.tsx';
+import Pagination from '../../components/common/Pagination.tsx';
+import SheetSelector from '../../components/filter/SheetSelector.tsx';
+import SyncCountHeader from '../../components/sync/SyncCountHeader.tsx';
+import SyncToolbar from '../../components/sync/SyncToolbar.tsx';
+import TabHeader from '../../components/common/TabHeader.tsx';
+import UsageFilterRadio from '../../components/filter/UsageFilterRadio.tsx';
+import { useProdPagination } from '../../hook/useProdPagination';
 import { useSheetSelection } from '../../hook/useSheetSelection';
 import { useStagingEnv } from '../../hook/useStagingEnv';
 import { useSyncState, SYNC_PAGE_SIZE } from '../../hook/useSyncState';
 import { useAccessTokenStore } from '../../store/useAccessTokenStore';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
 import type { usingChannelProps } from '../../types/type';
-import { appendNewDataToTop } from '../../utils/appendNewDataToExcel';
-import { fetchAllData } from '../../utils/fetchAllData';
-import { getNewData } from '../../utils/getNewData';
-import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
-import { overwriteExcelData } from '../../utils/updateExcel';
+import { appendNewDataToTop } from '../../utils/excel/appendNewDataToExcel.ts';
+import { fetchAllData } from '../../utils/api/fetchAllData.ts';
+import { getNewData } from '../../utils/excel/getNewData.ts';
+import { updateSheetSyncTime } from '../../utils/excel/updateSheetSyncTime.ts';
+import { overwriteExcelData } from '../../utils/excel/updateExcel.ts';
 import ProdChannelList from './ProdChannelList.tsx';
+import { SyncEmptyState } from '../../components/sync/SyncEmptyState.tsx';
 
 const CATEGORY = 'channel';
 const PAGE_SIZE = 10;
@@ -34,18 +36,11 @@ const ChannelLayout = () => {
   const { accessToken } = useAccessTokenStore();
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
-  // 데이터 조회 탭
-  const [prodData, setProdData] = useState<usingChannelProps[]>([]);
-  const [prodLoading, setProdLoading] = useState(false);
-  const [prodPage, setProdPage] = useState(1);
-  const [prodTotalPages, setProdTotalPages] = useState(0);
-  const [prodTotalCount, setProdTotalCount] = useState(0);
   const [episodeCountByChannelId, setEpisodeCountByChannelId] = useState<
     Record<number, number>
   >({});
   const [latestEpisodeUploadByChannelId, setLatestEpisodeUploadByChannelId] =
     useState<Record<number, string>>({});
-  const [usageFilter, setUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
 
   // 동기화 탭
   const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
@@ -78,16 +73,7 @@ const ChannelLayout = () => {
     storageKey,
   });
 
-  const abortControllerRef = useRef<AbortController | null>(null);
   const episodeCountLoadingRef = useRef<Set<number>>(new Set());
-
-  const cancelOngoingWork = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-  };
-
-  useEffect(() => () => cancelOngoingWork(), []);
 
   const fetchEpisodeCounts = async (channels: usingChannelProps[]) => {
     if (!loginToken || channels.length === 0) return;
@@ -117,7 +103,6 @@ const ChannelLayout = () => {
           const latestDispDtime = String(
             res.data?.data?.dataList?.[0]?.dispDtime ?? ''
           );
-
           setEpisodeCountByChannelId((prev) => ({
             ...prev,
             [channelId]: totalCount,
@@ -140,41 +125,42 @@ const ChannelLayout = () => {
     );
   };
 
-  const fetchProdPage = async (page: number, filter: 'All' | 'Y' | 'N') => {
-    if (!loginToken) return;
-    cancelOngoingWork();
-    abortControllerRef.current = new AbortController();
-    setProdLoading(true);
-    try {
-      const query =
-        filter === 'All'
-          ? `page=${page}&size=${PAGE_SIZE}`
-          : `usageYn=${filter}&page=${page}&size=${PAGE_SIZE}`;
-      const res = await apiInstance.get(`/admin/channel?${query}`, {
-        signal: abortControllerRef.current.signal,
+  const {
+    prodData,
+    prodLoading,
+    prodPage,
+    prodTotalPages,
+    prodTotalCount,
+    prodSearchQuery,
+    setProdSearchQuery,
+    usageFilter,
+    handleProdPageChange,
+    handleSearch,
+    handleUsageFilterChange,
+    cancelOngoingWork,
+  } = useProdPagination<usingChannelProps>({
+    fetcher: async ({ page, filter, keyword, signal }) => {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(PAGE_SIZE),
+      });
+      if (filter !== 'All') params.set('usageYn', filter);
+      if (keyword.trim()) params.set('keyword', keyword.trim());
+      const res = await apiInstance.get(`/admin/channel?${params.toString()}`, {
+        signal,
       });
       const { dataList, pageInfo } = res.data.data;
-      setProdData(dataList);
-      setProdTotalCount(pageInfo.totalCount);
-      setProdTotalPages(Math.ceil(pageInfo.totalCount / PAGE_SIZE));
-      await fetchEpisodeCounts(dataList);
-    } catch (e) {
-      console.error('채널 데이터 조회 실패:', e);
-    } finally {
-      setProdLoading(false);
-    }
-  };
-
-  const handleProdPageChange = (page: number) => {
-    setProdPage(page);
-    fetchProdPage(page, usageFilter);
-  };
+      return { dataList, totalCount: pageInfo.totalCount };
+    },
+    deps: [isStaging, loginToken],
+    pageSize: PAGE_SIZE,
+    enabled: !!loginToken,
+  });
 
   useEffect(() => {
-    setProdPage(1);
-    fetchProdPage(1, usageFilter);
+    if (prodData.length > 0) fetchEpisodeCounts(prodData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaging, loginToken, usageFilter]);
+  }, [prodData]);
 
   const handleLoadAllChannels = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
@@ -330,10 +316,18 @@ const ChannelLayout = () => {
                 <UsageFilterRadio
                   name='channelUsageFilter'
                   value={usageFilter}
-                  onChange={setUsageFilter}
+                  onChange={handleUsageFilterChange}
+                />
+                <input
+                  type='text'
+                  value={prodSearchQuery}
+                  onChange={(e) => setProdSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder='채널명 검색'
+                  className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
                 />
                 <button
-                  onClick={() => handleProdPageChange(prodPage)}
+                  onClick={handleSearch}
                   className='cursor-pointer'
                   disabled={prodLoading}
                 >
@@ -419,11 +413,10 @@ const ChannelLayout = () => {
                   />
                 </>
               )}
-              {!loading && !syncPreviewMode && (
-                <div className='flex items-center justify-center h-full text-gray-500'>
-                  신규/전체 조회를 먼저 실행해주세요.
-                </div>
-              )}
+              <SyncEmptyState
+                loading={loading}
+                syncPreviewMode={!!syncPreviewMode}
+              />
             </div>
           </div>
         )}

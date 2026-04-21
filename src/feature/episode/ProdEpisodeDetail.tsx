@@ -1,29 +1,31 @@
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { usingDataProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
-import { formatPlayTime } from '../../utils/formatPlayTime';
+import formatDateString from '../../utils/format/formatDateString';
+import { formatPlayTime } from '../../utils/format/formatPlayTime';
+import { api, stgApi } from '../../utils/api/api';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },
-  // { key: 'usageYn', label: '활성화' },
+  // { key: 'usageYn', label: '활성 상태' },
+  { key: 'thumbnailUrl', label: '썸네일' },
   { key: 'channelId', label: '채널 ID' },
-  { key: 'channelName', label: '채널명' },
   { key: 'episodeName', label: '에피소드명' },
+  { key: 'channelName', label: '채널명' },
   { key: 'dispDtime', label: '게시일자' },
   { key: 'createdAt', label: '등록일자' },
+  { key: 'audioUrl', label: '오디오' },
   { key: 'playTime', label: '에피소드 시간' },
-  { key: 'usageYn', label: '상태' },
+  { key: 'usageYn', label: '활성 상태' },
   { key: 'likeCnt', label: '좋아요수' },
   { key: 'listenCnt', label: '청취수' },
-  { key: 'thumbnailUrl', label: '썸네일 URL' },
-  { key: 'audioUrl', label: '오디오 URL' },
 ];
 
 const isImageUrl = (url: string) =>
   /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) || url.includes('thumbnail');
 
 const isAudioUrl = (url: string) =>
-  /\.(mp3|wav|m4a|aac|ogg|flac)(\?.*)?$/i.test(url) ||
+  /\.(mp3|wav|m4a|aac|ogg|flac|m3u8)(\?.*)?$/i.test(url) ||
   url.toLowerCase().includes('audio');
 
 const renderValue = (key: keyof usingDataProps, value: string | number) => {
@@ -96,12 +98,48 @@ const ProdEpisodeDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const episode = (
+  const stateEpisode = (
     location.state as { episode?: usingDataProps; from?: string }
   )?.episode;
   const from = (location.state as { from?: string })?.from ?? '/';
 
-  if (!episode) {
+  const [episode, setEpisode] = useState<usingDataProps | null>(
+    stateEpisode ?? null
+  );
+  const [loading, setLoading] = useState(!stateEpisode);
+  const [fetchError, setFetchError] = useState(false);
+
+  useEffect(() => {
+    if (stateEpisode || !id) return;
+
+    const controller = new AbortController();
+    const isStaging = location.pathname.startsWith('/stg/');
+    const apiInstance = isStaging ? stgApi : api;
+
+    apiInstance
+      .get<{ data: usingDataProps }>(`/admin/episode/${id}`, {
+        signal: controller.signal,
+      })
+      .then((res) => setEpisode(res.data.data))
+      .catch((err) => {
+        if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+          setFetchError(true);
+        }
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [id, stateEpisode, location.pathname]);
+
+  if (loading) {
+    return (
+      <div className='p-10 flex items-center justify-center'>
+        <p className='text-gray-400 text-sm'>불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (fetchError || !episode) {
     return (
       <div className='p-10 flex flex-col items-center gap-4'>
         <p className='text-gray-500'>에피소드 정보를 불러올 수 없습니다.</p>
@@ -115,19 +153,9 @@ const ProdEpisodeDetail = () => {
     );
   }
 
-  const wideKeys: (keyof usingDataProps)[] = [
-    'thumbnailUrl',
-    'audioUrl',
-    'episodeName',
-  ];
-
-  const narrowFields = FIELD_DEFS.filter((f) => !wideKeys.includes(f.key));
-  const wideFields = FIELD_DEFS.filter((f) => wideKeys.includes(f.key));
-
-  const narrowPairs: { key: keyof usingDataProps; label: string }[][] = [];
-  for (let i = 0; i < narrowFields.length; i += 2) {
-    narrowPairs.push(narrowFields.slice(i, i + 2));
-  }
+  const topWideKeys: (keyof usingDataProps)[] = ['episodeName'];
+  const topWideFields = FIELD_DEFS.filter((f) => topWideKeys.includes(f.key));
+  const narrowFields = FIELD_DEFS.filter((f) => !topWideKeys.includes(f.key));
 
   return (
     <div className='p-10 flex flex-col'>
@@ -152,8 +180,7 @@ const ProdEpisodeDetail = () => {
 
         {/* 필드 그리드 */}
         <div className='grid grid-cols-1 gap-3'>
-          {/* 넓은 필드 (에피소드명, 썸네일, 오디오) */}
-          {wideFields.map((field) => (
+          {topWideFields.map((field) => (
             <div
               key={field.key}
               className='grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden'
@@ -167,30 +194,42 @@ const ProdEpisodeDetail = () => {
             </div>
           ))}
 
-          {/* 좁은 필드 2열 페어 */}
-          {narrowPairs.map((pair, pairIdx) => (
-            <div
-              key={pairIdx}
-              className='grid grid-cols-1 lg:grid-cols-2 gap-3'
-            >
-              {pair.map((field) => (
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-3'>
+            {narrowFields.map((field) => {
+              const isThumbnailField = field.key === 'thumbnailUrl';
+              const isAudioField = field.key === 'audioUrl';
+              return (
                 <div
                   key={field.key}
-                  className='grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden'
+                  className={`grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden ${
+                    isThumbnailField ? 'lg:row-span-4' : ''
+                  } ${isAudioField ? 'lg:col-span-2' : ''}`}
                 >
-                  <div className='px-4 py-3 bg-gray-50 font-semibold text-sm text-gray-600'>
+                  <div
+                    className={`px-4 bg-gray-50 font-semibold text-sm text-gray-600 ${
+                      isThumbnailField || isAudioField ? 'py-4' : 'py-3'
+                    }`}
+                  >
                     {field.label}
                   </div>
-                  <div className='px-4 py-3 text-sm bg-white'>
+                  <div
+                    className={`px-4 text-sm bg-white break-all ${
+                      isThumbnailField
+                        ? 'py-4 min-h-[180px] flex items-start'
+                        : isAudioField
+                          ? 'py-4'
+                          : 'py-3'
+                    }`}
+                  >
                     {renderValue(
                       field.key,
                       episode[field.key] as string | number
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { usingCurationExcelProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
-import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
+import formatDateString from '../../utils/format/formatDateString';
+import { normalizeUsageYn } from '../../utils/format/normalizeUsageYn';
 
 type ProdCurationRow = usingCurationExcelProps & {
   curationId: number;
@@ -24,9 +24,9 @@ const getExhibitionBadgeClass = (value: string): string => {
 };
 
 const COLUMNS = [
-  { key: 'thumbnailTitle', label: '썸네일 제목', width: '100px' },
+  { key: 'thumbnailUrlSquare', label: '썸네일', width: '80px' },
   { key: 'curationType', label: '타입', width: '100px' },
-  { key: 'curationName', label: '큐레이션명', width: '220px' },
+  { key: 'curationName', label: '큐레이션명', width: '240px' },
   { key: 'curationDesc', label: '큐레이션 설명', width: '220px' },
   { key: 'activeState', label: '활성 상태', width: '100px' },
   { key: 'exhibitionState', label: '전시 상태', width: '100px' },
@@ -54,6 +54,20 @@ const getCellContent = (
   key: (typeof COLUMNS)[number]['key']
 ): React.ReactNode => {
   switch (key) {
+    case 'thumbnailUrlSquare': {
+      const url = row.thumbnailUrlSquare || row.thumbnailUrlRect;
+      if (!url) return <span className='text-gray-300 text-xs'>-</span>;
+      return (
+        <img
+          src={url}
+          alt='thumbnail'
+          className='w-12 h-12 rounded object-cover bg-gray-100'
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      );
+    }
     case 'activeState': {
       const usage = normalizeUsageYn(row.activeState);
       return (
@@ -153,7 +167,7 @@ const ProdCurationList: React.FC<ProdCurationListProps> = ({
             {COLUMNS.map((col) => (
               <div
                 key={col.key}
-                className='px-2 flex-shrink-0 text-sm truncate'
+                className={`px-2 flex-shrink-0 text-sm ${col.key === 'thumbnailUrlSquare' ? '' : 'truncate'}`}
                 style={{ width: col.width }}
               >
                 {getCellContent(row, col.key)}

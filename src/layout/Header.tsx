@@ -5,9 +5,9 @@ import {
   googleLogout,
   initializeGoogleAPI,
   initializeGIS,
-} from '../utils/auth';
+} from '../utils/auth/auth';
 import LoginPopup from '../feature/login/Login';
-import Button from '../components/Button';
+import Button from '../components/common/Button';
 import type { LoginResponseData } from '../types/type';
 import { useLoginTokenStore } from '../store/useLoginTokenStore';
 import { useAccessTokenStore } from '../store/useAccessTokenStore';

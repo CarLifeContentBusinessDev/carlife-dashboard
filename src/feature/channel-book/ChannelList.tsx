@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { usingChannelProps } from '../../types/type';
-import formatDateString from '../../utils/formatDateString';
+import formatDateString from '../../utils/format/formatDateString';
 
 interface HeaderColumnProps {
   label: string;

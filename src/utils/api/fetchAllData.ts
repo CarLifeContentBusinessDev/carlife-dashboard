@@ -6,9 +6,9 @@ import type {
   usingChannelProps,
   usingCurationExcelProps,
   usingDataProps,
-} from '../types/type';
+} from '../../types/type';
 import { api } from './api';
-import { mapCurationStatus } from './statusMapper';
+import { mapCurationStatus } from '../format/statusMapper';
 
 const SIZE = 10000;
 const CURATIONSIZE = 100;

@@ -1,4 +1,4 @@
-import { getGoogleToken, getSheetsClient } from './auth';
+import { getGoogleToken, getSheetsClient } from '../auth/auth';
 
 const getSheetList = async (spreadsheetId: string) => {
   try {

@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import DemoListLayout, { type StatusFilter } from '../../components/DemoListLayout';
-import LoadingOverlay from '../../components/LoadingOverlay';
+import DemoListLayout, {
+  type StatusFilter,
+} from '../../components/demo/DemoListLayout';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
 import DemoProgramList from './DemoProgramList';
 import type { LanguageCode } from '../../constants/languages';
 import { useNavigate } from 'react-router-dom';
-import SortControls from '../../components/SortControls';
+import SortControls from '../../components/table/SortControls';
 import type { Program } from '../../types/demoContents';
 import useListSort from '../../hook/useListSort';
-import parseLanguages from '../../utils/parseLanguages';
-import fetchAllSupabaseRows from '../../utils/fetchAllSupabaseRows';
+import parseLanguages from '../../utils/format/parseLanguages';
+import fetchAllSupabaseRows from '../../utils/api/fetchAllSupabaseRows';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id'; label: string }> = [
   { value: 'id', label: 'ID 기준' },
@@ -56,7 +58,9 @@ const DemoProgramLayout = () => {
     })
     .filter((prog) => {
       if (searchableFilter === 'all') return true;
-      return searchableFilter === 'active' ? prog.is_searchable : !prog.is_searchable;
+      return searchableFilter === 'active'
+        ? prog.is_searchable
+        : !prog.is_searchable;
     })
     .filter((prog) => {
       if (!searchQuery) return true;
