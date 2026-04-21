@@ -7,6 +7,7 @@ import SyncCountHeader from '../../components/sync/SyncCountHeader.tsx';
 import SyncToolbar from '../../components/sync/SyncToolbar.tsx';
 import TabHeader from '../../components/common/TabHeader.tsx';
 import UsageFilterRadio from '../../components/filter/UsageFilterRadio.tsx';
+import { useProdPagination } from '../../hook/useProdPagination';
 import { useSheetSelection } from '../../hook/useSheetSelection';
 import { useStagingEnv } from '../../hook/useStagingEnv';
 import { useSyncState, SYNC_PAGE_SIZE } from '../../hook/useSyncState';
@@ -19,6 +20,7 @@ import { getNewData } from '../../utils/excel/getNewData.ts';
 import { updateSheetSyncTime } from '../../utils/excel/updateSheetSyncTime.ts';
 import { overwriteExcelData } from '../../utils/excel/updateExcel.ts';
 import ProdChannelList from './ProdChannelList.tsx';
+import { SyncEmptyState } from '../../components/sync/SyncEmptyState.tsx';
 
 const CATEGORY = 'channel';
 const PAGE_SIZE = 10;
@@ -34,24 +36,14 @@ const ChannelLayout = () => {
   const { accessToken } = useAccessTokenStore();
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
-  // 데이터 조회 탭
-  const [prodData, setProdData] = useState<usingChannelProps[]>([]);
-  const [prodLoading, setProdLoading] = useState(false);
-  const [prodPage, setProdPage] = useState(1);
-  const [prodTotalPages, setProdTotalPages] = useState(0);
-  const [prodTotalCount, setProdTotalCount] = useState(0);
-  const [prodSearchQuery, setProdSearchQuery] = useState('');
   const [episodeCountByChannelId, setEpisodeCountByChannelId] = useState<
     Record<number, number>
   >({});
   const [latestEpisodeUploadByChannelId, setLatestEpisodeUploadByChannelId] =
     useState<Record<number, string>>({});
-  const [usageFilter, setUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
 
   // 동기화 탭
-  const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
-    null
-  );
+  const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(null);
   const [addData, setAddData] = useState<usingChannelProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
@@ -68,9 +60,7 @@ const ChannelLayout = () => {
   } = useSyncState();
 
   const defaultSheetName = isStaging ? 'stg_채널 DB' : '채널 DB';
-  const storageKey = isStaging
-    ? 'sheetName:channel:stg'
-    : 'sheetName:channel:prod';
+  const storageKey = isStaging ? 'sheetName:channel:stg' : 'sheetName:channel:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
     loginToken,
@@ -79,16 +69,7 @@ const ChannelLayout = () => {
     storageKey,
   });
 
-  const abortControllerRef = useRef<AbortController | null>(null);
   const episodeCountLoadingRef = useRef<Set<number>>(new Set());
-
-  const cancelOngoingWork = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-  };
-
-  useEffect(() => () => cancelOngoingWork(), []);
 
   const fetchEpisodeCounts = async (channels: usingChannelProps[]) => {
     if (!loginToken || channels.length === 0) return;
@@ -104,9 +85,7 @@ const ChannelLayout = () => {
 
     if (targetIds.length === 0) return;
 
-    targetIds.forEach((channelId) =>
-      episodeCountLoadingRef.current.add(channelId)
-    );
+    targetIds.forEach((channelId) => episodeCountLoadingRef.current.add(channelId));
 
     await Promise.all(
       targetIds.map(async (channelId) => {
@@ -115,25 +94,13 @@ const ChannelLayout = () => {
             `/admin/episode?page=1&size=1&channelId=${channelId}&withPlaylists=Y`
           );
           const totalCount = Number(res.data?.data?.pageInfo?.totalCount ?? 0);
-          const latestDispDtime = String(
-            res.data?.data?.dataList?.[0]?.dispDtime ?? ''
-          );
-
-          setEpisodeCountByChannelId((prev) => ({
-            ...prev,
-            [channelId]: totalCount,
-          }));
-          setLatestEpisodeUploadByChannelId((prev) => ({
-            ...prev,
-            [channelId]: latestDispDtime,
-          }));
+          const latestDispDtime = String(res.data?.data?.dataList?.[0]?.dispDtime ?? '');
+          setEpisodeCountByChannelId((prev) => ({ ...prev, [channelId]: totalCount }));
+          setLatestEpisodeUploadByChannelId((prev) => ({ ...prev, [channelId]: latestDispDtime }));
         } catch (error) {
           console.error(`채널 ${channelId}의 에피소드 수 조회 실패:`, error);
           setEpisodeCountByChannelId((prev) => ({ ...prev, [channelId]: 0 }));
-          setLatestEpisodeUploadByChannelId((prev) => ({
-            ...prev,
-            [channelId]: '',
-          }));
+          setLatestEpisodeUploadByChannelId((prev) => ({ ...prev, [channelId]: '' }));
         } finally {
           episodeCountLoadingRef.current.delete(channelId);
         }
@@ -141,69 +108,37 @@ const ChannelLayout = () => {
     );
   };
 
-  const fetchProdPage = async (
-    page: number,
-    filter: 'All' | 'Y' | 'N',
-    keyword: string = prodSearchQuery
-  ) => {
-    if (!loginToken) return;
-    cancelOngoingWork();
-    abortControllerRef.current = new AbortController();
-    setProdLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        size: String(PAGE_SIZE),
-      });
+  const {
+    prodData,
+    prodLoading,
+    prodPage,
+    prodTotalPages,
+    prodTotalCount,
+    prodSearchQuery,
+    setProdSearchQuery,
+    usageFilter,
+    handleProdPageChange,
+    handleSearch,
+    handleUsageFilterChange,
+    cancelOngoingWork,
+  } = useProdPagination<usingChannelProps>({
+    fetcher: async ({ page, filter, keyword, signal }) => {
+      const params = new URLSearchParams({ page: String(page), size: String(PAGE_SIZE) });
       if (filter !== 'All') params.set('usageYn', filter);
       if (keyword.trim()) params.set('keyword', keyword.trim());
-      const res = await apiInstance.get(`/admin/channel?${params.toString()}`, {
-        signal: abortControllerRef.current.signal,
-      });
+      const res = await apiInstance.get(`/admin/channel?${params.toString()}`, { signal });
       const { dataList, pageInfo } = res.data.data;
-      setProdData(dataList);
-      setProdTotalCount(pageInfo.totalCount);
-      setProdTotalPages(Math.ceil(pageInfo.totalCount / PAGE_SIZE));
-      await fetchEpisodeCounts(dataList);
-    } catch (e) {
-      console.error('채널 데이터 조회 실패:', e);
-    } finally {
-      setProdLoading(false);
-    }
-  };
-
-  const handleProdPageChange = (page: number) => {
-    setProdPage(page);
-    fetchProdPage(page, usageFilter);
-  };
-
-  const handleSearch = () => {
-    setProdPage(1);
-    fetchProdPage(1, usageFilter, prodSearchQuery);
-  };
+      return { dataList, totalCount: pageInfo.totalCount };
+    },
+    deps: [isStaging, loginToken],
+    pageSize: PAGE_SIZE,
+    enabled: !!loginToken,
+  });
 
   useEffect(() => {
-    setProdPage(1);
-    fetchProdPage(1, usageFilter, prodSearchQuery);
-    return () => cancelOngoingWork();
+    if (prodData.length > 0) fetchEpisodeCounts(prodData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaging, loginToken, usageFilter]);
-
-  const isSearchFirstRender = useRef(true);
-  useEffect(() => {
-    if (isSearchFirstRender.current) {
-      isSearchFirstRender.current = false;
-      return () => {
-        isSearchFirstRender.current = true;
-      };
-    }
-    const timer = setTimeout(() => {
-      setProdPage(1);
-      fetchProdPage(1, usageFilter, prodSearchQuery);
-    }, 1000);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prodSearchQuery]);
+  }, [prodData]);
 
   const handleLoadAllChannels = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
@@ -217,12 +152,7 @@ const ChannelLayout = () => {
 
     try {
       setLoading(true);
-      const allData = await fetchAllData(
-        CATEGORY,
-        setProgress,
-        undefined,
-        apiInstance
-      );
+      const allData = await fetchAllData(CATEGORY, setProgress, undefined, apiInstance);
       const sortedAllData = sortChannelsByCreatedAtDesc(allData);
       setAddData(sortedAllData);
       setSyncTotalPages(Math.ceil(sortedAllData.length / SYNC_PAGE_SIZE));
@@ -287,8 +217,7 @@ const ChannelLayout = () => {
     if (!syncPreviewMode)
       return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
 
-    const previewData =
-      syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
+    const previewData = syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
 
     if (syncPreviewMode === 'new' && previewData.length === 0) {
       return toast.info('동기화할 신규 데이터가 없습니다.');
@@ -315,13 +244,7 @@ const ChannelLayout = () => {
           spreadsheetId
         );
       } else {
-        await overwriteExcelData(
-          previewData,
-          loginToken,
-          CATEGORY,
-          currentSheet,
-          spreadsheetId
-        );
+        await overwriteExcelData(previewData, loginToken, CATEGORY, currentSheet, spreadsheetId);
       }
 
       await updateSheetSyncTime(defaultSheetName, spreadsheetId);
@@ -337,8 +260,7 @@ const ChannelLayout = () => {
     ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=902383353#gid=902383353`
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=934666118#gid=934666118`;
 
-  const syncDisplayData =
-    syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
+  const syncDisplayData = syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
 
   return (
     <div className='p-10 flex flex-col h-[90vh]'>
@@ -359,7 +281,7 @@ const ChannelLayout = () => {
                 <UsageFilterRadio
                   name='channelUsageFilter'
                   value={usageFilter}
-                  onChange={setUsageFilter}
+                  onChange={handleUsageFilterChange}
                 />
                 <input
                   type='text'
@@ -388,9 +310,7 @@ const ChannelLayout = () => {
                 <ProdChannelList
                   data={prodData}
                   episodeCountByChannelId={episodeCountByChannelId}
-                  latestEpisodeUploadByChannelId={
-                    latestEpisodeUploadByChannelId
-                  }
+                  latestEpisodeUploadByChannelId={latestEpisodeUploadByChannelId}
                   isStaging={isStaging}
                 />
               </div>
@@ -456,11 +376,10 @@ const ChannelLayout = () => {
                   />
                 </>
               )}
-              {!loading && !syncPreviewMode && (
-                <div className='flex items-center justify-center h-full text-gray-500'>
-                  신규/전체 조회를 먼저 실행해주세요.
-                </div>
-              )}
+              <SyncEmptyState
+                loading={!loading}
+                syncPreviewMode={!syncPreviewMode}
+              />
             </div>
           </div>
         )}
