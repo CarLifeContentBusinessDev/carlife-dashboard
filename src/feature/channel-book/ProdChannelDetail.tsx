@@ -14,7 +14,7 @@ const CHANNEL_FIELD_DEFS: Array<{
 }> = [
   { key: 'thumbnailUrl', label: '썸네일' },
   { key: 'channelName', label: '채널명' },
-  { key: 'usageYn', label: '활성화' },
+  { key: 'usageYn', label: '활성 상태' },
   { key: 'vendorName', label: '제작사명' },
   { key: 'categoryName', label: '카테고리' },
   { key: 'channelTypeName', label: '채널 타입' },
@@ -35,7 +35,7 @@ interface EpisodeColumn {
 
 const EPISODE_COLUMNS: EpisodeColumn[] = [
   { key: 'episodeId', label: '에피소드 ID', width: '90px' },
-  { key: 'usageYn', label: '활성화', width: '70px' },
+  { key: 'usageYn', label: '활성 상태', width: '70px' },
   { key: 'episodeName', label: '에피소드명', minWidth: '280px', isFlex: true },
   { key: 'dispDtime', label: '게시일자', width: '180px' },
   { key: 'createdAt', label: '등록일자', width: '180px' },

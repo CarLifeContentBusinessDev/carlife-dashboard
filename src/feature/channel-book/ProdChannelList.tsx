@@ -6,7 +6,7 @@ import { normalizeUsageYn } from '../../utils/normalizeUsageYn';
 
 const COLUMNS = [
   { key: 'channelId', label: '채널 ID', width: '90px' },
-  { key: 'usageYn', label: '활성화', width: '80px' },
+  { key: 'usageYn', label: '활성 상태', width: '80px' },
   { key: 'channelName', label: '채널명', width: '200px' },
   { key: 'vendorName', label: '제작사명', width: '140px' },
   { key: 'categoryName', label: '카테고리', width: '120px' },

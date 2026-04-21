@@ -21,6 +21,7 @@ import { mapCurationStatus } from '../../utils/statusMapper';
 import { updateSheetSyncTime } from '../../utils/updateSheetSyncTime';
 import { overwriteCurationExcelData } from '../../utils/updateCuration';
 import ProdCurationList from './ProdCurationList';
+import UsageFilterRadio from '../../components/UsageFilterRadio';
 
 const DATA_PAGE_SIZE = 10;
 
@@ -39,6 +40,19 @@ const CurationLayout = () => {
   const [prodPage, setProdPage] = useState(1);
   const [prodTotalPages, setProdTotalPages] = useState(0);
   const [prodTotalCount, setProdTotalCount] = useState(0);
+  const [prodSearchQuery, setProdSearchQuery] = useState('');
+  const [usageFilter, setUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
+  const [exhibitionFilter, setExhibitionFilter] = useState<
+    'All' | '게시 중' | '게시 대기' | '게시 종료' | '게시 예약'
+  >('All');
+
+  const EXHIBITION_OPTIONS = [
+    'All',
+    '게시 중',
+    '게시 대기',
+    '게시 종료',
+    '게시 예약',
+  ] as const;
 
   // 동기화 탭
   const [newCurations, setNewCurations] = useState<ProdCurationRow[]>([]);
@@ -58,7 +72,9 @@ const CurationLayout = () => {
   } = useSyncState();
 
   const defaultSheetName = isStaging ? 'stg_큐레이션 DB' : '큐레이션 DB';
-  const storageKey = isStaging ? 'sheetName:curation:stg' : 'sheetName:curation:prod';
+  const storageKey = isStaging
+    ? 'sheetName:curation:stg'
+    : 'sheetName:curation:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
     loginToken,
@@ -67,12 +83,32 @@ const CurationLayout = () => {
     storageKey,
   });
 
-  const fetchProdCurationPage = async (page: number) => {
+  const EXHIBITION_STATUS_MAP: Record<string, string> = {
+    '게시 중': 'ACTIVE',
+    '게시 대기': 'ACTIVE_NONE_DISPLAY',
+    '게시 종료': 'INACTIVE',
+    '게시 예약': 'WAITING',
+  };
+
+  const fetchProdCurationPage = async (
+    page: number,
+    usage: typeof usageFilter = usageFilter,
+    exhibition: typeof exhibitionFilter = exhibitionFilter
+  ) => {
     if (!loginToken) return;
     setProdLoading(true);
     try {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(DATA_PAGE_SIZE),
+        periodType: 'ALL',
+      });
+      if (usage !== 'All') params.set('usageYn', usage);
+      if (exhibition !== 'All')
+        params.set('status', EXHIBITION_STATUS_MAP[exhibition]);
+
       const listRes = await apiInstance.get(
-        `/admin/curation?page=${page}&size=${DATA_PAGE_SIZE}&periodType=ALL`
+        `/admin/curation?${params.toString()}`
       );
       const { dataList, pageInfo } = listRes.data.data as {
         dataList: curationListItemProps[];
@@ -85,6 +121,8 @@ const CurationLayout = () => {
       const rows: ProdCurationRow[] = (dataList ?? []).map((listItem) => ({
         curationId: listItem.curationId,
         thumbnailTitle: '',
+        thumbnailUrlSquare: listItem.thumbnailUrlSquare ?? '',
+        thumbnailUrlRect: listItem.thumbnailUrlRect ?? '',
         curationType: listItem.curationType,
         curationName: listItem.curationName,
         curationDesc: listItem.curationDesc,
@@ -122,6 +160,18 @@ const CurationLayout = () => {
   const handleProdPageChange = (page: number) => {
     setProdPage(page);
     fetchProdCurationPage(page);
+  };
+
+  const handleUsageFilterChange = (value: typeof usageFilter) => {
+    setUsageFilter(value);
+    setProdPage(1);
+    fetchProdCurationPage(1, value, exhibitionFilter);
+  };
+
+  const handleExhibitionFilterChange = (value: typeof exhibitionFilter) => {
+    setExhibitionFilter(value);
+    setProdPage(1);
+    fetchProdCurationPage(1, usageFilter, value);
   };
 
   useEffect(() => {
@@ -170,7 +220,11 @@ const CurationLayout = () => {
       setSyncPage(1);
 
       const newList = await getNewCurationData(
-        loginToken, setProgress, apiInstance, spreadsheetId, currentSheet
+        loginToken,
+        setProgress,
+        apiInstance,
+        spreadsheetId,
+        currentSheet
       );
       setNewCurations(newList as ProdCurationRow[]);
       setSyncTotalPages(Math.ceil(newList.length / SYNC_PAGE_SIZE));
@@ -195,7 +249,8 @@ const CurationLayout = () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
-    if (!syncPreviewMode) return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
+    if (!syncPreviewMode)
+      return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
 
     const previewData = syncPreviewMode === 'new' ? newCurations : allCurations;
 
@@ -215,11 +270,18 @@ const CurationLayout = () => {
 
       if (syncPreviewMode === 'new') {
         await appendNewCurationToExcel(
-          previewData, setProgress, setExcelLoading, currentSheet, spreadsheetId
+          previewData,
+          setProgress,
+          setExcelLoading,
+          currentSheet,
+          spreadsheetId
         );
       } else {
         await overwriteCurationExcelData(
-          previewData, loginToken, currentSheet, spreadsheetId
+          previewData,
+          loginToken,
+          currentSheet,
+          spreadsheetId
         );
       }
 
@@ -232,11 +294,19 @@ const CurationLayout = () => {
     }
   };
 
+  const filteredProdData = prodData.filter(
+    (cu) =>
+      !prodSearchQuery ||
+      cu.curationName?.toLowerCase().includes(prodSearchQuery.toLowerCase())
+  );
+  const isSearchFiltered = prodSearchQuery.trim().length > 0;
+
   const excelHref = isStaging
     ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=1243772316#gid=1243772316`
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=991347809#gid=991347809`;
 
-  const syncDisplayData = syncPreviewMode === 'new' ? newCurations : allCurations;
+  const syncDisplayData =
+    syncPreviewMode === 'new' ? newCurations : allCurations;
 
   return (
     <div className='p-10 flex flex-col h-[90vh]'>
@@ -250,16 +320,45 @@ const CurationLayout = () => {
           <div className='flex-1 p-8 flex flex-col'>
             <div className='flex justify-between items-center flex-shrink-0 mb-4'>
               <h3 className='text-point-color font-semibold'>
-                큐레이션 총{' '}
-                <span className='font-extrabold'>{prodTotalCount}</span>개
+                {isSearchFiltered ? '조회 결과 ' : '큐레이션 총 '}
+                <span className='font-extrabold'>
+                  {isSearchFiltered ? filteredProdData.length : prodTotalCount}
+                </span>
+                개
+                {isSearchFiltered && (
+                  <span className='ml-2 text-gray-500 text-sm'>
+                    (전체 {prodTotalCount}개)
+                  </span>
+                )}
               </h3>
-              <button
-                onClick={() => handleProdPageChange(prodPage)}
-                className='cursor-pointer'
-                disabled={prodLoading}
-              >
-                <img src='/redo.svg' alt='새로고침' width={22} height={22} />
-              </button>
+              <div className='flex gap-6 items-center'>
+                <UsageFilterRadio
+                  name='usageFilter'
+                  value={usageFilter}
+                  onChange={handleUsageFilterChange}
+                />
+                <UsageFilterRadio
+                  name='exhibitionFilter'
+                  label='전시 상태'
+                  options={EXHIBITION_OPTIONS}
+                  value={exhibitionFilter}
+                  onChange={handleExhibitionFilterChange}
+                />
+                <input
+                  type='text'
+                  value={prodSearchQuery}
+                  onChange={(e) => setProdSearchQuery(e.target.value)}
+                  placeholder='큐레이션명 검색'
+                  className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
+                />
+                <button
+                  onClick={() => handleProdPageChange(prodPage)}
+                  className='cursor-pointer'
+                  disabled={prodLoading}
+                >
+                  <img src='/redo.svg' alt='새로고침' width={22} height={22} />
+                </button>
+              </div>
             </div>
             <LoadingOverlay loading={prodLoading}>
               큐레이션 목록을 불러오는 중입니다.
@@ -268,7 +367,10 @@ const CurationLayout = () => {
             </LoadingOverlay>
             {!prodLoading && (
               <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                <ProdCurationList data={prodData} isStaging={isStaging} />
+                <ProdCurationList
+                  data={filteredProdData}
+                  isStaging={isStaging}
+                />
               </div>
             )}
             <Pagination

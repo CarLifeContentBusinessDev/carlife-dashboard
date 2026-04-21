@@ -1,15 +1,25 @@
 type UsageFilter = 'All' | 'Y' | 'N';
 
-interface UsageFilterRadioProps {
+interface UsageFilterRadioProps<T extends string = UsageFilter> {
   name: string;
-  value: UsageFilter;
-  onChange: (value: UsageFilter) => void;
+  value: T;
+  onChange: (value: T) => void;
+  label?: string;
+  options?: readonly T[];
 }
 
-const UsageFilterRadio = ({ name, value, onChange }: UsageFilterRadioProps) => (
+const DEFAULT_OPTIONS = ['All', 'Y', 'N'] as const;
+
+const UsageFilterRadio = <T extends string = UsageFilter>({
+  name,
+  value,
+  onChange,
+  label = '활성 상태',
+  options = DEFAULT_OPTIONS as unknown as readonly T[],
+}: UsageFilterRadioProps<T>) => (
   <div className='flex items-center gap-3'>
-    <span className='text-sm text-gray-600 font-medium'>활성화:</span>
-    {(['All', 'Y', 'N'] as const).map((option) => (
+    <span className='text-sm text-gray-600 font-medium'>{label}:</span>
+    {options.map((option) => (
       <label key={option} className='flex items-center gap-1.5 cursor-pointer'>
         <input
           type='radio'

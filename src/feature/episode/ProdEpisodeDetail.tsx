@@ -5,7 +5,7 @@ import { formatPlayTime } from '../../utils/formatPlayTime';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },
-  // { key: 'usageYn', label: '활성화' },
+  // { key: 'usageYn', label: '활성 상태' },
   { key: 'channelId', label: '채널 ID' },
   { key: 'channelName', label: '채널명' },
   { key: 'episodeName', label: '에피소드명' },

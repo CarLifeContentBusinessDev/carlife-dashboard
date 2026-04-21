@@ -52,7 +52,7 @@ const EpisodeList = ({ data }: { data: usingDataProps[] }) => {
     },
     {
       key: 'usageYn',
-      label: '활성화',
+      label: '활성 상태',
       width: '80px',
       noDataWidth: '80px',
       className: 'px-3 truncate flex-shrink-0',
