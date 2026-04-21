@@ -8,7 +8,9 @@ export interface ProdPaginationFetcherArgs {
 }
 
 interface UseProdPaginationOptions<T> {
-  fetcher: (args: ProdPaginationFetcherArgs) => Promise<{ dataList: T[]; totalCount: number }>;
+  fetcher: (
+    args: ProdPaginationFetcherArgs
+  ) => Promise<{ dataList: T[]; totalCount: number }>;
   deps: React.DependencyList;
   pageSize?: number;
   enabled?: boolean;
@@ -49,7 +51,12 @@ export function useProdPagination<T>({
       abortControllerRef.current = controller;
       setProdLoading(true);
       try {
-        const result = await fetcherRef.current({ page, filter, keyword, signal: controller.signal });
+        const result = await fetcherRef.current({
+          page,
+          filter,
+          keyword,
+          signal: controller.signal,
+        });
         if (!controller.signal.aborted) {
           setProdData(result.dataList);
           setProdTotalCount(result.totalCount);
@@ -87,7 +94,7 @@ export function useProdPagination<T>({
     const timer = setTimeout(() => {
       setProdPage(1);
       fetchPage(1, usageFilterRef.current, prodSearchQuery);
-    }, 1000);
+    }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prodSearchQuery]);

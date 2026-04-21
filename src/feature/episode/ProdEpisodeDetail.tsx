@@ -16,7 +16,7 @@ const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   { key: 'createdAt', label: '등록일자' },
   { key: 'audioUrl', label: '오디오' },
   { key: 'playTime', label: '에피소드 시간' },
-  { key: 'usageYn', label: '상태' },
+  { key: 'usageYn', label: '활성 상태' },
   { key: 'likeCnt', label: '좋아요수' },
   { key: 'listenCnt', label: '청취수' },
 ];

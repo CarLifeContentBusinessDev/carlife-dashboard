@@ -38,7 +38,9 @@ const EpisodeLayout = () => {
   const [newEpi, setNewEpi] = useState<usingDataProps[]>([]);
   const [duplicateNewEpi, setDuplicateNewEpi] = useState<usingDataProps[]>([]);
   const [allEpisodes, setAllEpisodes] = useState<usingDataProps[]>([]);
-  const [duplicateAllEpisodes, setDuplicateAllEpisodes] = useState<usingDataProps[]>([]);
+  const [duplicateAllEpisodes, setDuplicateAllEpisodes] = useState<
+    usingDataProps[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
   const [progress, setProgress] = useState('');
@@ -53,7 +55,9 @@ const EpisodeLayout = () => {
   } = useSyncState();
 
   const defaultSheetName = isStaging ? 'stg_에피소드 DB' : '에피소드 DB';
-  const storageKey = isStaging ? 'sheetName:episode:stg' : 'sheetName:episode:prod';
+  const storageKey = isStaging
+    ? 'sheetName:episode:stg'
+    : 'sheetName:episode:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
     loginToken,
@@ -78,10 +82,15 @@ const EpisodeLayout = () => {
     handleUsageFilterChange,
   } = useProdPagination<usingDataProps>({
     fetcher: async ({ page, filter, keyword, signal }) => {
-      const params = new URLSearchParams({ page: String(page), size: String(PROD_PAGE_SIZE) });
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(PROD_PAGE_SIZE),
+      });
       if (filter !== 'All') params.set('usageYn', filter);
       if (keyword.trim()) params.set('keyword', keyword.trim());
-      const res = await apiInstance.get(`/admin/episode?${params.toString()}`, { signal });
+      const res = await apiInstance.get(`/admin/episode?${params.toString()}`, {
+        signal,
+      });
       const { dataList, pageInfo } = res.data.data;
       return { dataList, totalCount: pageInfo.totalCount };
     },
@@ -94,7 +103,12 @@ const EpisodeLayout = () => {
     setLoading(true);
     try {
       const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
-      const newList = await getNewDataWithExcel(setProgress, apiInstance, spreadsheetId, currentSheet);
+      const newList = await getNewDataWithExcel(
+        setProgress,
+        apiInstance,
+        spreadsheetId,
+        currentSheet
+      );
       setProgress('');
       setNewEpi(newList);
       setDuplicateNewEpi([]);
@@ -108,7 +122,12 @@ const EpisodeLayout = () => {
   const handleLoadAllEpisodes = async () => {
     setLoading(true);
     try {
-      const allList = await fetchAllData(CATEGORY, setProgress, undefined, apiInstance);
+      const allList = await fetchAllData(
+        CATEGORY,
+        setProgress,
+        undefined,
+        apiInstance
+      );
       const duplicateData = await findChangedData(allList);
       setProgress('');
       setAllEpisodes(allList);
@@ -122,7 +141,8 @@ const EpisodeLayout = () => {
 
   const handleSyncExcel = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
-    if (!syncPreviewMode) return toast.warn('신규/전체 조회를 먼저 실행해주세요!');
+    if (!syncPreviewMode)
+      return toast.warn('신규/전체 조회를 먼저 실행해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
@@ -135,8 +155,10 @@ const EpisodeLayout = () => {
 
     try {
       setExcelLoading(true);
-      const duplicateToSync = syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
-      const shouldAppendLogs = syncPreviewMode === 'new' && duplicateToSync.length > 0;
+      const duplicateToSync =
+        syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
+      const shouldAppendLogs =
+        syncPreviewMode === 'new' && duplicateToSync.length > 0;
 
       if (syncPreviewMode === 'new') {
         await appendNewDataToTop(
@@ -164,7 +186,9 @@ const EpisodeLayout = () => {
 
       if (shouldAppendLogs) {
         const logsSheet = getSheetName('Episode_Logs');
-        setProgress(`Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`);
+        setProgress(
+          `Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`
+        );
         await appendNewDataToTop(
           duplicateToSync,
           setProgress,
@@ -287,7 +311,10 @@ const EpisodeLayout = () => {
                 <>
                   <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
                     <EpisodeList
-                      data={(syncPreviewMode === 'new' ? newEpi : allEpisodes).slice(
+                      data={(syncPreviewMode === 'new'
+                        ? newEpi
+                        : allEpisodes
+                      ).slice(
                         (syncPage - 1) * SYNC_PAGE_SIZE,
                         syncPage * SYNC_PAGE_SIZE
                       )}
@@ -301,8 +328,8 @@ const EpisodeLayout = () => {
                 </>
               )}
               <SyncEmptyState
-                loading={!loading}
-                syncPreviewMode={!syncPreviewMode}
+                loading={loading}
+                syncPreviewMode={!!syncPreviewMode}
               />
             </div>
           </div>

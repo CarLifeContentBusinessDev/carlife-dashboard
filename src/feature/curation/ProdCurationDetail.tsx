@@ -37,8 +37,8 @@ type CurationFieldDef = {
 };
 
 const CURATION_FIELD_DEFS: CurationFieldDef[] = [
-  { key: 'curationName', label: '큐레이션명' },
-  { key: 'curationDesc', label: '큐레이션 설명' },
+  { key: 'curationName', label: '큐레이션명', wide: true },
+  { key: 'curationDesc', label: '큐레이션 설명', wide: true },
   { key: 'thumbnailUrlSquare', label: '썸네일' },
   { key: 'curationType', label: '타입' },
   { key: 'activeState', label: '활성 상태' },
@@ -167,15 +167,34 @@ const ProdCurationDetail = () => {
     if (!id || Number.isNaN(curationId)) return;
 
     const instance = isStaging ? stgApi : api;
+    const controller = new AbortController();
     setLoading(true);
     instance
-      .get(`/admin/curation/${curationId}`)
-      .then((res) => setDetail(res.data?.data ?? null))
-      .catch((error) => {
-        console.error('큐레이션 상세 조회 실패:', error);
-        setDetail(null);
+      .get(`/admin/curation/${curationId}`, {
+        signal: controller.signal,
       })
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (!controller.signal.aborted) {
+          setDetail(res.data?.data ?? null);
+        }
+      })
+      .catch((error) => {
+        if (
+          error.name !== 'CanceledError' &&
+          error.name !== 'AbortError' &&
+          !controller.signal.aborted
+        ) {
+          console.error('큐레이션 상세 조회 실패:', error);
+          setDetail(null);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
+
+    return () => controller.abort();
   }, [id, curationId, isStaging]);
 
   const allEpisodes: curationDetailEpisodeProps[] = detail?.episodes ?? [];

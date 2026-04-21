@@ -43,7 +43,9 @@ const ChannelLayout = () => {
     useState<Record<number, string>>({});
 
   // 동기화 탭
-  const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(null);
+  const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
+    null
+  );
   const [addData, setAddData] = useState<usingChannelProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
@@ -60,7 +62,9 @@ const ChannelLayout = () => {
   } = useSyncState();
 
   const defaultSheetName = isStaging ? 'stg_채널 DB' : '채널 DB';
-  const storageKey = isStaging ? 'sheetName:channel:stg' : 'sheetName:channel:prod';
+  const storageKey = isStaging
+    ? 'sheetName:channel:stg'
+    : 'sheetName:channel:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
     loginToken,
@@ -85,7 +89,9 @@ const ChannelLayout = () => {
 
     if (targetIds.length === 0) return;
 
-    targetIds.forEach((channelId) => episodeCountLoadingRef.current.add(channelId));
+    targetIds.forEach((channelId) =>
+      episodeCountLoadingRef.current.add(channelId)
+    );
 
     await Promise.all(
       targetIds.map(async (channelId) => {
@@ -94,13 +100,24 @@ const ChannelLayout = () => {
             `/admin/episode?page=1&size=1&channelId=${channelId}&withPlaylists=Y`
           );
           const totalCount = Number(res.data?.data?.pageInfo?.totalCount ?? 0);
-          const latestDispDtime = String(res.data?.data?.dataList?.[0]?.dispDtime ?? '');
-          setEpisodeCountByChannelId((prev) => ({ ...prev, [channelId]: totalCount }));
-          setLatestEpisodeUploadByChannelId((prev) => ({ ...prev, [channelId]: latestDispDtime }));
+          const latestDispDtime = String(
+            res.data?.data?.dataList?.[0]?.dispDtime ?? ''
+          );
+          setEpisodeCountByChannelId((prev) => ({
+            ...prev,
+            [channelId]: totalCount,
+          }));
+          setLatestEpisodeUploadByChannelId((prev) => ({
+            ...prev,
+            [channelId]: latestDispDtime,
+          }));
         } catch (error) {
           console.error(`채널 ${channelId}의 에피소드 수 조회 실패:`, error);
           setEpisodeCountByChannelId((prev) => ({ ...prev, [channelId]: 0 }));
-          setLatestEpisodeUploadByChannelId((prev) => ({ ...prev, [channelId]: '' }));
+          setLatestEpisodeUploadByChannelId((prev) => ({
+            ...prev,
+            [channelId]: '',
+          }));
         } finally {
           episodeCountLoadingRef.current.delete(channelId);
         }
@@ -123,10 +140,15 @@ const ChannelLayout = () => {
     cancelOngoingWork,
   } = useProdPagination<usingChannelProps>({
     fetcher: async ({ page, filter, keyword, signal }) => {
-      const params = new URLSearchParams({ page: String(page), size: String(PAGE_SIZE) });
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(PAGE_SIZE),
+      });
       if (filter !== 'All') params.set('usageYn', filter);
       if (keyword.trim()) params.set('keyword', keyword.trim());
-      const res = await apiInstance.get(`/admin/channel?${params.toString()}`, { signal });
+      const res = await apiInstance.get(`/admin/channel?${params.toString()}`, {
+        signal,
+      });
       const { dataList, pageInfo } = res.data.data;
       return { dataList, totalCount: pageInfo.totalCount };
     },
@@ -152,7 +174,12 @@ const ChannelLayout = () => {
 
     try {
       setLoading(true);
-      const allData = await fetchAllData(CATEGORY, setProgress, undefined, apiInstance);
+      const allData = await fetchAllData(
+        CATEGORY,
+        setProgress,
+        undefined,
+        apiInstance
+      );
       const sortedAllData = sortChannelsByCreatedAtDesc(allData);
       setAddData(sortedAllData);
       setSyncTotalPages(Math.ceil(sortedAllData.length / SYNC_PAGE_SIZE));
@@ -217,7 +244,8 @@ const ChannelLayout = () => {
     if (!syncPreviewMode)
       return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
 
-    const previewData = syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
+    const previewData =
+      syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
 
     if (syncPreviewMode === 'new' && previewData.length === 0) {
       return toast.info('동기화할 신규 데이터가 없습니다.');
@@ -244,7 +272,13 @@ const ChannelLayout = () => {
           spreadsheetId
         );
       } else {
-        await overwriteExcelData(previewData, loginToken, CATEGORY, currentSheet, spreadsheetId);
+        await overwriteExcelData(
+          previewData,
+          loginToken,
+          CATEGORY,
+          currentSheet,
+          spreadsheetId
+        );
       }
 
       await updateSheetSyncTime(defaultSheetName, spreadsheetId);
@@ -260,7 +294,8 @@ const ChannelLayout = () => {
     ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=902383353#gid=902383353`
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=934666118#gid=934666118`;
 
-  const syncDisplayData = syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
+  const syncDisplayData =
+    syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
 
   return (
     <div className='p-10 flex flex-col h-[90vh]'>
@@ -310,7 +345,9 @@ const ChannelLayout = () => {
                 <ProdChannelList
                   data={prodData}
                   episodeCountByChannelId={episodeCountByChannelId}
-                  latestEpisodeUploadByChannelId={latestEpisodeUploadByChannelId}
+                  latestEpisodeUploadByChannelId={
+                    latestEpisodeUploadByChannelId
+                  }
                   isStaging={isStaging}
                 />
               </div>
@@ -377,8 +414,8 @@ const ChannelLayout = () => {
                 </>
               )}
               <SyncEmptyState
-                loading={!loading}
-                syncPreviewMode={!syncPreviewMode}
+                loading={loading}
+                syncPreviewMode={!!syncPreviewMode}
               />
             </div>
           </div>
