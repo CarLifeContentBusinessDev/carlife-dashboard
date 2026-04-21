@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { usingDataProps } from '../../types/type';
 import formatDateString from '../../utils/formatDateString';
 import { formatPlayTime } from '../../utils/formatPlayTime';
+import { api, stgApi } from '../../utils/api';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },
@@ -23,7 +25,7 @@ const isImageUrl = (url: string) =>
   /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) || url.includes('thumbnail');
 
 const isAudioUrl = (url: string) =>
-  /\.(mp3|wav|m4a|aac|ogg|flac)(\?.*)?$/i.test(url) ||
+  /\.(mp3|wav|m4a|aac|ogg|flac|m3u8)(\?.*)?$/i.test(url) ||
   url.toLowerCase().includes('audio');
 
 const renderValue = (key: keyof usingDataProps, value: string | number) => {
@@ -96,12 +98,48 @@ const ProdEpisodeDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const episode = (
+  const stateEpisode = (
     location.state as { episode?: usingDataProps; from?: string }
   )?.episode;
   const from = (location.state as { from?: string })?.from ?? '/';
 
-  if (!episode) {
+  const [episode, setEpisode] = useState<usingDataProps | null>(
+    stateEpisode ?? null
+  );
+  const [loading, setLoading] = useState(!stateEpisode);
+  const [fetchError, setFetchError] = useState(false);
+
+  useEffect(() => {
+    if (stateEpisode || !id) return;
+
+    const controller = new AbortController();
+    const isStaging = location.pathname.startsWith('/stg/');
+    const apiInstance = isStaging ? stgApi : api;
+
+    apiInstance
+      .get<{ data: usingDataProps }>(`/admin/episode/${id}`, {
+        signal: controller.signal,
+      })
+      .then((res) => setEpisode(res.data.data))
+      .catch((err) => {
+        if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+          setFetchError(true);
+        }
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [id, stateEpisode, location.pathname]);
+
+  if (loading) {
+    return (
+      <div className='p-10 flex items-center justify-center'>
+        <p className='text-gray-400 text-sm'>불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (fetchError || !episode) {
     return (
       <div className='p-10 flex flex-col items-center gap-4'>
         <p className='text-gray-500'>에피소드 정보를 불러올 수 없습니다.</p>

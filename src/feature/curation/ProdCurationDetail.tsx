@@ -315,7 +315,10 @@ const ProdCurationDetail = () => {
                 {pagedEpisodes.map((episode, index) => (
                   <div
                     key={`${episode.episodeId ?? 0}-${index}`}
-                    className='flex items-center border-b border-gray-200 py-3'
+                    className={`flex items-center border-b border-gray-200 py-3 hover:bg-gray-50 cursor-pointer `}
+                    onClick={() =>
+                      navigate(`/episode/detail/${episode.episodeId}`)
+                    }
                   >
                     {EPISODE_COLUMNS.map((col) => (
                       <div

@@ -158,14 +158,15 @@ const ProdChannelDetail = () => {
   const apiInstance = isStaging ? stgApi : api;
   const channelId = Number(id);
 
-  const fetchEpisodes = async (page: number) => {
+  const fetchEpisodes = async (page: number, signal?: AbortSignal) => {
     if (!id || Number.isNaN(channelId)) return;
 
     setLoading(true);
 
     try {
       const res = await apiInstance.get(
-        `/admin/episode?page=${page}&size=${EPISODE_PAGE_SIZE}&channelId=${channelId}&withPlaylists=Y`
+        `/admin/episode?page=${page}&size=${EPISODE_PAGE_SIZE}&channelId=${channelId}&withPlaylists=Y`,
+        { signal }
       );
 
       const { dataList, pageInfo } = res.data.data;
@@ -174,7 +175,12 @@ const ProdChannelDetail = () => {
       setEpisodeTotalPages(
         Math.ceil((pageInfo?.totalCount ?? 0) / EPISODE_PAGE_SIZE)
       );
-    } catch (error) {
+    } catch (error: unknown) {
+      if (
+        (error as { name?: string }).name === 'CanceledError' ||
+        (error as { name?: string }).name === 'AbortError'
+      )
+        return;
       console.error('채널 에피소드 조회 실패:', error);
       setEpisodes([]);
       setEpisodeTotalCount(0);
@@ -185,8 +191,10 @@ const ProdChannelDetail = () => {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     setEpisodePage(1);
-    fetchEpisodes(1);
+    fetchEpisodes(1, controller.signal);
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isStaging]);
 
@@ -298,12 +306,15 @@ const ProdChannelDetail = () => {
                 {episodes.map((episode) => (
                   <div
                     key={episode.episodeId}
-                    className='flex items-center border-b border-gray-200 py-3 w-full'
+                    className='flex items-center border-b border-gray-200 py-3 w-full cursor-pointer hover:bg-gray-50'
+                    onClick={() =>
+                      navigate(`/episode/detail/${episode.episodeId}`)
+                    }
                   >
                     {EPISODE_COLUMNS.map((col) => (
                       <div
                         key={col.key}
-                        className={`px-2 text-sm cursor-pointer ${
+                        className={`px-2 text-sm ${
                           col.isFlex
                             ? 'flex-1 min-w-[280px] truncate'
                             : 'flex-shrink-0 truncate'

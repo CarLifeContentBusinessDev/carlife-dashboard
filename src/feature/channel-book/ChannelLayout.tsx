@@ -185,10 +185,18 @@ const ChannelLayout = () => {
   useEffect(() => {
     setProdPage(1);
     fetchProdPage(1, usageFilter, prodSearchQuery);
+    return () => cancelOngoingWork();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStaging, loginToken, usageFilter]);
 
+  const isSearchFirstRender = useRef(true);
   useEffect(() => {
+    if (isSearchFirstRender.current) {
+      isSearchFirstRender.current = false;
+      return () => {
+        isSearchFirstRender.current = true;
+      };
+    }
     const timer = setTimeout(() => {
       setProdPage(1);
       fetchProdPage(1, usageFilter, prodSearchQuery);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import Pagination from '../../components/Pagination';
@@ -33,6 +33,13 @@ const CurationLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelOngoingWork = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
 
   // 데이터 조회 탭
   const [prodData, setProdData] = useState<ProdCurationRow[]>([]);
@@ -97,6 +104,9 @@ const CurationLayout = () => {
     keyword: string = prodSearchQuery
   ) => {
     if (!loginToken) return;
+    cancelOngoingWork();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setProdLoading(true);
     try {
       const params = new URLSearchParams({
@@ -110,7 +120,8 @@ const CurationLayout = () => {
       if (keyword.trim()) params.set('keyword', keyword.trim());
 
       const listRes = await apiInstance.get(
-        `/admin/curation?${params.toString()}`
+        `/admin/curation?${params.toString()}`,
+        { signal: controller.signal }
       );
       const { dataList, pageInfo } = listRes.data.data as {
         dataList: curationListItemProps[];
@@ -150,12 +161,16 @@ const CurationLayout = () => {
 
       setProdData(rows);
     } catch (error) {
-      console.error('큐레이션 데이터 조회 실패:', error);
-      setProdData([]);
-      setProdTotalCount(0);
-      setProdTotalPages(0);
+      if (!controller.signal.aborted) {
+        console.error('큐레이션 데이터 조회 실패:', error);
+        setProdData([]);
+        setProdTotalCount(0);
+        setProdTotalPages(0);
+      }
     } finally {
-      setProdLoading(false);
+      if (!controller.signal.aborted) {
+        setProdLoading(false);
+      }
     }
   };
 
@@ -184,10 +199,18 @@ const CurationLayout = () => {
   useEffect(() => {
     setProdPage(1);
     fetchProdCurationPage(1, usageFilter, exhibitionFilter, prodSearchQuery);
+    return () => cancelOngoingWork();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStaging, loginToken]);
 
+  const isSearchFirstRender = useRef(true);
   useEffect(() => {
+    if (isSearchFirstRender.current) {
+      isSearchFirstRender.current = false;
+      return () => {
+        isSearchFirstRender.current = true;
+      };
+    }
     const timer = setTimeout(() => {
       setProdPage(1);
       fetchProdCurationPage(1, usageFilter, exhibitionFilter, prodSearchQuery);

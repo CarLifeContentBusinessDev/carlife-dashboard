@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import Pagination from '../../components/Pagination';
@@ -28,6 +28,13 @@ const EpisodeLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelOngoingWork = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
 
   // 데이터 조회 탭
   const [prodData, setProdData] = useState<usingDataProps[]>([]);
@@ -78,6 +85,9 @@ const EpisodeLayout = () => {
     keyword: string = prodSearchQuery
   ) => {
     if (!loginToken) return;
+    cancelOngoingWork();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setProdLoading(true);
     try {
       const params = new URLSearchParams({
@@ -86,15 +96,21 @@ const EpisodeLayout = () => {
       });
       if (filter !== 'All') params.set('usageYn', filter);
       if (keyword.trim()) params.set('keyword', keyword.trim());
-      const res = await apiInstance.get(`/admin/episode?${params.toString()}`);
+      const res = await apiInstance.get(`/admin/episode?${params.toString()}`, {
+        signal: controller.signal,
+      });
       const { dataList, pageInfo } = res.data.data;
       setProdData(dataList);
       setProdTotalCount(pageInfo.totalCount);
       setProdTotalPages(Math.ceil(pageInfo.totalCount / PROD_PAGE_SIZE));
     } catch (e) {
-      console.error('에피소드 데이터 조회 실패:', e);
+      if (!controller.signal.aborted) {
+        console.error('에피소드 데이터 조회 실패:', e);
+      }
     } finally {
-      setProdLoading(false);
+      if (!controller.signal.aborted) {
+        setProdLoading(false);
+      }
     }
   };
 
@@ -111,10 +127,18 @@ const EpisodeLayout = () => {
   useEffect(() => {
     setProdPage(1);
     fetchProdPage(1, usageFilter, prodSearchQuery);
+    return () => cancelOngoingWork();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStaging, loginToken, usageFilter]);
 
+  const isSearchFirstRender = useRef(true);
   useEffect(() => {
+    if (isSearchFirstRender.current) {
+      isSearchFirstRender.current = false;
+      return () => {
+        isSearchFirstRender.current = true;
+      };
+    }
     const timer = setTimeout(() => {
       setProdPage(1);
       fetchProdPage(1, usageFilter, prodSearchQuery);
