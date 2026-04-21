@@ -6,17 +6,17 @@ import { formatPlayTime } from '../../utils/formatPlayTime';
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },
   // { key: 'usageYn', label: '활성 상태' },
+  { key: 'thumbnailUrl', label: '썸네일' },
   { key: 'channelId', label: '채널 ID' },
-  { key: 'channelName', label: '채널명' },
   { key: 'episodeName', label: '에피소드명' },
+  { key: 'channelName', label: '채널명' },
   { key: 'dispDtime', label: '게시일자' },
   { key: 'createdAt', label: '등록일자' },
+  { key: 'audioUrl', label: '오디오' },
   { key: 'playTime', label: '에피소드 시간' },
   { key: 'usageYn', label: '상태' },
   { key: 'likeCnt', label: '좋아요수' },
   { key: 'listenCnt', label: '청취수' },
-  { key: 'thumbnailUrl', label: '썸네일 URL' },
-  { key: 'audioUrl', label: '오디오 URL' },
 ];
 
 const isImageUrl = (url: string) =>
@@ -115,19 +115,9 @@ const ProdEpisodeDetail = () => {
     );
   }
 
-  const wideKeys: (keyof usingDataProps)[] = [
-    'thumbnailUrl',
-    'audioUrl',
-    'episodeName',
-  ];
-
-  const narrowFields = FIELD_DEFS.filter((f) => !wideKeys.includes(f.key));
-  const wideFields = FIELD_DEFS.filter((f) => wideKeys.includes(f.key));
-
-  const narrowPairs: { key: keyof usingDataProps; label: string }[][] = [];
-  for (let i = 0; i < narrowFields.length; i += 2) {
-    narrowPairs.push(narrowFields.slice(i, i + 2));
-  }
+  const topWideKeys: (keyof usingDataProps)[] = ['episodeName'];
+  const topWideFields = FIELD_DEFS.filter((f) => topWideKeys.includes(f.key));
+  const narrowFields = FIELD_DEFS.filter((f) => !topWideKeys.includes(f.key));
 
   return (
     <div className='p-10 flex flex-col'>
@@ -152,8 +142,7 @@ const ProdEpisodeDetail = () => {
 
         {/* 필드 그리드 */}
         <div className='grid grid-cols-1 gap-3'>
-          {/* 넓은 필드 (에피소드명, 썸네일, 오디오) */}
-          {wideFields.map((field) => (
+          {topWideFields.map((field) => (
             <div
               key={field.key}
               className='grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden'
@@ -167,30 +156,42 @@ const ProdEpisodeDetail = () => {
             </div>
           ))}
 
-          {/* 좁은 필드 2열 페어 */}
-          {narrowPairs.map((pair, pairIdx) => (
-            <div
-              key={pairIdx}
-              className='grid grid-cols-1 lg:grid-cols-2 gap-3'
-            >
-              {pair.map((field) => (
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-3'>
+            {narrowFields.map((field) => {
+              const isThumbnailField = field.key === 'thumbnailUrl';
+              const isAudioField = field.key === 'audioUrl';
+              return (
                 <div
                   key={field.key}
-                  className='grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden'
+                  className={`grid grid-cols-[170px_1fr] rounded-xl border border-gray-100 overflow-hidden ${
+                    isThumbnailField ? 'lg:row-span-4' : ''
+                  } ${isAudioField ? 'lg:col-span-2' : ''}`}
                 >
-                  <div className='px-4 py-3 bg-gray-50 font-semibold text-sm text-gray-600'>
+                  <div
+                    className={`px-4 bg-gray-50 font-semibold text-sm text-gray-600 ${
+                      isThumbnailField || isAudioField ? 'py-4' : 'py-3'
+                    }`}
+                  >
                     {field.label}
                   </div>
-                  <div className='px-4 py-3 text-sm bg-white'>
+                  <div
+                    className={`px-4 text-sm bg-white break-all ${
+                      isThumbnailField
+                        ? 'py-4 min-h-[180px] flex items-start'
+                        : isAudioField
+                          ? 'py-4'
+                          : 'py-3'
+                    }`}
+                  >
                     {renderValue(
                       field.key,
                       episode[field.key] as string | number
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

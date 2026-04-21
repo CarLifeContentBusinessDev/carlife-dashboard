@@ -14,14 +14,14 @@ const CHANNEL_FIELD_DEFS: Array<{
 }> = [
   { key: 'thumbnailUrl', label: '썸네일' },
   { key: 'channelName', label: '채널명' },
-  { key: 'usageYn', label: '활성 상태' },
   { key: 'vendorName', label: '제작사명' },
+  { key: 'usageYn', label: '활성 상태' },
   { key: 'categoryName', label: '카테고리' },
   { key: 'channelTypeName', label: '채널 타입' },
+  { key: 'createdAt', label: '등록일' },
   { key: 'likeCnt', label: '좋아요수' },
   { key: 'listenCnt', label: '재생 요청 수' },
   { key: 'dispDtime', label: '최근 에피소드 업로드일' },
-  { key: 'createdAt', label: '등록일' },
   { key: 'interfaceUrl', label: 'RSS URL' },
 ];
 
@@ -303,7 +303,7 @@ const ProdChannelDetail = () => {
                     {EPISODE_COLUMNS.map((col) => (
                       <div
                         key={col.key}
-                        className={`px-2 text-sm ${
+                        className={`px-2 text-sm cursor-pointer ${
                           col.isFlex
                             ? 'flex-1 min-w-[280px] truncate'
                             : 'flex-shrink-0 truncate'

@@ -72,7 +72,11 @@ const EpisodeLayout = () => {
 
   const getSheetName = (name: string) => (isStaging ? `stg_${name}` : name);
 
-  const fetchProdPage = async (page: number, filter: 'All' | 'Y' | 'N') => {
+  const fetchProdPage = async (
+    page: number,
+    filter: 'All' | 'Y' | 'N',
+    keyword: string = prodSearchQuery
+  ) => {
     if (!loginToken) return;
     setProdLoading(true);
     try {
@@ -81,6 +85,7 @@ const EpisodeLayout = () => {
         size: String(PROD_PAGE_SIZE),
       });
       if (filter !== 'All') params.set('usageYn', filter);
+      if (keyword.trim()) params.set('keyword', keyword.trim());
       const res = await apiInstance.get(`/admin/episode?${params.toString()}`);
       const { dataList, pageInfo } = res.data.data;
       setProdData(dataList);
@@ -98,11 +103,25 @@ const EpisodeLayout = () => {
     fetchProdPage(page, usageFilter);
   };
 
+  const handleSearch = () => {
+    setProdPage(1);
+    fetchProdPage(1, usageFilter, prodSearchQuery);
+  };
+
   useEffect(() => {
     setProdPage(1);
-    fetchProdPage(1, usageFilter);
+    fetchProdPage(1, usageFilter, prodSearchQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStaging, loginToken, usageFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setProdPage(1);
+      fetchProdPage(1, usageFilter, prodSearchQuery);
+    }, 1000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prodSearchQuery]);
 
   const handleSearchNew = async () => {
     setLoading(true);
@@ -218,13 +237,6 @@ const EpisodeLayout = () => {
     }
   };
 
-  const filteredProdData = prodData.filter(
-    (ep) =>
-      !prodSearchQuery ||
-      ep.episodeName?.toLowerCase().includes(prodSearchQuery.toLowerCase())
-  );
-  const isSearchFiltered = prodSearchQuery.trim().length > 0;
-
   const excelHref = isStaging
     ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=418216794#gid=418216794`
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=1925187377#gid=1925187377`;
@@ -241,16 +253,8 @@ const EpisodeLayout = () => {
           <div className='flex-1 p-8 flex flex-col'>
             <div className='flex justify-between items-center flex-shrink-0 mb-4'>
               <h3 className='text-point-color font-semibold'>
-                {isSearchFiltered ? '조회 결과 ' : '에피소드 총 '}
-                <span className='font-extrabold'>
-                  {isSearchFiltered ? filteredProdData.length : prodTotalCount}
-                </span>
-                개
-                {isSearchFiltered && (
-                  <span className='ml-2 text-gray-500 text-sm'>
-                    (전체 {prodTotalCount}개)
-                  </span>
-                )}
+                에피소드 총{' '}
+                <span className='font-extrabold'>{prodTotalCount}</span>개
               </h3>
               <div className='flex gap-6 items-center'>
                 <UsageFilterRadio
@@ -262,11 +266,12 @@ const EpisodeLayout = () => {
                   type='text'
                   value={prodSearchQuery}
                   onChange={(e) => setProdSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder='에피소드명 검색'
                   className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
                 />
                 <button
-                  onClick={() => handleProdPageChange(prodPage)}
+                  onClick={handleSearch}
                   className='cursor-pointer'
                   disabled={prodLoading}
                 >
@@ -281,10 +286,7 @@ const EpisodeLayout = () => {
             </LoadingOverlay>
             {!prodLoading && (
               <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                <ProdEpisodeList
-                  data={filteredProdData}
-                  isStaging={isStaging}
-                />
+                <ProdEpisodeList data={prodData} isStaging={isStaging} />
               </div>
             )}
             <Pagination

@@ -93,7 +93,8 @@ const CurationLayout = () => {
   const fetchProdCurationPage = async (
     page: number,
     usage: typeof usageFilter = usageFilter,
-    exhibition: typeof exhibitionFilter = exhibitionFilter
+    exhibition: typeof exhibitionFilter = exhibitionFilter,
+    keyword: string = prodSearchQuery
   ) => {
     if (!loginToken) return;
     setProdLoading(true);
@@ -106,6 +107,7 @@ const CurationLayout = () => {
       if (usage !== 'All') params.set('usageYn', usage);
       if (exhibition !== 'All')
         params.set('status', EXHIBITION_STATUS_MAP[exhibition]);
+      if (keyword.trim()) params.set('keyword', keyword.trim());
 
       const listRes = await apiInstance.get(
         `/admin/curation?${params.toString()}`
@@ -162,23 +164,37 @@ const CurationLayout = () => {
     fetchProdCurationPage(page);
   };
 
+  const handleSearch = () => {
+    setProdPage(1);
+    fetchProdCurationPage(1, usageFilter, exhibitionFilter, prodSearchQuery);
+  };
+
   const handleUsageFilterChange = (value: typeof usageFilter) => {
     setUsageFilter(value);
     setProdPage(1);
-    fetchProdCurationPage(1, value, exhibitionFilter);
+    fetchProdCurationPage(1, value, exhibitionFilter, prodSearchQuery);
   };
 
   const handleExhibitionFilterChange = (value: typeof exhibitionFilter) => {
     setExhibitionFilter(value);
     setProdPage(1);
-    fetchProdCurationPage(1, usageFilter, value);
+    fetchProdCurationPage(1, usageFilter, value, prodSearchQuery);
   };
 
   useEffect(() => {
     setProdPage(1);
-    fetchProdCurationPage(1);
+    fetchProdCurationPage(1, usageFilter, exhibitionFilter, prodSearchQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStaging, loginToken]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setProdPage(1);
+      fetchProdCurationPage(1, usageFilter, exhibitionFilter, prodSearchQuery);
+    }, 1000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prodSearchQuery]);
 
   const handleLoadAllCurations = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
@@ -294,13 +310,6 @@ const CurationLayout = () => {
     }
   };
 
-  const filteredProdData = prodData.filter(
-    (cu) =>
-      !prodSearchQuery ||
-      cu.curationName?.toLowerCase().includes(prodSearchQuery.toLowerCase())
-  );
-  const isSearchFiltered = prodSearchQuery.trim().length > 0;
-
   const excelHref = isStaging
     ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=1243772316#gid=1243772316`
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=991347809#gid=991347809`;
@@ -320,16 +329,8 @@ const CurationLayout = () => {
           <div className='flex-1 p-8 flex flex-col'>
             <div className='flex justify-between items-center flex-shrink-0 mb-4'>
               <h3 className='text-point-color font-semibold'>
-                {isSearchFiltered ? '조회 결과 ' : '큐레이션 총 '}
-                <span className='font-extrabold'>
-                  {isSearchFiltered ? filteredProdData.length : prodTotalCount}
-                </span>
-                개
-                {isSearchFiltered && (
-                  <span className='ml-2 text-gray-500 text-sm'>
-                    (전체 {prodTotalCount}개)
-                  </span>
-                )}
+                큐레이션 총{' '}
+                <span className='font-extrabold'>{prodTotalCount}</span>개
               </h3>
               <div className='flex gap-6 items-center'>
                 <UsageFilterRadio
@@ -348,11 +349,12 @@ const CurationLayout = () => {
                   type='text'
                   value={prodSearchQuery}
                   onChange={(e) => setProdSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder='큐레이션명 검색'
                   className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
                 />
                 <button
-                  onClick={() => handleProdPageChange(prodPage)}
+                  onClick={handleSearch}
                   className='cursor-pointer'
                   disabled={prodLoading}
                 >
@@ -367,10 +369,7 @@ const CurationLayout = () => {
             </LoadingOverlay>
             {!prodLoading && (
               <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                <ProdCurationList
-                  data={filteredProdData}
-                  isStaging={isStaging}
-                />
+                <ProdCurationList data={prodData} isStaging={isStaging} />
               </div>
             )}
             <Pagination
