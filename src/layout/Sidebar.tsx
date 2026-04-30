@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Button from '../components/common/Button';
-import { MENU_GROUPS } from '../constants/sidebarMenus';
+import { PICKLE_MENU_GROUPS, PICKNOW_MENU_GROUPS } from '../constants/sidebarMenus';
 import MenuGroupItem from './components/MenuGroupItem';
 import MenuButton from './components/MenuButton';
+import { useServiceStore } from '../store/useServiceStore';
 
 const Sidebar = () => {
   const { pathname } = useLocation();
+  const { selectedService } = useServiceStore();
   const [isOpen, setIsOpen] = useState(true);
+
+  const menuGroups =
+    selectedService === 'picknow' ? PICKNOW_MENU_GROUPS : PICKLE_MENU_GROUPS;
 
   return (
     <aside
@@ -38,7 +43,7 @@ const Sidebar = () => {
             display: none;
           }
         `}</style>
-        {MENU_GROUPS.map((group, index) => {
+        {menuGroups.map((group, index) => {
           const isActive = group.children
             ? group.children.some((item) => item.to === pathname)
             : pathname === group.to;
@@ -48,7 +53,6 @@ const Sidebar = () => {
               {index > 0 && <hr className='mx-4' />}
 
               {group.children ? (
-                // 서브메뉴가 있는 경우
                 <MenuGroupItem
                   label={group.label}
                   icon={group.icon}
@@ -57,7 +61,6 @@ const Sidebar = () => {
                   items={group.children}
                 />
               ) : (
-                // 단일 메뉴 버튼인 경우
                 <MenuButton
                   to={group.to!}
                   isOpen={isOpen}
