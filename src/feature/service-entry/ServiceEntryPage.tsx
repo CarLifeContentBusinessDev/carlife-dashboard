@@ -33,16 +33,18 @@ export function ServiceEntryPage() {
     <div className='min-h-screen bg-[#F6F7FA] flex flex-col items-center justify-center gap-10'>
       <div className='text-center'>
         <img
-          src='/pickle_logo.svg'
+          src='/car.svg'
           alt='CarLife Admin'
           width={64}
           height={64}
           className='mx-auto mb-4'
         />
-        <h1 className='text-4xl font-bold text-[#1B1E2F]'>
-          Car Life Content Business
-        </h1>
-        <h1 className='text-4xl font-bold text-[#1B1E2F]'>Admin Page</h1>
+        <div className='flex flex-col gap-2'>
+          <h1 className='text-4xl font-bold text-[#1B1E2F]'>
+            Car Life Content Business
+          </h1>
+          <h1 className='text-4xl font-bold text-[#1B1E2F]'>Admin Page</h1>
+        </div>
       </div>
 
       <div className='flex gap-6'>
