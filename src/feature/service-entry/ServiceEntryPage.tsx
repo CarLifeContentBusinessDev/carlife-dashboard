@@ -1,0 +1,69 @@
+import { useNavigate } from 'react-router-dom';
+import {
+  useServiceStore,
+  getServiceToken,
+  setServiceToken,
+} from '../../store/useServiceStore';
+import { useAccessTokenStore } from '../../store/useAccessTokenStore';
+import type { ServiceType } from '../../store/useServiceStore';
+
+const SERVICE_HOME: Record<ServiceType, string> = {
+  pickle: '/episode-list',
+  picknow: '/picknow/excel-sync',
+};
+
+export function ServiceEntryPage() {
+  const navigate = useNavigate();
+  const { setSelectedService } = useServiceStore();
+  const { setAccessToken } = useAccessTokenStore();
+
+  const handleSelect = (service: ServiceType) => {
+    setSelectedService(service);
+    const savedToken = getServiceToken(service);
+    if (savedToken) {
+      setServiceToken(service, savedToken);
+      setAccessToken(savedToken);
+      navigate(SERVICE_HOME[service]);
+    } else {
+      navigate(`/${service}/login`);
+    }
+  };
+
+  return (
+    <div className='min-h-screen bg-[#F6F7FA] flex flex-col items-center justify-center gap-10'>
+      <div className='text-center'>
+        <img
+          src='/pickle_logo.svg'
+          alt='CarLife Admin'
+          width={64}
+          height={64}
+          className='mx-auto mb-4'
+        />
+        <h1 className='text-4xl font-bold text-[#1B1E2F]'>
+          Car Life Content Business
+        </h1>
+        <h1 className='text-4xl font-bold text-[#1B1E2F]'>Admin Page</h1>
+      </div>
+
+      <div className='flex gap-6'>
+        <button
+          onClick={() => handleSelect('pickle')}
+          className='w-64 h-52 rounded-2xl bg-[#1B1E2F] text-white flex flex-col items-center justify-center gap-3 shadow-xl hover:scale-105 transition-transform cursor-pointer'
+        >
+          <img src='/pickle_logo.svg' alt='pickle' width={48} height={48} />
+          <span className='text-2xl font-bold'>Pickle</span>
+          <span className='text-sm text-gray-400'>상용 & 데모 콘텐츠 관리</span>
+        </button>
+
+        <button
+          onClick={() => handleSelect('picknow')}
+          className='w-64 h-52 rounded-2xl bg-[#1B1E2F] text-white flex flex-col items-center justify-center gap-3 shadow-xl hover:scale-105 transition-transform cursor-pointer'
+        >
+          <img src='/picknow_logo.svg' alt='picknow' width={48} height={48} />
+          <span className='text-2xl font-bold'>Picknow</span>
+          <span className='text-sm text-gray-400'>엑셀 데이터 동기화</span>
+        </button>
+      </div>
+    </div>
+  );
+}

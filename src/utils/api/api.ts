@@ -60,3 +60,4 @@ function createApiInstance(baseURL: string) {
 
 export const api = createApiInstance(import.meta.env.VITE_PROD_API_URL);
 export const stgApi = createApiInstance(import.meta.env.VITE_STG_API_URL);
+export const picknowApi = createApiInstance(import.meta.env.VITE_PICKNOW_API_URL);

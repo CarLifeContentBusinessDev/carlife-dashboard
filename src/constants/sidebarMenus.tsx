@@ -6,7 +6,7 @@ export interface MenuChild {
   openInNewTab?: boolean;
 }
 
-type MenuGroup =
+export type MenuGroup =
   | {
       id: string;
       label: string;
@@ -24,7 +24,7 @@ type MenuGroup =
       openInNewTab?: boolean;
     };
 
-export const MENU_GROUPS: MenuGroup[] = [
+export const PICKLE_MENU_GROUPS: MenuGroup[] = [
   {
     id: 'data-management',
     label: '상용 콘텐츠 관리',
@@ -34,7 +34,7 @@ export const MENU_GROUPS: MenuGroup[] = [
     children: [
       {
         id: 'episode',
-        to: '/',
+        to: '/episode-list',
         label: '에피소드 관리',
       },
       {
@@ -65,7 +65,7 @@ export const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    id: 'demo-data-mannagement',
+    id: 'demo-data-management',
     label: '데모 콘텐츠 관리',
     icon: (
       <img
@@ -115,5 +115,16 @@ export const MENU_GROUPS: MenuGroup[] = [
     ),
     to: import.meta.env.VITE_ADMIN_EPI_URL_STG,
     openInNewTab: true,
+  },
+];
+
+export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
+  {
+    id: 'excel-sync',
+    label: '엑셀 데이터 동기화',
+    icon: (
+      <img src='/excel.svg' width={24} height={24} alt='엑셀 데이터 동기화' />
+    ),
+    to: '/picknow/excel-sync',
   },
 ];
