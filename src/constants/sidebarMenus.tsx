@@ -121,7 +121,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
 export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
   {
     id: 'excel-sync',
-    label: '콘텐츠 데이터 추출',
+    label: 'Configuration 데이터 추출',
     icon: <img src='/excel.svg' width={24} height={24} alt='엑셀' />,
     to: '/picknow/excel-sync',
   },
