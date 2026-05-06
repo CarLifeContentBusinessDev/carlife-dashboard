@@ -184,7 +184,7 @@ export default function Configuration() {
     <div className='p-6'>
       <div className='flex items-end gap-3 mb-5'>
         <h1 className='text-2xl font-bold text-[#1B1E2F]'>
-          콘텐츠 데이터 추출
+          Configuration 데이터 추출
         </h1>
         <span className='text-sm text-slate-400 pb-0.5'>
           OEM과 디바이스를 선택해 데이터를 추출하세요
@@ -232,7 +232,7 @@ export default function Configuration() {
 
             <button
               onClick={() => setSelectedDevices(new Set(allDeviceKeys))}
-              className='flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-700 border border-gray-200 bg-white hover:bg-gray-50 transition-colors'
+              className='flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-700 border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer'
             >
               <svg
                 className='w-4 h-4'
@@ -253,7 +253,7 @@ export default function Configuration() {
 
             <button
               onClick={() => setSelectedDevices(new Set())}
-              className='flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold text-orange-500 border border-gray-200 bg-white hover:bg-orange-50 transition-colors'
+              className='flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold text-orange-500 border border-gray-200 bg-white hover:bg-orange-50 transition-colors cursor-pointer'
             >
               <svg
                 className='w-4 h-4'
@@ -327,7 +327,7 @@ export default function Configuration() {
                     {/* 고객사 전체 선택 */}
                     <button
                       onClick={() => toggleClient(client)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors shrink-0
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors shrink-0 cursor-pointer
                         ${
                           clientAllSelected
                             ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700'
@@ -444,7 +444,7 @@ export default function Configuration() {
                 ))}
               </div>
 
-              <button className='flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors shrink-0'>
+              <button className='flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors shrink-0 cursor-pointer'>
                 <svg
                   className='w-4 h-4'
                   fill='none'
@@ -524,7 +524,7 @@ function DeviceChip({ label, selected, onToggle }: DeviceChipProps) {
   return (
     <button
       onClick={onToggle}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border cursor-pointer
         ${
           selected
             ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700'
