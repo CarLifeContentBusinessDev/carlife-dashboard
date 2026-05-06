@@ -125,4 +125,18 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
     icon: <img src='/excel.svg' width={24} height={24} alt='엑셀' />,
     to: '/picknow/excel-sync',
   },
+  {
+    id: 'stg-admin',
+    label: '검증 어드민 바로가기',
+    icon: (
+      <img
+        src='/admin-fill.svg'
+        width={24}
+        height={24}
+        alt='검증 어드민 바로가기'
+      />
+    ),
+    to: import.meta.env.VITE_PICKNOW_ADMIN_EPI_URL_STG,
+    openInNewTab: true,
+  },
 ];
