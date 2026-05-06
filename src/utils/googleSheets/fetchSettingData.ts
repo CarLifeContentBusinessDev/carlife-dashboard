@@ -1,4 +1,5 @@
-import { getSheetsClient } from '../auth/auth';
+import { getSheetsClient, initializeGoogleAPI } from '../auth/auth';
+import { useLoginTokenStore } from '../../store/useLoginTokenStore';
 import { buildSheetRange } from '../excel/sheetRange';
 
 export interface SettingRow {
@@ -11,6 +12,11 @@ export interface SettingRow {
 }
 
 export async function fetchSettingData(): Promise<SettingRow[]> {
+  await initializeGoogleAPI();
+
+  const token = useLoginTokenStore.getState().loginToken;
+  gapi.client.setToken({ access_token: token });
+
   const sheets = getSheetsClient();
   const spreadsheetId = import.meta.env.VITE_PICKNOW_SPREADSHEET_ID as string;
 

@@ -4,7 +4,7 @@ import Layout from './layout/Layout';
 import { ServiceEntryPage } from './feature/service-entry/ServiceEntryPage';
 import PickleLogin from './feature/login/PickleLogin';
 import PicknowLogin from './feature/login/PicknowLogin';
-import ExcelSyncPage from './feature/picknow/ExcelSyncPage';
+import Configuration from './feature/picknow/Configuration';
 import ChannelLayout from './feature/pickle/production/channel-book/ChannelLayout';
 import CurationLayout from './feature/pickle/production/curation/CurationLayout';
 import DemoCategoryLayout from './feature/pickle/demo/category/DemoCategoryLayout';
@@ -120,7 +120,7 @@ function App() {
             </Route>
 
             {/* Picknow */}
-            <Route path='/picknow/excel-sync' element={<ExcelSyncPage />} />
+            <Route path='/picknow/excel-sync' element={<Configuration />} />
           </Route>
         </Route>
       </Routes>
