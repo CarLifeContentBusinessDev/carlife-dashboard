@@ -238,3 +238,4 @@ export function getSheetsClient() {
 
   return gapi.client.sheets;
 }
+

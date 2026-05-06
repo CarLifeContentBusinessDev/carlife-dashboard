@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
+import { getGoogleToken } from '../../utils/auth/auth';
 import { fetchSettingData } from '../../utils/googleSheets/fetchSettingData';
+import { preparePicknowConfigurationSheet } from '../../utils/googleSheets/preparePicknowConfigurationSheet';
 import type { SettingRow } from '../../utils/googleSheets/fetchSettingData';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();
   const [rows, setRows] = useState<SettingRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -34,6 +39,65 @@ export default function Configuration() {
     };
     load();
   }, [loginToken]);
+
+  const handleGoogleLogin = async () => {
+    setLoginLoading(true);
+    setError(null);
+
+    try {
+      const token = await getGoogleToken();
+      if (!token) {
+        setError('Google 로그인에 실패했습니다. 다시 시도해주세요.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Google 로그인에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleExtractData = async () => {
+    if (selectedClients.length === 0) {
+      toast.error('데이터 추출할 고객사를 먼저 선택해주세요.');
+      return;
+    }
+
+    setExportLoading(true);
+    const results: { success: string[]; failed: string[] } = {
+      success: [],
+      failed: [],
+    };
+
+    try {
+      for (const customerName of selectedClients) {
+        try {
+          await preparePicknowConfigurationSheet(customerName);
+          results.success.push(customerName);
+        } catch (err) {
+          console.error(`${customerName} 시트 생성 실패:`, err);
+          results.failed.push(customerName);
+        }
+      }
+
+      if (results.success.length > 0 && results.failed.length === 0) {
+        toast.success(
+          `${results.success.length}개 고객사 시트에 헤더를 생성했습니다.`
+        );
+      } else if (results.success.length > 0 && results.failed.length > 0) {
+        toast.warning(
+          `${results.success.length}개 성공, ${results.failed.length}개 실패 (${results.failed.join(', ')})`
+        );
+      } else {
+        toast.error('모든 시트 생성에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('데이터 추출 중 오류가 발생했습니다.');
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const grouped = useMemo(() => {
     const map: Record<string, Record<string, string[]>> = {};
@@ -170,6 +234,12 @@ export default function Configuration() {
     return oemSet.size;
   }, [selectedDevices]);
 
+  const selectedClients = useMemo(() => {
+    return [...new Set([...selectedDevices].map((key) => key.split('::')[0]))]
+      .filter(Boolean)
+      .sort();
+  }, [selectedDevices]);
+
   // 하단 요약: OEM/DEVICE 형식
   const summaryItems = useMemo(() => {
     return [...selectedDevices]
@@ -192,9 +262,20 @@ export default function Configuration() {
       </div>
 
       {!loginToken ? (
-        <p className='text-gray-400 text-sm'>
-          헤더에서 Google Sheets 로그인 후 이용해주세요.
-        </p>
+        <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3 max-w-xl'>
+          <p className='text-gray-600 text-sm'>
+            Google Sheets 로그인이 필요합니다. 헤더의 버튼을 눌러도 되고, 아래
+            버튼으로 바로 인증할 수도 있습니다.
+          </p>
+          <button
+            type='button'
+            onClick={handleGoogleLogin}
+            disabled={loginLoading}
+            className='w-fit rounded-lg bg-[#1B1E2F] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
+          >
+            {loginLoading ? '로그인 요청 중...' : 'Google Sheets 로그인'}
+          </button>
+        </div>
       ) : loading ? (
         <p className='text-sm text-gray-400'>데이터를 불러오는 중...</p>
       ) : error ? (
@@ -444,7 +525,12 @@ export default function Configuration() {
                 ))}
               </div>
 
-              <button className='flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors shrink-0 cursor-pointer'>
+              <button
+                type='button'
+                onClick={handleExtractData}
+                disabled={exportLoading}
+                className='flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60'
+              >
                 <svg
                   className='w-4 h-4'
                   fill='none'
@@ -458,7 +544,7 @@ export default function Configuration() {
                     d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'
                   />
                 </svg>
-                데이터 추출
+                {exportLoading ? '생성 중...' : '데이터 추출'}
                 <svg
                   className='w-3.5 h-3.5'
                   fill='none'
