@@ -25,7 +25,7 @@ const Header = () => {
   const [googleInitialized, setGoogleInitialized] = useState(false);
 
   useEffect(() => {
-    if (selectedService !== 'pickle') return;
+    if (!selectedService) return;
     const initGoogle = async () => {
       try {
         await initializeGoogleAPI();
@@ -56,7 +56,7 @@ const Header = () => {
     localStorage.removeItem('refreshToken');
     clearAccessToken();
     clearSelectedService();
-    if (selectedService === 'pickle') googleLogout();
+    if (selectedService === 'pickle' || selectedService === 'picknow') googleLogout();
     navigate('/');
   };
 
@@ -84,7 +84,7 @@ const Header = () => {
         <Button onClick={handleChangeService} className='bg-gray-300'>
           서비스 변경
         </Button>
-        {selectedService === 'pickle' && googleInitialized && !loginToken && (
+        {googleInitialized && !loginToken && (
           <Button onClick={handleGoogleLogin}>Google Sheets 로그인</Button>
         )}
         <Button onClick={handleLogout}>로그아웃</Button>

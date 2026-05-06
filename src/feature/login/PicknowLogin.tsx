@@ -7,6 +7,9 @@ import { useAccessTokenStore } from '../../store/useAccessTokenStore';
 import { setServiceToken } from '../../store/useServiceStore';
 
 const PICKNOW_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY}\n-----END PUBLIC KEY-----`;
+const PICKNOW_DEV_LOGIN_ID = import.meta.env.VITE_DEV_LOGIN_ID ?? 'dev';
+const PICKNOW_DEV_LOGIN_PASSWORD =
+  import.meta.env.VITE_DEV_LOGIN_PASSWORD ?? 'dev';
 
 interface PicknowLoginData {
   adminSeq: number;
@@ -40,6 +43,22 @@ export default function PicknowLogin() {
     setError('');
 
     try {
+      if (
+        import.meta.env.DEV &&
+        id === PICKNOW_DEV_LOGIN_ID &&
+        password === PICKNOW_DEV_LOGIN_PASSWORD
+      ) {
+        const devAccessToken = 'dev-access-token';
+        const devRefreshToken = 'dev-refresh-token';
+
+        setAccessToken(devAccessToken);
+        setServiceToken('picknow', devAccessToken);
+        localStorage.setItem('refreshToken', devRefreshToken);
+        toast.success('개발 계정으로 로그인되었습니다.');
+        navigate('/picknow/excel-sync');
+        return;
+      }
+
       const encrypt = new JSEncrypt();
       encrypt.setPublicKey(PICKNOW_PUBLIC_KEY);
       const encryptedPassword = encrypt.encrypt(password);
@@ -97,9 +116,7 @@ export default function PicknowLogin() {
         </div>
 
         <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-          {error && (
-            <p className='text-red-500 text-sm text-center'>{error}</p>
-          )}
+          {error && <p className='text-red-500 text-sm text-center'>{error}</p>}
 
           <input
             type='text'
