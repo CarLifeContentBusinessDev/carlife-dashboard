@@ -51,6 +51,7 @@ function createApiInstance(baseURL: string) {
     if (resultCode === 'E0123') {
       localStorage.removeItem('accessToken');
       toast.error('로그인 토큰이 만료되었습니다. 다시 로그인해주세요.');
+      return Promise.reject(new Error('로그인 토큰이 만료되었습니다. 다시 로그인해주세요.'));
     }
     return response;
   });

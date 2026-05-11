@@ -1,36 +1,19 @@
 import {
+  PICKNOW_CONFIGURATION_DATA_RANGE,
+  PICKNOW_CONFIGURATION_HEADER_RANGE,
+  PICKNOW_CONFIGURATION_HEADERS,
+} from '../../constants/picknowExcel';
+import {
   getGoogleToken,
   getSheetsClient,
   initializeGoogleAPI,
 } from '../auth/auth';
 import { buildSheetRange } from '../excel/sheetRange';
 
-const PICKNOW_CONFIGURATION_HEADERS = [
-  'index',
-  'OEM',
-  'Device',
-  'Category',
-  'Country',
-  'Title',
-  '홈화면 ON (Default, Recommended, Active)',
-  'Orientation',
-  'Range From',
-  'Range To',
-  'ZoomFactor',
-  'UserAgentString',
-  'WhiteList',
-  'BlackList',
-  'supportNewTab',
-  'MouseOnlyPage',
-];
-
-const PICKNOW_CONFIGURATION_RANGE = 'A1:Q1000';
-const PICKNOW_CONFIGURATION_HEADER_RANGE = 'B2:Q2';
-
 export async function preparePicknowConfigurationSheet(
   sheetName: string,
   spreadsheetId: string = import.meta.env.VITE_PICKNOW_SPREADSHEET_ID as string
-): Promise<void> {
+): Promise<number> {
   const targetSheetName = sheetName.trim();
 
   if (!targetSheetName) {
@@ -77,19 +60,11 @@ export async function preparePicknowConfigurationSheet(
     sheetId = existingSheet.properties?.sheetId ?? 0;
   }
 
-  if (!existingSheet) {
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId,
-      range: buildSheetRange(targetSheetName, PICKNOW_CONFIGURATION_RANGE),
-      resource: {},
-    });
-  } else {
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId,
-      range: buildSheetRange(targetSheetName, 'B3:Q1000'),
-      resource: {},
-    });
-  }
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId,
+    range: buildSheetRange(targetSheetName, PICKNOW_CONFIGURATION_DATA_RANGE),
+    resource: {},
+  });
 
   if (!existingSheet) {
     await sheets.spreadsheets.values.update({
@@ -115,7 +90,7 @@ export async function preparePicknowConfigurationSheet(
                 startRowIndex: 1,
                 endRowIndex: 2,
                 startColumnIndex: 1,
-                endColumnIndex: 17,
+                endColumnIndex: 21,
               },
               rows: [
                 {
@@ -138,8 +113,86 @@ export async function preparePicknowConfigurationSheet(
                 'userEnteredFormat.backgroundColor,userEnteredFormat.horizontalAlignment,userEnteredFormat.textFormat.bold',
             },
           },
+          {
+            repeatCell: {
+              range: {
+                sheetId,
+                startRowIndex: 2,
+                endRowIndex: 1000,
+                startColumnIndex: 0,
+                endColumnIndex: 21,
+              },
+              cell: {
+                userEnteredFormat: {
+                  horizontalAlignment: 'LEFT',
+                  verticalAlignment: 'MIDDLE',
+                  wrapStrategy: 'CLIP',
+                },
+              },
+              fields:
+                'userEnteredFormat(horizontalAlignment,verticalAlignment,wrapStrategy)',
+            },
+          },
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 0,
+                endIndex: 1,
+              },
+              properties: {
+                pixelSize: 20,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          {
+            setBasicFilter: {
+              filter: {
+                range: {
+                  sheetId,
+                  startRowIndex: 1, // 헤더 2행
+                  endRowIndex: 1000,
+                  startColumnIndex: 1, // B열
+                  endColumnIndex: 21, // U열
+                },
+              },
+            },
+          },
+          {
+            updateSheetProperties: {
+              properties: {
+                sheetId,
+                gridProperties: {
+                  columnCount: 21,
+                  frozenRowCount: 2,
+                },
+              },
+              fields:
+                'gridProperties.columnCount,gridProperties.frozenRowCount',
+            },
+          },
         ],
       },
     });
   }
+
+  // B1 셀에 개수 및 업데이트 시간 작성
+  const countFormula = `="총 " & SUBTOTAL(103, B3:B) & "개 (" & TEXT(NOW(),"yyMMdd HH:mm") & ")"`;
+
+  try {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: buildSheetRange(targetSheetName, 'B1'),
+      valueInputOption: 'USER_ENTERED',
+      resource: {
+        values: [[countFormula]],
+      },
+    });
+  } catch (err) {
+    console.warn('B1 업데이트 실패:', err);
+  }
+
+  return sheetId;
 }

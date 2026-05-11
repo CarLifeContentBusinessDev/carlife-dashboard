@@ -53,10 +53,9 @@ export async function fetchSettingData(): Promise<SettingRow[]> {
   }
 
   const values = response.result.values ?? [];
-  if (values.length < 2) return [];
+  if (values.length === 0) return [];
 
   return values
-    .slice(1)
     .map((row: string[]) => ({
       고객사: String(row[0] ?? '').trim(),
       OEM: String(row[1] ?? '').trim(),

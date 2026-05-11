@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
-import { getGoogleToken } from '../../utils/auth/auth';
-import { fetchSettingData } from '../../utils/googleSheets/fetchSettingData';
-import { preparePicknowConfigurationSheet } from '../../utils/googleSheets/preparePicknowConfigurationSheet';
 import type { SettingRow } from '../../utils/googleSheets/fetchSettingData';
+import { fetchSettingData } from '../../utils/googleSheets/fetchSettingData';
+import { syncPicknowConfigurationSheet } from '../../utils/googleSheets/syncPicknowConfigurationSheet';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();
   const [rows, setRows] = useState<SettingRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,23 +38,6 @@ export default function Configuration() {
     load();
   }, [loginToken]);
 
-  const handleGoogleLogin = async () => {
-    setLoginLoading(true);
-    setError(null);
-
-    try {
-      const token = await getGoogleToken();
-      if (!token) {
-        setError('Google 로그인에 실패했습니다. 다시 시도해주세요.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Google 로그인에 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
   const handleExtractData = async () => {
     if (selectedClients.length === 0) {
       toast.error('데이터 추출할 고객사를 먼저 선택해주세요.');
@@ -71,9 +52,30 @@ export default function Configuration() {
 
     try {
       for (const customerName of selectedClients) {
+        const selections = [...selectedDevices]
+          .map((key) => {
+            const [client, oem, device] = key.split('::');
+            return { client, oem, device };
+          })
+          .filter((item) => item.client === customerName);
+
+        if (selections.length === 0) {
+          results.failed.push(customerName);
+          continue;
+        }
+
         try {
-          await preparePicknowConfigurationSheet(customerName);
+          const syncResult = await syncPicknowConfigurationSheet(
+            customerName,
+            selections
+          );
           results.success.push(customerName);
+          if (syncResult.failedBookmarkSeqs.length > 0) {
+            console.warn(
+              `${customerName} 일부 bookmark 상세 조회 실패:`,
+              syncResult.failedBookmarkSeqs
+            );
+          }
         } catch (err) {
           console.error(`${customerName} 시트 생성 실패:`, err);
           results.failed.push(customerName);
@@ -82,14 +84,14 @@ export default function Configuration() {
 
       if (results.success.length > 0 && results.failed.length === 0) {
         toast.success(
-          `${results.success.length}개 고객사 시트에 헤더를 생성했습니다.`
+          `${results.success.length}개 고객사 시트에 데이터를 동기화했습니다.`
         );
       } else if (results.success.length > 0 && results.failed.length > 0) {
         toast.warning(
           `${results.success.length}개 성공, ${results.failed.length}개 실패 (${results.failed.join(', ')})`
         );
       } else {
-        toast.error('모든 시트 생성에 실패했습니다.');
+        toast.error('모든 데이터 동기화에 실패했습니다.');
       }
     } catch (err) {
       console.error(err);
@@ -262,19 +264,10 @@ export default function Configuration() {
       </div>
 
       {!loginToken ? (
-        <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3 max-w-xl'>
+        <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3'>
           <p className='text-gray-600 text-sm'>
-            Google Sheets 로그인이 필요합니다. 헤더의 버튼을 눌러도 되고, 아래
-            버튼으로 바로 인증할 수도 있습니다.
+            Google Sheets 로그인이 필요합니다.
           </p>
-          <button
-            type='button'
-            onClick={handleGoogleLogin}
-            disabled={loginLoading}
-            className='w-fit rounded-lg bg-[#1B1E2F] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
-          >
-            {loginLoading ? '로그인 요청 중...' : 'Google Sheets 로그인'}
-          </button>
         </div>
       ) : loading ? (
         <p className='text-sm text-gray-400'>데이터를 불러오는 중...</p>

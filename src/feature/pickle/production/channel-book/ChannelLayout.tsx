@@ -26,9 +26,18 @@ const CATEGORY = 'channel';
 const PAGE_SIZE = 10;
 
 const sortChannelsByCreatedAtDesc = (channels: usingChannelProps[]) =>
-  [...channels].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  [...channels].sort((a, b) => {
+    const catA = (a.categoryName ?? '').toLowerCase();
+    const catB = (b.categoryName ?? '').toLowerCase();
+    const catCompare = catA.localeCompare(catB, undefined, {
+      sensitivity: 'base',
+    });
+    if (catCompare !== 0) return catCompare;
+
+    const nameA = (a.channelName ?? '').toLowerCase();
+    const nameB = (b.channelName ?? '').toLowerCase();
+    return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+  });
 
 const ChannelLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
