@@ -25,7 +25,7 @@ import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState.tsx';
 const CATEGORY = 'channel';
 const PAGE_SIZE = 10;
 
-const sortChannelsByCreatedAtDesc = (channels: usingChannelProps[]) =>
+const sortChannels = (channels: usingChannelProps[]) =>
   [...channels].sort((a, b) => {
     const catA = (a.categoryName ?? '').toLowerCase();
     const catB = (b.categoryName ?? '').toLowerCase();
@@ -189,7 +189,7 @@ const ChannelLayout = () => {
         undefined,
         apiInstance
       );
-      const sortedAllData = sortChannelsByCreatedAtDesc(allData);
+      const sortedAllData = sortChannels(allData);
       setAddData(sortedAllData);
       setSyncTotalPages(Math.ceil(sortedAllData.length / SYNC_PAGE_SIZE));
       setSyncPage(1);
@@ -226,7 +226,7 @@ const ChannelLayout = () => {
         apiInstance,
         spreadsheetId
       );
-      const sortedNewList = sortChannelsByCreatedAtDesc(newList);
+      const sortedNewList = sortChannels(newList);
       setNewChannels(sortedNewList);
       setSyncTotalPages(Math.ceil(sortedNewList.length / SYNC_PAGE_SIZE));
       setSyncPreviewMode('new');
