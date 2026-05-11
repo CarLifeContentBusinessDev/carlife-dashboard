@@ -48,6 +48,9 @@ const Header = () => {
   };
 
   const handleChangeService = () => {
+    localStorage.removeItem('refreshToken');
+    clearAccessToken();
+    clearSelectedService();
     navigate('/');
   };
 

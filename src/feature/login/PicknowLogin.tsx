@@ -4,12 +4,11 @@ import { toast } from 'react-toastify';
 import JSEncrypt from 'jsencrypt';
 import { picknowApi } from '../../utils/api/api';
 import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import { setServiceToken } from '../../store/useServiceStore';
+import { setServiceToken, getServiceToken } from '../../store/useServiceStore';
 
 const PICKNOW_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY}\n-----END PUBLIC KEY-----`;
-const PICKNOW_DEV_LOGIN_ID = import.meta.env.VITE_DEV_LOGIN_ID ?? 'dev';
-const PICKNOW_DEV_LOGIN_PASSWORD =
-  import.meta.env.VITE_DEV_LOGIN_PASSWORD ?? 'dev';
+const TEST_ID = import.meta.env.VITE_TEST_ID ?? 'dev';
+const TEST_PW = import.meta.env.VITE_TEST_PW ?? 'dev';
 
 interface PicknowLoginData {
   adminSeq: number;
@@ -28,26 +27,22 @@ interface PicknowLoginResponse {
 
 export default function PicknowLogin() {
   const navigate = useNavigate();
-  const { accessToken, setAccessToken } = useAccessTokenStore();
+  const { setAccessToken } = useAccessTokenStore();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (accessToken) navigate('/picknow/excel-sync', { replace: true });
-  }, [accessToken, navigate]);
+    if (getServiceToken('picknow')) navigate('/picknow/excel-sync', { replace: true });
+  }, [navigate]);
 
   const handleLogin = async () => {
     setLoading(true);
     setError('');
 
     try {
-      if (
-        import.meta.env.DEV &&
-        id === PICKNOW_DEV_LOGIN_ID &&
-        password === PICKNOW_DEV_LOGIN_PASSWORD
-      ) {
+      if (import.meta.env.DEV && id === TEST_ID && password === TEST_PW) {
         const devAccessToken = 'dev-access-token';
         const devRefreshToken = 'dev-refresh-token';
 
