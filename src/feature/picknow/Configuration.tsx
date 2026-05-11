@@ -4,6 +4,7 @@ import { useLoginTokenStore } from '../../store/useLoginTokenStore';
 import type { SettingRow } from '../../utils/googleSheets/fetchSettingData';
 import { fetchSettingData } from '../../utils/googleSheets/fetchSettingData';
 import { syncPicknowConfigurationSheet } from '../../utils/googleSheets/syncPicknowConfigurationSheet';
+import Button from '../../components/common/Button';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();
@@ -254,13 +255,25 @@ export default function Configuration() {
 
   return (
     <div className='p-6'>
-      <div className='flex items-end gap-3 mb-5'>
-        <h1 className='text-2xl font-bold text-[#1B1E2F]'>
-          Configuration 데이터 추출
-        </h1>
-        <span className='text-sm text-slate-400 pb-0.5'>
-          OEM과 디바이스를 선택해 데이터를 추출하세요
-        </span>
+      <div className='flex justify-between mb-5'>
+        <div className='flex items-end gap-3'>
+          <h1 className='text-2xl font-bold text-[#1B1E2F]'>
+            Configuration 데이터 추출
+          </h1>
+          <span className='text-sm text-slate-400 pb-0.5'>
+            OEM과 디바이스를 선택해 데이터를 추출하세요
+          </span>
+        </div>
+        <Button
+          onClick={() => {
+            window.open(
+              `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_PICKNOW_SPREADSHEET_ID}/edit`,
+              '_blank'
+            );
+          }}
+        >
+          시트 바로가기
+        </Button>
       </div>
 
       {!loginToken ? (

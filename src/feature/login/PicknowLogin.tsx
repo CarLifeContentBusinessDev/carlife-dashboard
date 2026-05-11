@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import JSEncrypt from 'jsencrypt';
 import { picknowApi } from '../../utils/api/api';
 import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import { setServiceToken, getServiceToken } from '../../store/useServiceStore';
+import { setServiceToken } from '../../store/useServiceStore';
 
 const PICKNOW_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY}\n-----END PUBLIC KEY-----`;
 const TEST_ID = import.meta.env.VITE_TEST_ID ?? 'dev';
@@ -30,12 +30,17 @@ export default function PicknowLogin() {
   const { setAccessToken } = useAccessTokenStore();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (getServiceToken('picknow')) navigate('/picknow/excel-sync', { replace: true });
-  }, [navigate]);
+    const savedId = localStorage.getItem('rememberId_picknow');
+    if (savedId) {
+      setId(savedId);
+      setRemember(true);
+    }
+  }, []);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -75,6 +80,13 @@ export default function PicknowLogin() {
         setAccessToken(data.accessToken);
         setServiceToken('picknow', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
+
+        if (remember) {
+          localStorage.setItem('rememberId_picknow', id);
+        } else {
+          localStorage.removeItem('rememberId_picknow');
+        }
+
         toast.success('로그인에 성공하였습니다.');
         navigate('/picknow/excel-sync');
       } else {
@@ -124,10 +136,21 @@ export default function PicknowLogin() {
           <input
             type='password'
             placeholder='비밀번호'
+            autoComplete='current-password'
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className='border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
           />
+
+          <label className='flex items-center gap-2 text-sm'>
+            <input
+              type='checkbox'
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className='w-4 h-4 cursor-pointer'
+            />
+            아이디 저장하기
+          </label>
 
           <button
             disabled={loading}

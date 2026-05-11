@@ -4,7 +4,8 @@ import { toast } from 'react-toastify';
 import { supabase } from '../../lib/supabase';
 import { api } from '../../utils/api/api';
 import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import { setServiceToken, getServiceToken } from '../../store/useServiceStore';
+import { setServiceToken } from '../../store/useServiceStore';
+import { useLoginTokenStore } from '../../store/useLoginTokenStore';
 import type { LoginResponseData } from '../../types/type';
 
 interface LoginApiResponse {
@@ -16,6 +17,7 @@ interface LoginApiResponse {
 export default function PickleLogin() {
   const navigate = useNavigate();
   const { setAccessToken } = useAccessTokenStore();
+  const { clearLoginToken } = useLoginTokenStore();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -23,11 +25,7 @@ export default function PickleLogin() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (getServiceToken('pickle')) navigate('/episode-list', { replace: true });
-  }, [navigate]);
-
-  useEffect(() => {
-    const savedId = localStorage.getItem('rememberId');
+    const savedId = localStorage.getItem('rememberId_pickle');
     if (savedId) {
       setId(savedId);
       setRemember(true);
@@ -43,10 +41,11 @@ export default function PickleLogin() {
       const testId = import.meta.env.VITE_TEST_ID;
       const testPw = import.meta.env.VITE_TEST_PW;
       if (testId && testPw && id === testId && password === testPw) {
+        clearLoginToken();
         if (remember) {
-          localStorage.setItem('rememberId', id);
+          localStorage.setItem('rememberId_pickle', id);
         } else {
-          localStorage.removeItem('rememberId');
+          localStorage.removeItem('rememberId_pickle');
         }
         setAccessToken('TEST_TOKEN');
         setServiceToken('pickle', 'TEST_TOKEN');
@@ -81,13 +80,15 @@ export default function PickleLogin() {
 
       // API 성공 후 Supabase 세션도 연동 (실패해도 무시)
       supabase.auth.signInWithPassword({ email: id, password }).catch(() => {
-        console.warn('Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.');
+        console.warn(
+          'Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.'
+        );
       });
 
       if (remember) {
-        localStorage.setItem('rememberId', id);
+        localStorage.setItem('rememberId_pickle', id);
       } else {
-        localStorage.removeItem('rememberId');
+        localStorage.removeItem('rememberId_pickle');
       }
 
       toast.success('로그인에 성공하였습니다.');
@@ -136,6 +137,7 @@ export default function PickleLogin() {
           <input
             type='password'
             placeholder='비밀번호'
+            autoComplete='current-password'
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className='border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
