@@ -1,32 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import {
-  useServiceStore,
-  getServiceToken,
-  setServiceToken,
-} from '../../store/useServiceStore';
-import { useAccessTokenStore } from '../../store/useAccessTokenStore';
+import { useServiceStore } from '../../store/useServiceStore';
 import type { ServiceType } from '../../store/useServiceStore';
-
-const SERVICE_HOME: Record<ServiceType, string> = {
-  pickle: '/episode-list',
-  picknow: '/picknow/excel-sync',
-};
 
 export function ServiceEntryPage() {
   const navigate = useNavigate();
   const { setSelectedService } = useServiceStore();
-  const { setAccessToken } = useAccessTokenStore();
 
   const handleSelect = (service: ServiceType) => {
     setSelectedService(service);
-    const savedToken = getServiceToken(service);
-    if (savedToken) {
-      setServiceToken(service, savedToken);
-      setAccessToken(savedToken);
-      navigate(SERVICE_HOME[service]);
-    } else {
-      navigate(`/${service}/login`);
-    }
+    navigate(`/${service}/login`);
   };
 
   return (
