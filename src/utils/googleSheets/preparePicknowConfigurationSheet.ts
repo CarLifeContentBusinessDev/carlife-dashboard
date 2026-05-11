@@ -179,7 +179,17 @@ export async function preparePicknowConfigurationSheet(
   }
 
   // B1 셀에 개수 및 업데이트 시간 작성
-  const countFormula = `="총 " & SUBTOTAL(103, B3:B) & "개 (" & TEXT(NOW(),"yyMMdd HH:mm") & ")"`;
+  const now = new Date();
+  const timestamp =
+    String(now.getFullYear()).slice(-2) +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0') +
+    ' ' +
+    String(now.getHours()).padStart(2, '0') +
+    ':' +
+    String(now.getMinutes()).padStart(2, '0');
+  const countFormula =
+    '="총 " & SUBTOTAL(103, B3:B) & "개 (' + timestamp + ')"';
 
   try {
     await sheets.spreadsheets.values.update({

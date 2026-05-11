@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { useAccessTokenStore } from './store/useAccessTokenStore';
 import AuthGuard from './components/common/AuthGuard';
@@ -39,6 +39,23 @@ import DemoThemeDetail from './feature/pickle/demo/theme/DemoThemeDetail';
 import DemoCategoryDetail from './feature/pickle/demo/category/DemoCategoryDetail';
 import DemoBroadcastingDetail from './feature/pickle/demo/broadcasting/DemoBroadcastingDetail';
 
+const LOGOUT_EVENT_NAME = 'app:logout';
+
+function LogoutRedirectListener() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleLogout = () => {
+      navigate('/', { replace: true });
+    };
+
+    window.addEventListener(LOGOUT_EVENT_NAME, handleLogout);
+    return () => window.removeEventListener(LOGOUT_EVENT_NAME, handleLogout);
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   useEffect(() => {
     const {
@@ -48,7 +65,11 @@ function App() {
       // (Picknow는 Supabase 미사용 / Pickle API 토큰이 있을 땐 api.ts 인터셉터가 담당)
       const selectedService = localStorage.getItem('selectedService');
       const hasPickleApiToken = !!localStorage.getItem('refreshToken');
-      if (selectedService === 'pickle' && !hasPickleApiToken && session?.access_token) {
+      if (
+        selectedService === 'pickle' &&
+        !hasPickleApiToken &&
+        session?.access_token
+      ) {
         useAccessTokenStore.getState().setAccessToken(session.access_token);
       }
     });
@@ -58,6 +79,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <LogoutRedirectListener />
       <Routes>
         {/* 서비스 선택 및 로그인 (Layout 없음) */}
         <Route path='/' element={<ServiceEntryPage />} />

@@ -5,6 +5,11 @@ import { useAccessTokenStore } from '../../store/useAccessTokenStore';
 
 let isRefreshing = false;
 let pendingCallbacks: ((token: string) => void)[] = [];
+const LOGOUT_EVENT_NAME = 'app:logout';
+
+function triggerLogoutRedirect() {
+  window.dispatchEvent(new Event(LOGOUT_EVENT_NAME));
+}
 
 async function tryRefreshToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem('refreshToken');
@@ -25,7 +30,8 @@ async function tryRefreshToken(): Promise<string | null> {
 
     if (newAccessToken) {
       useAccessTokenStore.getState().setAccessToken(newAccessToken);
-      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
+      if (newRefreshToken)
+        localStorage.setItem('refreshToken', newRefreshToken);
       return newAccessToken;
     }
   } catch {
@@ -71,7 +77,7 @@ function createApiInstance(baseURL: string) {
       useAccessTokenStore.getState().clearAccessToken();
       localStorage.removeItem('refreshToken');
       toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
-      window.location.href = '/';
+      triggerLogoutRedirect();
       return Promise.reject(new Error('인증이 만료되었습니다.'));
     }
 
@@ -80,7 +86,8 @@ function createApiInstance(baseURL: string) {
       return new Promise<typeof response>((resolve) => {
         pendingCallbacks.push((token) => {
           response.config.headers.Authorization = `Bearer ${token}`;
-          (response.config as unknown as Record<string, unknown>)._refreshed = true;
+          (response.config as unknown as Record<string, unknown>)._refreshed =
+            true;
           resolve(instance(response.config));
         });
       });
@@ -107,7 +114,7 @@ function createApiInstance(baseURL: string) {
     useAccessTokenStore.getState().clearAccessToken();
     localStorage.removeItem('refreshToken');
     toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
-    window.location.href = '/';
+    triggerLogoutRedirect();
     return Promise.reject(new Error('인증이 만료되었습니다.'));
   });
 
@@ -116,4 +123,6 @@ function createApiInstance(baseURL: string) {
 
 export const api = createApiInstance(import.meta.env.VITE_PROD_API_URL);
 export const stgApi = createApiInstance(import.meta.env.VITE_STG_API_URL);
-export const picknowApi = createApiInstance(import.meta.env.VITE_PICKNOW_API_URL);
+export const picknowApi = createApiInstance(
+  import.meta.env.VITE_PICKNOW_API_URL
+);
