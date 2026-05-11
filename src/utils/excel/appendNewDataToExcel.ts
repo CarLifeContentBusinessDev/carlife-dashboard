@@ -63,6 +63,38 @@ export async function appendNewDataToTop(
     // Step 1: 시트 ID 가져오기 (내부에서 getSheetsClient 사용)
     const sheetId = await getSheetId(sheetName, spreadsheetId);
 
+    // 중복 방지: 실제 쓰기 직전에 현재 시트에 있는 ID들을 다시 조회해서 제거
+    const tokenForCheck = await getGoogleToken();
+    if (!tokenForCheck) throw new Error('Google 인증 토큰이 없습니다.');
+    // getExcelData를 동기화하는 모듈에서 사용해 현재 시트에 있는 항목을 읽어옴
+    const { getExcelData } = await import('./updateExcel');
+    const existingRows = await getExcelData(
+      tokenForCheck,
+      category,
+      sheetName,
+      spreadsheetId
+    );
+    const existingIds = new Set(
+      existingRows.map((item) =>
+        'episodeId' in item ? item.episodeId : item.channelId
+      )
+    );
+
+    const dedupedData = filteredData.filter((item) => {
+      const id = 'episodeId' in item ? item.episodeId : item.channelId;
+      return !existingIds.has(id);
+    });
+
+    if (dedupedData.length === 0) {
+      setLoading(false);
+      if (showToast)
+        toast.info('추가할 신규 데이터가 없습니다 (이미 시트에 존재).');
+      return;
+    }
+
+    // 새로 쓸 데이터는 dedupedData로 갱신
+    const effectiveData = dedupedData;
+
     // Step 2: 비어있으면 행 확장, 있으면 행 삽입
     const isEmpty = await isSheetEmpty(sheetName, spreadsheetId);
 
@@ -120,7 +152,7 @@ export async function appendNewDataToTop(
     // Step 3: 데이터 변환 로직
     let allNewValues: any[][];
     if (category === 'episode') {
-      allNewValues = (filteredData as usingDataProps[]).map((row) => [
+      allNewValues = (effectiveData as usingDataProps[]).map((row) => [
         row.episodeId,
         row.usageYn,
         row.channelName,
@@ -135,7 +167,7 @@ export async function appendNewDataToTop(
         row.channelId,
       ]);
     } else {
-      allNewValues = (filteredData as usingChannelProps[]).map((row) => [
+      allNewValues = (effectiveData as usingChannelProps[]).map((row) => [
         row.channelId,
         row.usageYn,
         row.channelName,

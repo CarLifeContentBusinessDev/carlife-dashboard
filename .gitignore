@@ -28,3 +28,4 @@ MIGRATION_GUIDE.md
 README_MIGRATION.md
 
 .env
+.claude/*
