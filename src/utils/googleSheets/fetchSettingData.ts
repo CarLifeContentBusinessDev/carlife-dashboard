@@ -39,7 +39,7 @@ export async function fetchSettingData(): Promise<SettingRow[]> {
   try {
     response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: buildSheetRange('Setting', 'B2:G1000'),
+      range: buildSheetRange('Setting', 'B3:G1000'),
     });
   } catch (err: any) {
     // 401이면 저장된 토큰을 클리어하여 다음번에 재로그인 유도
