@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   getGoogleToken,
@@ -6,80 +7,92 @@ import {
   initializeGoogleAPI,
   initializeGIS,
 } from '../utils/auth/auth';
-import LoginPopup from '../feature/login/Login';
 import Button from '../components/common/Button';
-import type { LoginResponseData } from '../types/type';
 import { useLoginTokenStore } from '../store/useLoginTokenStore';
 import { useAccessTokenStore } from '../store/useAccessTokenStore';
+import { useServiceStore, clearServiceToken } from '../store/useServiceStore';
+
+const SERVICE_LABELS: Record<string, string> = {
+  pickle: 'Pickle Admin',
+  picknow: 'Picknow Admin',
+};
 
 const Header = () => {
-  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const navigate = useNavigate();
   const { loginToken, setLoginToken } = useLoginTokenStore();
-  const { accessToken, setAccessToken, clearAccessToken } =
-    useAccessTokenStore();
+  const { accessToken, clearAccessToken } = useAccessTokenStore();
+  const { selectedService, clearSelectedService } = useServiceStore();
+  const [googleInitialized, setGoogleInitialized] = useState(false);
 
   useEffect(() => {
+    if (!selectedService) return;
     const initGoogle = async () => {
       try {
         await initializeGoogleAPI();
         await initializeGIS();
+        setGoogleInitialized(true);
       } catch (error) {
         console.error('Google API 초기화 실패:', error);
       }
     };
     initGoogle();
-  }, []);
+  }, [selectedService]);
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     if (!accessToken) return toast.warn('관리자 로그인을 먼저 해주세요!');
     const token = await getGoogleToken();
-    if (token && localStorage.getItem('accessToken')) {
+    if (token) {
       setLoginToken(token);
       toast.success('Google 로그인에 성공하였습니다.');
     }
   };
 
-  const handlePopupLoginSuccess = (data: LoginResponseData) => {
-    setAccessToken(data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    setShowLoginPopup(false);
+  const handleChangeService = () => {
+    localStorage.removeItem('refreshToken');
+    clearAccessToken();
+    clearSelectedService();
+    navigate('/');
   };
 
   const handleLogout = () => {
+    if (selectedService) clearServiceToken(selectedService);
     localStorage.removeItem('refreshToken');
     clearAccessToken();
-    googleLogout();
-    window.location.reload();
+    clearSelectedService();
+    if (selectedService === 'pickle' || selectedService === 'picknow') googleLogout();
+    navigate('/');
   };
 
+  const serviceLabel = selectedService
+    ? SERVICE_LABELS[selectedService]
+    : 'CarLife Admin';
+
   return (
-    <>
-      <div className='w-full h-[10%] flex justify-between items-center mb-0 px-10 bg-white'>
-        <h1 className='text-3xl font-bold flex gap-4 items-center'>
-          <img src='/logo.svg' alt='로고' width={40} height={40} />
-          PICKLE (데모)
-        </h1>
-        <div className='flex gap-4'>
-          {!accessToken && (
-            <Button onClick={() => setShowLoginPopup(true)}>
-              관리자 로그인
-            </Button>
-          )}
-          {accessToken && (
-            <Button onClick={handleLogout}>관리자 로그아웃</Button>
-          )}
-          {!loginToken && (
-            <Button onClick={handleLogin}>Google Sheets 로그인</Button>
-          )}
-        </div>
-      </div>
-      {showLoginPopup && (
-        <LoginPopup
-          onClose={() => setShowLoginPopup(false)}
-          onLoginSuccess={handlePopupLoginSuccess}
+    <div className='w-full h-[10%] flex justify-between items-center mb-0 px-10 bg-white'>
+      <h1 className='text-3xl font-bold flex gap-4 items-center'>
+        <img
+          src={
+            selectedService === 'pickle'
+              ? '/pickle_logo.svg'
+              : '/picknow_logo.svg'
+          }
+          alt='로고'
+          width={40}
+          height={40}
         />
-      )}
-    </>
+        {serviceLabel}
+      </h1>
+
+      <div className='flex gap-4'>
+        <Button onClick={handleChangeService} className='bg-gray-300'>
+          서비스 변경
+        </Button>
+        {googleInitialized && !loginToken && (
+          <Button onClick={handleGoogleLogin}>Google Sheets 로그인</Button>
+        )}
+        <Button onClick={handleLogout}>로그아웃</Button>
+      </div>
+    </div>
   );
 };
 
