@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { supabase } from '../../lib/supabase';
 import { api } from '../../utils/api/api';
 import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import { setServiceToken } from '../../store/useServiceStore';
+import { setServiceToken, getServiceToken } from '../../store/useServiceStore';
 import type { LoginResponseData } from '../../types/type';
 
 interface LoginApiResponse {
@@ -15,7 +15,7 @@ interface LoginApiResponse {
 
 export default function PickleLogin() {
   const navigate = useNavigate();
-  const { accessToken, setAccessToken } = useAccessTokenStore();
+  const { setAccessToken } = useAccessTokenStore();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -23,8 +23,8 @@ export default function PickleLogin() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (accessToken) navigate('/episode-list', { replace: true });
-  }, [accessToken, navigate]);
+    if (getServiceToken('pickle')) navigate('/episode-list', { replace: true });
+  }, [navigate]);
 
   useEffect(() => {
     const savedId = localStorage.getItem('rememberId');
@@ -39,22 +39,24 @@ export default function PickleLogin() {
     setError('');
 
     try {
-      const { data: supabaseData, error: supabaseError } =
-        await supabase.auth.signInWithPassword({ email: id, password });
-
-      if (supabaseError || !supabaseData.session) {
-        setError('로그인에 실패했습니다. 다시 시도해주세요.');
+      // 테스트 계정 체크
+      const testId = import.meta.env.VITE_TEST_ID;
+      const testPw = import.meta.env.VITE_TEST_PW;
+      if (testId && testPw && id === testId && password === testPw) {
+        if (remember) {
+          localStorage.setItem('rememberId', id);
+        } else {
+          localStorage.removeItem('rememberId');
+        }
+        setAccessToken('TEST_TOKEN');
+        setServiceToken('pickle', 'TEST_TOKEN');
+        toast.success('테스트 계정으로 로그인했습니다.');
+        navigate('/episode-list');
         return;
       }
 
-      if (remember) {
-        localStorage.setItem('rememberId', id);
-      } else {
-        localStorage.removeItem('rememberId');
-      }
-
-      setAccessToken(supabaseData.session.access_token);
-
+      // API 로그인 먼저
+      let apiLoginData: LoginResponseData | null = null;
       try {
         const res = await api.post<LoginApiResponse>(
           '/admin/login',
@@ -62,14 +64,30 @@ export default function PickleLogin() {
           { headers: { 'Content-Type': 'application/json' } }
         );
         if (res.data.resultCode === 'SUCCESS') {
-          setAccessToken(res.data.data.accessToken);
-          setServiceToken('pickle', res.data.data.accessToken);
-          localStorage.setItem('refreshToken', res.data.data.refreshToken);
+          apiLoginData = res.data.data;
         }
       } catch {
-        console.warn(
-          'pickle API 연결 실패 - Google Sheets 기능을 사용할 수 없습니다.'
-        );
+        // API 호출 자체 실패 (네트워크 오류 등)
+      }
+
+      if (!apiLoginData) {
+        setError('로그인에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      setAccessToken(apiLoginData.accessToken);
+      setServiceToken('pickle', apiLoginData.accessToken);
+      localStorage.setItem('refreshToken', apiLoginData.refreshToken);
+
+      // API 성공 후 Supabase 세션도 연동 (실패해도 무시)
+      supabase.auth.signInWithPassword({ email: id, password }).catch(() => {
+        console.warn('Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.');
+      });
+
+      if (remember) {
+        localStorage.setItem('rememberId', id);
+      } else {
+        localStorage.removeItem('rememberId');
       }
 
       toast.success('로그인에 성공하였습니다.');

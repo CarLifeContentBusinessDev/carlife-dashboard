@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { supabase } from './lib/supabase';
+import { useAccessTokenStore } from './store/useAccessTokenStore';
 import AuthGuard from './components/common/AuthGuard';
 import Layout from './layout/Layout';
 import { ServiceEntryPage } from './feature/service-entry/ServiceEntryPage';
@@ -37,6 +40,22 @@ import DemoCategoryDetail from './feature/pickle/demo/category/DemoCategoryDetai
 import DemoBroadcastingDetail from './feature/pickle/demo/broadcasting/DemoBroadcastingDetail';
 
 function App() {
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Pickle 서비스에서만 Supabase 세션으로 accessToken 갱신
+      // (Picknow는 Supabase 미사용 / Pickle API 토큰이 있을 땐 api.ts 인터셉터가 담당)
+      const selectedService = localStorage.getItem('selectedService');
+      const hasPickleApiToken = !!localStorage.getItem('refreshToken');
+      if (selectedService === 'pickle' && !hasPickleApiToken && session?.access_token) {
+        useAccessTokenStore.getState().setAccessToken(session.access_token);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
