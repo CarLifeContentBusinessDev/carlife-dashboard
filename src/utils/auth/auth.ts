@@ -12,7 +12,11 @@ let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 
 let gapiInited = false;
 
+let gapiInitPromise: Promise<void> | null = null;
+
 let gisInited = false;
+
+let gisInitPromise: Promise<void> | null = null;
 
 const clearSavedGoogleToken = () => {
   localStorage.removeItem('loginToken');
@@ -22,13 +26,15 @@ const clearSavedGoogleToken = () => {
 // Google API 클라이언트 초기화
 
 export function initializeGoogleAPI(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (gapiInited) {
-      resolve();
+  if (gapiInited) {
+    return Promise.resolve();
+  }
 
-      return;
-    }
+  if (gapiInitPromise) {
+    return gapiInitPromise;
+  }
 
+  gapiInitPromise = new Promise((resolve, reject) => {
     // gapi 스크립트 로드
 
     const gapiScript = document.createElement('script');
@@ -56,6 +62,8 @@ export function initializeGoogleAPI(): Promise<void> {
 
           resolve();
         } catch (error) {
+          gapiInitPromise = null;
+
           console.error('Google API 초기화 실패:', error);
 
           reject(error);
@@ -64,23 +72,29 @@ export function initializeGoogleAPI(): Promise<void> {
     };
 
     gapiScript.onerror = () => {
+      gapiInitPromise = null;
+
       reject(new Error('Google API 스크립트 로드 실패'));
     };
 
     document.body.appendChild(gapiScript);
   });
+
+  return gapiInitPromise;
 }
 
 // Google Identity Services 초기화
 
 export function initializeGIS(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (gisInited) {
-      resolve();
+  if (gisInited) {
+    return Promise.resolve();
+  }
 
-      return;
-    }
+  if (gisInitPromise) {
+    return gisInitPromise;
+  }
 
+  gisInitPromise = new Promise((resolve, reject) => {
     // GIS 스크립트 로드
 
     const gisScript = document.createElement('script');
@@ -108,11 +122,15 @@ export function initializeGIS(): Promise<void> {
     };
 
     gisScript.onerror = () => {
+      gisInitPromise = null;
+
       reject(new Error('GIS 스크립트 로드 실패'));
     };
 
     document.body.appendChild(gisScript);
   });
+
+  return gisInitPromise;
 }
 
 // Google 인증 토큰 획득
