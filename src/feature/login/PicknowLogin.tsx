@@ -69,12 +69,6 @@ export default function PicknowLogin() {
         return;
       }
 
-      if (remember) {
-        localStorage.setItem('rememberId_picknow', id);
-      } else {
-        localStorage.removeItem('rememberId_picknow');
-      }
-
       const res = await picknowApi.post<PicknowLoginResponse>(
         '/admin/login',
         { email: id, password: encryptedPassword },

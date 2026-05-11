@@ -264,7 +264,16 @@ export default function Configuration() {
             OEM과 디바이스를 선택해 데이터를 추출하세요
           </span>
         </div>
-        <Button onClick={() => {}}>시트 바로가기</Button>
+        <Button
+          onClick={() => {
+            window.open(
+              `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_PICKNOW_SPREADSHEET_ID}/edit`,
+              '_blank'
+            );
+          }}
+        >
+          시트 바로가기
+        </Button>
       </div>
 
       {!loginToken ? (
