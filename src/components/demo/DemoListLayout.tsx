@@ -2,7 +2,8 @@ import { toast } from 'react-toastify';
 import Button from '../common/Button';
 import Dropdown from '../common/Dropdown';
 import { LANGUAGES, type LanguageCode } from '../../constants/languages';
-import { useAccessTokenStore } from '../../store/useAccessTokenStore';
+import { usePickleServerStore } from '../../store/usePickleServerStore';
+import PickleLoginBanner from '../common/PickleLoginBanner';
 
 export type StatusFilter = 'all' | 'active' | 'inactive';
 
@@ -85,17 +86,20 @@ const DemoListLayout = ({
   searchPlaceholder = '검색어를 입력하세요.',
   children,
 }: DemoListLayoutProps) => {
-  const { accessToken } = useAccessTokenStore();
+  const { isServerLoggedIn } = usePickleServerStore();
+  const isWebDemoLoggedIn = isServerLoggedIn('web-demo');
 
   const onAdd = () => {
-    if (!accessToken) {
-      toast.warn('관리자 로그인이 필요합니다.');
+    if (!isWebDemoLoggedIn) {
+      toast.warn('웹데모 로그인이 필요합니다.');
       return;
     }
     onAddProp();
   };
 
   return (
+    <div className='flex flex-col'>
+      <PickleLoginBanner serverId='web-demo' serverLabel='웹데모' />
     <div className='p-10 flex flex-col'>
       <h1 className='mb-4 indent-1' style={{ fontSize: '16px' }}>
         <span className='text-gray-500'>{parentMenu} / </span>
@@ -179,6 +183,7 @@ const DemoListLayout = ({
 
         <div className='mt-4'>{children}</div>
       </div>
+    </div>
     </div>
   );
 };

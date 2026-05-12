@@ -1,26 +1,28 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { toast } from 'react-toastify';
 import { supabase } from '../../lib/supabase';
-import { api, setTestMode } from '../../utils/api/api';
-import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import { setServiceToken } from '../../store/useServiceStore';
+import { setTestMode } from '../../utils/api/api';
+import { usePickleServerStore } from '../../store/usePickleServerStore';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
-import type { LoginResponseData } from '../../types/type';
+import type { PickleServer } from '../../constants/servers';
 
 interface LoginApiResponse {
   resultCode: string;
   resultMessage: string;
-  data: LoginResponseData;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+  };
 }
 
 interface Props {
+  server: PickleServer;
   onClose: () => void;
 }
 
-export default function PickleLoginModal({ onClose }: Props) {
-  const navigate = useNavigate();
-  const { setAccessToken } = useAccessTokenStore();
+export default function PickleLoginModal({ server, onClose }: Props) {
+  const { setServerToken } = usePickleServerStore();
   const { clearLoginToken } = useLoginTokenStore();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
@@ -29,26 +31,47 @@ export default function PickleLoginModal({ onClose }: Props) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const savedId = localStorage.getItem('rememberId_pickle');
+    const savedId = localStorage.getItem(`rememberId_pickle_${server.id}`);
     if (savedId) {
       setId(savedId);
       setRemember(true);
     }
-  }, []);
+  }, [server.id]);
 
   const handleLogin = async () => {
     setLoading(true);
     setError('');
 
     try {
+      // 웹데모: Supabase 로그인
+      if (server.id === 'web-demo') {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: id,
+          password,
+        });
+        if (error || !data.session) {
+          setError('로그인에 실패했습니다. 이메일/비밀번호를 확인해주세요.');
+          return;
+        }
+        if (remember) {
+          localStorage.setItem(`rememberId_pickle_${server.id}`, id);
+        } else {
+          localStorage.removeItem(`rememberId_pickle_${server.id}`);
+        }
+        setServerToken(server.id, data.session.access_token);
+        toast.success('웹데모 로그인에 성공하였습니다.');
+        onClose();
+        return;
+      }
+
       const testId = import.meta.env.VITE_TEST_ID;
       const testPw = import.meta.env.VITE_TEST_PW;
       if (testId && testPw && id === testId && password === testPw) {
         clearLoginToken();
         if (remember) {
-          localStorage.setItem('rememberId_pickle', id);
+          localStorage.setItem(`rememberId_pickle_${server.id}`, id);
         } else {
-          localStorage.removeItem('rememberId_pickle');
+          localStorage.removeItem(`rememberId_pickle_${server.id}`);
         }
 
         let supabaseToken = 'TEST_TOKEN';
@@ -61,48 +84,39 @@ export default function PickleLoginModal({ onClose }: Props) {
         }
 
         setTestMode(true);
-        setAccessToken(supabaseToken);
-        setServiceToken('pickle', supabaseToken);
+        setServerToken(server.id, supabaseToken);
         toast.success('테스트 계정으로 로그인했습니다.');
         onClose();
-        navigate('/episode-list');
         return;
       }
 
-      let apiLoginData: LoginResponseData | null = null;
-      try {
-        const res = await api.post<LoginApiResponse>(
-          '/admin/login',
-          { adminId: id, password },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-        if (res.data.resultCode === 'SUCCESS') {
-          apiLoginData = res.data.data;
-        }
-      } catch {
-        // 네트워크 오류 등
-      }
+      const res = await axios.post<LoginApiResponse>(
+        `${server.apiUrl}/admin/login`,
+        { adminId: id, password },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
 
-      if (!apiLoginData) {
+      if (res.data.resultCode !== 'SUCCESS') {
         setError('로그인에 실패했습니다. 다시 시도해주세요.');
         return;
       }
 
-      setAccessToken(apiLoginData.accessToken);
-      setServiceToken('pickle', apiLoginData.accessToken);
-      localStorage.setItem('refreshToken', apiLoginData.refreshToken);
+      const { accessToken, refreshToken } = res.data.data;
+      setServerToken(server.id, accessToken, refreshToken);
 
-      supabase.auth.signInWithPassword({ email: id, password }).catch(() => {
-        console.warn('Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.');
-      });
-
-      if (remember) {
-        localStorage.setItem('rememberId_pickle', id);
-      } else {
-        localStorage.removeItem('rememberId_pickle');
+      if (server.id === 'prod') {
+        supabase.auth.signInWithPassword({ email: id, password }).catch(() => {
+          console.warn('Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.');
+        });
       }
 
-      toast.success('로그인에 성공하였습니다.');
+      if (remember) {
+        localStorage.setItem(`rememberId_pickle_${server.id}`, id);
+      } else {
+        localStorage.removeItem(`rememberId_pickle_${server.id}`);
+      }
+
+      toast.success(`Pickle ${server.label} 로그인에 성공하였습니다.`);
       onClose();
     } catch (err) {
       console.error(err);
@@ -133,7 +147,9 @@ export default function PickleLoginModal({ onClose }: Props) {
             height={40}
             className='mx-auto mb-3'
           />
-          <h2 className='text-xl font-bold text-[#1B1E2F]'>Pickle Admin</h2>
+          <h2 className='text-xl font-bold text-[#1B1E2F]'>
+            Pickle {server.label}
+          </h2>
           <p className='text-sm text-gray-500 mt-1'>관리자 계정으로 로그인하세요</p>
         </div>
 
@@ -143,7 +159,7 @@ export default function PickleLoginModal({ onClose }: Props) {
           )}
           <input
             type='text'
-            placeholder='아이디'
+            placeholder={server.id === 'web-demo' ? '이메일' : '아이디'}
             value={id}
             onChange={(e) => setId(e.target.value)}
             className='border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'

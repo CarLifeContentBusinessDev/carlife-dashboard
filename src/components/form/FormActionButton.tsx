@@ -18,7 +18,7 @@ const FormActionsButton = ({
 
   const handleSave = () => {
     if (!accessToken) {
-      toast.warn('관리자 로그인이 필요합니다.');
+      toast.warn('웹데모 로그인이 필요합니다.');
       return;
     }
     onSave();

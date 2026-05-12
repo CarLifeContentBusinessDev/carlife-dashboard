@@ -11,7 +11,7 @@ import { useProdPagination } from '../../../../hook/useProdPagination.ts';
 import { useSheetSelection } from '../../../../hook/useSheetSelection.ts';
 import { useStagingEnv } from '../../../../hook/useStagingEnv.ts';
 import { useSyncState, SYNC_PAGE_SIZE } from '../../../../hook/useSyncState.ts';
-import { useAccessTokenStore } from '../../../../store/useAccessTokenStore.ts';
+import { usePickleServerStore } from '../../../../store/usePickleServerStore.ts';
 import { useLoginTokenStore } from '../../../../store/useLoginTokenStore.ts';
 import type { usingChannelProps } from '../../../../types/type.ts';
 import { appendNewDataToTop } from '../../../../utils/excel/appendNewDataToExcel.ts';
@@ -21,6 +21,7 @@ import { updateSheetSyncTime } from '../../../../utils/excel/updateSheetSyncTime
 import { overwriteExcelData } from '../../../../utils/excel/updateExcel.ts';
 import ProdChannelList from './ProdChannelList.tsx';
 import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState.tsx';
+import PickleLoginBanner from '../../../../components/common/PickleLoginBanner.tsx';
 
 const CATEGORY = 'channel';
 const PAGE_SIZE = 10;
@@ -42,7 +43,8 @@ const sortChannels = (channels: usingChannelProps[]) =>
 const ChannelLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
-  const { accessToken } = useAccessTokenStore();
+  const { getServerToken } = usePickleServerStore();
+  const accessToken = getServerToken(isStaging ? 'stg' : 'prod') ?? '';
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
   const [episodeCountByChannelId, setEpisodeCountByChannelId] = useState<
@@ -307,7 +309,12 @@ const ChannelLayout = () => {
     syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
 
   return (
-    <div className='p-10 flex flex-col h-[90vh]'>
+    <div className='flex flex-col h-[90vh]'>
+      <PickleLoginBanner
+        serverId={isStaging ? 'stg' : 'prod'}
+        serverLabel={isStaging ? 'STG' : '상용'}
+      />
+      <div className='p-10 flex flex-col h-full'>
       <h1 className='text-3xl font-bold mb-4 indent-1'>
         채널·도서 관리{isStaging ? ' (스테이징)' : ''}
       </h1>
@@ -430,6 +437,7 @@ const ChannelLayout = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };

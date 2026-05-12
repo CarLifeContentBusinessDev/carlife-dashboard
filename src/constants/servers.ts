@@ -1,3 +1,30 @@
+export interface PickleServer {
+  id: string;
+  label: string;
+  apiUrl: string;
+}
+
+export const pickleTokenKey = (id: string) => `pickle_token_${id}`;
+export const pickleRefreshKey = (id: string) => `pickle_refresh_${id}`;
+
+export const PICKLE_SERVERS: PickleServer[] = [
+  {
+    id: 'prod',
+    label: '상용',
+    apiUrl: import.meta.env.VITE_PROD_API_URL as string,
+  },
+  {
+    id: 'stg',
+    label: 'STG',
+    apiUrl: import.meta.env.VITE_STG_API_URL as string,
+  },
+  {
+    id: 'web-demo',
+    label: '웹데모',
+    apiUrl: '',
+  },
+];
+
 export interface PicknowServer {
   id: string;
   label: string;

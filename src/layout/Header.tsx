@@ -10,13 +10,15 @@ import Button from '../components/common/Button';
 import ServerLoginModal from '../components/common/ServerLoginModal';
 import PickleLoginModal from '../components/common/PickleLoginModal';
 import { useLoginTokenStore } from '../store/useLoginTokenStore';
-import { useAccessTokenStore } from '../store/useAccessTokenStore';
 import { useServiceStore, clearServiceToken } from '../store/useServiceStore';
 import { usePicknowServerStore } from '../store/usePicknowServerStore';
+import { usePickleServerStore } from '../store/usePickleServerStore';
 import { PICKNOW_SERVERS } from '../constants/servers';
-import type { PicknowServer } from '../constants/servers';
+import { PICKLE_SERVERS } from '../constants/servers';
+import type { PicknowServer, PickleServer } from '../constants/servers';
 import { setTestMode } from '../utils/api/api';
 import { supabase } from '../lib/supabase';
+import { useAccessTokenStore } from '../store/useAccessTokenStore';
 
 const SERVICE_LABELS: Record<string, string> = {
   pickle: 'Pickle Admin',
@@ -26,16 +28,21 @@ const SERVICE_LABELS: Record<string, string> = {
 const Header = () => {
   const navigate = useNavigate();
   const { loginToken, setLoginToken } = useLoginTokenStore();
-  const { accessToken, clearAccessToken } = useAccessTokenStore();
+  const { clearAccessToken } = useAccessTokenStore();
   const { selectedService, clearSelectedService } = useServiceStore();
-  const { serverTokens, isServerLoggedIn, clearServerToken } =
+  const { serverTokens: picknowTokens, isServerLoggedIn: isPicknowLoggedIn, clearServerToken: clearPicknowToken } =
     usePicknowServerStore();
+  const { serverTokens: pickleTokens, isServerLoggedIn: isPickleLoggedIn, clearServerToken: clearPickleToken } =
+    usePickleServerStore();
   const [googleInitialized, setGoogleInitialized] = useState(false);
-  const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
-  const [loginModalServer, setLoginModalServer] =
+  const [picknowDropdownOpen, setPicknowDropdownOpen] = useState(false);
+  const [pickleDropdownOpen, setPickleDropdownOpen] = useState(false);
+  const [loginModalPicknowServer, setLoginModalPicknowServer] =
     useState<PicknowServer | null>(null);
-  const [showPickleLoginModal, setShowPickleLoginModal] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [loginModalPickleServer, setLoginModalPickleServer] =
+    useState<PickleServer | null>(null);
+  const picknowDropdownRef = useRef<HTMLDivElement>(null);
+  const pickleDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!selectedService) return;
@@ -52,27 +59,43 @@ const Header = () => {
   }, [selectedService]);
 
   useEffect(() => {
-    if (!serverDropdownOpen) return;
+    if (!picknowDropdownOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
+        picknowDropdownRef.current &&
+        !picknowDropdownRef.current.contains(e.target as Node)
       ) {
-        setServerDropdownOpen(false);
+        setPicknowDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [serverDropdownOpen]);
+  }, [picknowDropdownOpen]);
+
+  useEffect(() => {
+    if (!pickleDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        pickleDropdownRef.current &&
+        !pickleDropdownRef.current.contains(e.target as Node)
+      ) {
+        setPickleDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [pickleDropdownOpen]);
 
   const handleGoogleLogin = async () => {
     if (selectedService === 'picknow') {
       const { selectedServerIds } = usePicknowServerStore.getState();
-      if (!selectedServerIds.some((id) => isServerLoggedIn(id))) {
+      if (!selectedServerIds.some((id) => isPicknowLoggedIn(id))) {
         return toast.warn('서버에 먼저 로그인해주세요!');
       }
-    } else if (!accessToken) {
-      return toast.warn('관리자 로그인을 먼저 해주세요!');
+    } else if (selectedService === 'pickle') {
+      if (Object.keys(pickleTokens).length === 0) {
+        return toast.warn('서버에 먼저 로그인해주세요!');
+      }
     }
     const token = await getGoogleToken();
     if (token) {
@@ -89,7 +112,14 @@ const Header = () => {
   const handleLogout = () => {
     setTestMode(false);
     if (selectedService === 'picknow') {
-      PICKNOW_SERVERS.forEach((server) => clearServerToken(server.id));
+      PICKNOW_SERVERS.forEach((server) => clearPicknowToken(server.id));
+    } else if (selectedService === 'pickle') {
+      PICKLE_SERVERS.forEach((server) => clearPickleToken(server.id));
+      clearAccessToken();
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('pickleToken');
+      supabase.auth.signOut();
     } else {
       if (selectedService) clearServiceToken(selectedService);
       localStorage.removeItem('refreshToken');
@@ -100,8 +130,12 @@ const Header = () => {
     navigate('/');
   };
 
-  const connectedCount = PICKNOW_SERVERS.filter((s) =>
-    isServerLoggedIn(s.id)
+  const picknowConnectedCount = PICKNOW_SERVERS.filter((s) =>
+    isPicknowLoggedIn(s.id)
+  ).length;
+
+  const pickleConnectedCount = PICKLE_SERVERS.filter((s) =>
+    isPickleLoggedIn(s.id)
   ).length;
 
   const serviceLabel = selectedService
@@ -132,29 +166,19 @@ const Header = () => {
           서비스 변경
         </button>
 
-        {/* Pickle: 미로그인 시 관리자 로그인 버튼 */}
-        {selectedService === 'pickle' && !accessToken && (
-          <Button
-            onClick={() => setShowPickleLoginModal(true)}
-            className='bg-indigo-600 text-white'
-          >
-            관리자 로그인
-          </Button>
-        )}
-
-        {/* Picknow: 서버 연결 상태 드롭다운 */}
-        {selectedService === 'picknow' && (
-          <div className='relative' ref={dropdownRef}>
+        {/* Pickle: 서버 연결 상태 드롭다운 */}
+        {selectedService === 'pickle' && (
+          <div className='relative' ref={pickleDropdownRef}>
             <button
-              onClick={() => setServerDropdownOpen((prev) => !prev)}
+              onClick={() => setPickleDropdownOpen((prev) => !prev)}
               className='flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
             >
               <span
-                className={`w-2 h-2 rounded-full shrink-0 ${connectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
+                className={`w-2 h-2 rounded-full shrink-0 ${pickleConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
               />
-              서버 연결 {connectedCount}/{PICKNOW_SERVERS.length}
+              서버 연결 {pickleConnectedCount}/{PICKLE_SERVERS.length}
               <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${serverDropdownOpen ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 text-gray-400 transition-transform ${pickleDropdownOpen ? 'rotate-180' : ''}`}
                 fill='none'
                 viewBox='0 0 24 24'
                 stroke='currentColor'
@@ -168,10 +192,10 @@ const Header = () => {
               </svg>
             </button>
 
-            {serverDropdownOpen && (
-              <div className='absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50'>
-                {PICKNOW_SERVERS.map((server) => {
-                  const connected = !!serverTokens[server.id];
+            {pickleDropdownOpen && (
+              <div className='absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50'>
+                {PICKLE_SERVERS.map((server) => {
+                  const connected = !!pickleTokens[server.id];
                   return (
                     <div
                       key={server.id}
@@ -191,10 +215,81 @@ const Header = () => {
                       <button
                         onClick={() => {
                           if (connected) {
-                            clearServerToken(server.id);
+                            clearPickleToken(server.id);
                           } else {
-                            setServerDropdownOpen(false);
-                            setLoginModalServer(server);
+                            setPickleDropdownOpen(false);
+                            setLoginModalPickleServer(server);
+                          }
+                        }}
+                        className={`text-xs px-3 py-1 rounded-full border cursor-pointer transition-colors ${
+                          connected
+                            ? 'border-red-200 text-red-500 hover:bg-red-50'
+                            : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                        }`}
+                      >
+                        {connected ? '해제' : '연결'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Picknow: 서버 연결 상태 드롭다운 */}
+        {selectedService === 'picknow' && (
+          <div className='relative' ref={picknowDropdownRef}>
+            <button
+              onClick={() => setPicknowDropdownOpen((prev) => !prev)}
+              className='flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
+            >
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${picknowConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
+              />
+              서버 연결 {picknowConnectedCount}/{PICKNOW_SERVERS.length}
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${picknowDropdownOpen ? 'rotate-180' : ''}`}
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  d='M19 9l-7 7-7-7'
+                />
+              </svg>
+            </button>
+
+            {picknowDropdownOpen && (
+              <div className='absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50'>
+                {PICKNOW_SERVERS.map((server) => {
+                  const connected = !!picknowTokens[server.id];
+                  return (
+                    <div
+                      key={server.id}
+                      className='flex items-center gap-3 px-4 py-3 hover:bg-gray-50'
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
+                      />
+                      <span className='flex-1 text-sm font-medium text-gray-700'>
+                        {server.label}
+                      </span>
+                      <span
+                        className={`text-xs ${connected ? 'text-green-600' : 'text-gray-400'}`}
+                      >
+                        {connected ? '연결됨' : '미연결'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (connected) {
+                            clearPicknowToken(server.id);
+                          } else {
+                            setPicknowDropdownOpen(false);
+                            setLoginModalPicknowServer(server);
                           }
                         }}
                         className={`text-xs px-3 py-1 rounded-full border cursor-pointer transition-colors ${
@@ -219,15 +314,18 @@ const Header = () => {
         <Button onClick={handleLogout}>로그아웃</Button>
       </div>
 
-      {loginModalServer && (
+      {loginModalPicknowServer && (
         <ServerLoginModal
-          server={loginModalServer}
-          onClose={() => setLoginModalServer(null)}
+          server={loginModalPicknowServer}
+          onClose={() => setLoginModalPicknowServer(null)}
         />
       )}
 
-      {showPickleLoginModal && (
-        <PickleLoginModal onClose={() => setShowPickleLoginModal(false)} />
+      {loginModalPickleServer && (
+        <PickleLoginModal
+          server={loginModalPickleServer}
+          onClose={() => setLoginModalPickleServer(null)}
+        />
       )}
     </div>
   );

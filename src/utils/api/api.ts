@@ -2,8 +2,14 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { supabase } from '../../lib/supabase';
 import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import type { PicknowServer } from '../../constants/servers';
-import { picknowTokenKey, picknowRefreshKey } from '../../constants/servers';
+import type { PicknowServer, PickleServer } from '../../constants/servers';
+import {
+  picknowTokenKey,
+  picknowRefreshKey,
+  pickleTokenKey,
+  pickleRefreshKey,
+  PICKLE_SERVERS,
+} from '../../constants/servers';
 
 let isRefreshing = false;
 let pendingCallbacks: ((token: string) => void)[] = [];
@@ -157,11 +163,113 @@ function createApiInstance(baseURL: string) {
   return instance;
 }
 
-export const api = createApiInstance(import.meta.env.VITE_PROD_API_URL);
-export const stgApi = createApiInstance(import.meta.env.VITE_STG_API_URL);
 export const picknowApi = createApiInstance(
   import.meta.env.VITE_PICKNOW_API_URL_STG
 );
+
+// ── Pickle 다중 서버 지원 ──────────────────────────────────────────────────
+
+const pickleServerApiCache = new Map<string, ReturnType<typeof axios.create>>();
+
+export function getPickleServerApi(server: PickleServer) {
+  if (!pickleServerApiCache.has(server.id)) {
+    pickleServerApiCache.set(server.id, createPickleServerInstance(server));
+  }
+  return pickleServerApiCache.get(server.id)!;
+}
+
+function createPickleServerInstance(server: PickleServer) {
+  let isRefreshingServer = false;
+  let pendingServerCallbacks: ((token: string) => void)[] = [];
+
+  const instance = axios.create({ baseURL: server.apiUrl });
+
+  instance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem(pickleTokenKey(server.id));
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        (config as unknown as Record<string, unknown>)._hadAuth = true;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  instance.interceptors.response.use(async (response) => {
+    const { resultCode } = response.data;
+    if (resultCode !== 'E0123') return response;
+
+    if (isTestMode) return response;
+
+    if (!(response.config as unknown as Record<string, unknown>)._hadAuth) {
+      return response;
+    }
+
+    if ((response.config as unknown as Record<string, unknown>)._refreshed) {
+      doPickleServerLogout(server);
+      return Promise.reject(new Error('인증이 만료되었습니다.'));
+    }
+
+    if (isRefreshingServer) {
+      return new Promise<typeof response>((resolve) => {
+        pendingServerCallbacks.push((token) => {
+          response.config.headers.Authorization = `Bearer ${token}`;
+          (response.config as unknown as Record<string, unknown>)._refreshed = true;
+          resolve(instance(response.config));
+        });
+      });
+    }
+
+    isRefreshingServer = true;
+    let newToken: string | null = null;
+
+    try {
+      const storedRefresh = localStorage.getItem(pickleRefreshKey(server.id));
+      if (storedRefresh) {
+        const res = await axios.post(`${server.apiUrl}/admin/reissue`, {
+          refreshToken: storedRefresh,
+        });
+        const newAccess = res.data?.data?.accessToken;
+        const newRefresh = res.data?.data?.refreshToken;
+        if (newAccess) {
+          localStorage.setItem(pickleTokenKey(server.id), newAccess);
+          if (newRefresh)
+            localStorage.setItem(pickleRefreshKey(server.id), newRefresh);
+          newToken = newAccess;
+        }
+      }
+    } catch {
+      localStorage.removeItem(pickleRefreshKey(server.id));
+    } finally {
+      isRefreshingServer = false;
+    }
+
+    if (newToken) {
+      pendingServerCallbacks.forEach((cb) => cb(newToken!));
+      pendingServerCallbacks = [];
+      response.config.headers.Authorization = `Bearer ${newToken}`;
+      (response.config as unknown as Record<string, unknown>)._refreshed = true;
+      return instance(response.config);
+    }
+
+    pendingServerCallbacks = [];
+    doPickleServerLogout(server);
+    return Promise.reject(new Error('인증이 만료되었습니다.'));
+  });
+
+  return instance;
+}
+
+function doPickleServerLogout(server: PickleServer) {
+  import('../../store/usePickleServerStore').then(({ usePickleServerStore }) => {
+    usePickleServerStore.getState().clearServerToken(server.id);
+  });
+  toast.error(`Pickle ${server.label} 로그인이 만료되었습니다. 다시 로그인해주세요.`);
+}
+
+export const api = getPickleServerApi(PICKLE_SERVERS[0]);
+export const stgApi = getPickleServerApi(PICKLE_SERVERS[1]);
 
 // ── Picknow 다중 서버 지원 ─────────────────────────────────────────────────
 
