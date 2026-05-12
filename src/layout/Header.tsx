@@ -11,6 +11,7 @@ import Button from '../components/common/Button';
 import { useLoginTokenStore } from '../store/useLoginTokenStore';
 import { useAccessTokenStore } from '../store/useAccessTokenStore';
 import { useServiceStore, clearServiceToken } from '../store/useServiceStore';
+import { setTestMode } from '../utils/api/api';
 
 const SERVICE_LABELS: Record<string, string> = {
   pickle: 'Pickle Admin',
@@ -48,13 +49,12 @@ const Header = () => {
   };
 
   const handleChangeService = () => {
-    localStorage.removeItem('refreshToken');
-    clearAccessToken();
     clearSelectedService();
     navigate('/');
   };
 
   const handleLogout = () => {
+    setTestMode(false);
     if (selectedService) clearServiceToken(selectedService);
     localStorage.removeItem('refreshToken');
     clearAccessToken();

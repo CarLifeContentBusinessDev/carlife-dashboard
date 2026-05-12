@@ -5,10 +5,44 @@ import { useAccessTokenStore } from '../../store/useAccessTokenStore';
 
 let isRefreshing = false;
 let pendingCallbacks: ((token: string) => void)[] = [];
+let isGoogleLoginInProgress = false;
+let pendingLogout = false;
+let isTestMode = false;
 const LOGOUT_EVENT_NAME = 'app:logout';
 
-function triggerLogoutRedirect() {
+export function setTestMode(value: boolean) {
+  isTestMode = value;
+}
+
+function doLogout() {
+  isTestMode = false;
+  const selectedService = localStorage.getItem('selectedService');
+  if (selectedService) {
+    localStorage.removeItem(
+      selectedService === 'picknow' ? 'picknowToken' : 'pickleToken'
+    );
+  }
+  localStorage.removeItem('refreshToken');
+  useAccessTokenStore.getState().clearAccessToken();
+  toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
   window.dispatchEvent(new Event(LOGOUT_EVENT_NAME));
+}
+
+function triggerLogoutRedirect() {
+  if (isTestMode) return;
+  if (isGoogleLoginInProgress) {
+    pendingLogout = true;
+    return;
+  }
+  doLogout();
+}
+
+export function setGoogleLoginInProgress(value: boolean) {
+  isGoogleLoginInProgress = value;
+  if (!value && pendingLogout) {
+    pendingLogout = false;
+    doLogout();
+  }
 }
 
 async function tryRefreshToken(): Promise<string | null> {
@@ -74,9 +108,6 @@ function createApiInstance(baseURL: string) {
 
     // 이미 재시도한 요청이 또 E0123 → 로그아웃
     if ((response.config as unknown as Record<string, unknown>)._refreshed) {
-      useAccessTokenStore.getState().clearAccessToken();
-      localStorage.removeItem('refreshToken');
-      toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
       triggerLogoutRedirect();
       return Promise.reject(new Error('인증이 만료되었습니다.'));
     }
@@ -111,9 +142,6 @@ function createApiInstance(baseURL: string) {
     }
 
     pendingCallbacks = [];
-    useAccessTokenStore.getState().clearAccessToken();
-    localStorage.removeItem('refreshToken');
-    toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
     triggerLogoutRedirect();
     return Promise.reject(new Error('인증이 만료되었습니다.'));
   });

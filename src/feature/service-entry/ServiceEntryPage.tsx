@@ -1,6 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { useServiceStore } from '../../store/useServiceStore';
+import { useServiceStore, getServiceToken } from '../../store/useServiceStore';
 import type { ServiceType } from '../../store/useServiceStore';
+
+const SERVICE_HOME: Record<ServiceType, string> = {
+  pickle: '/episode-list',
+  picknow: '/picknow/excel-sync',
+};
 
 export function ServiceEntryPage() {
   const navigate = useNavigate();
@@ -8,7 +13,8 @@ export function ServiceEntryPage() {
 
   const handleSelect = (service: ServiceType) => {
     setSelectedService(service);
-    navigate(`/${service}/login`);
+    const existingToken = getServiceToken(service);
+    navigate(existingToken ? SERVICE_HOME[service] : `/${service}/login`);
   };
 
   return (
@@ -45,7 +51,7 @@ export function ServiceEntryPage() {
         >
           <img src='/picknow_logo.svg' alt='picknow' width={48} height={48} />
           <span className='text-2xl font-bold'>Picknow</span>
-          <span className='text-sm text-gray-400'>엑셀 데이터 동기화</span>
+          <span className='text-sm text-gray-400'>Configuration 추출</span>
         </button>
       </div>
     </div>

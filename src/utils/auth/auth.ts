@@ -1,4 +1,5 @@
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
+import { setGoogleLoginInProgress } from '../api/api';
 
 // Google OAuth 설정
 
@@ -195,6 +196,8 @@ export async function getGoogleToken(): Promise<string | null> {
       tokenClient.callback = (
         response: google.accounts.oauth2.TokenResponse
       ) => {
+        setGoogleLoginInProgress(false);
+
         if (response.error) {
           console.error('Google 인증 실패:', response);
 
@@ -218,11 +221,12 @@ export async function getGoogleToken(): Promise<string | null> {
         resolve(token);
       };
 
-      // 토큰 요청 시작 (빈 객체로 설정하여 기본 동작 사용)
-
+      // 팝업이 열리는 동안 Pickle API 에러로 인한 강제 로그아웃 방지
+      setGoogleLoginInProgress(true);
       tokenClient.requestAccessToken({});
     });
   } catch (error) {
+    setGoogleLoginInProgress(false);
     console.error('Google 인증 실패:', error);
 
     clearSavedGoogleToken();

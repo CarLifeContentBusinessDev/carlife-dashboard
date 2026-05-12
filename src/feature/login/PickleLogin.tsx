@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { supabase } from '../../lib/supabase';
-import { api } from '../../utils/api/api';
+import { api, setTestMode } from '../../utils/api/api';
 import { useAccessTokenStore } from '../../store/useAccessTokenStore';
 import { setServiceToken } from '../../store/useServiceStore';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
@@ -47,8 +47,20 @@ export default function PickleLogin() {
         } else {
           localStorage.removeItem('rememberId_pickle');
         }
-        setAccessToken('TEST_TOKEN');
-        setServiceToken('pickle', 'TEST_TOKEN');
+
+        // Supabase 로그인으로 데모 기능 사용 가능하게
+        let supabaseToken = 'TEST_TOKEN';
+        const { data: supabaseData } = await supabase.auth.signInWithPassword({
+          email: testId,
+          password: testPw,
+        });
+        if (supabaseData.session?.access_token) {
+          supabaseToken = supabaseData.session.access_token;
+        }
+
+        setTestMode(true);
+        setAccessToken(supabaseToken);
+        setServiceToken('pickle', supabaseToken);
         toast.success('테스트 계정으로 로그인했습니다.');
         navigate('/episode-list');
         return;

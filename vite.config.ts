@@ -7,7 +7,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      // Google OAuth 팝업이 window.opener를 통해 토큰을 전달할 수 있도록
+      // 개발 서버에서는 unsafe-none 사용 (배포는 vercel.json에서 same-origin-allow-popups 유지)
+      'Cross-Origin-Opener-Policy': 'unsafe-none',
     },
   },
   preview: {
