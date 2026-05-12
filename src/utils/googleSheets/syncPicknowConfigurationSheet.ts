@@ -641,8 +641,12 @@ export async function syncPicknowConfigurationSheet(
           resolvedUA.value,
           stringifyBooleanArray(detail.urlConfig?.whiteList),
           stringifyBooleanArray(detail.urlConfig?.blackList),
+          // 미지원 기능 팝업
+          // 미지원 바이너리
+          toBooleanText(detail.urlConfig?.pinchZoom),
           toBooleanText(detail.urlConfig?.supportNewTab),
           toBooleanText(detail.urlConfig?.mouseOnlyPage),
+          toBooleanText(detail.urlConfig?.sendStringOnEnter),
           detail.bookmarkSeq,
         ],
       });

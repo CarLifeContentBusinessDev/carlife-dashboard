@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   getGoogleToken,
-  googleLogout,
   initializeGoogleAPI,
   initializeGIS,
 } from '../utils/auth/auth';
@@ -59,7 +58,6 @@ const Header = () => {
     localStorage.removeItem('refreshToken');
     clearAccessToken();
     clearSelectedService();
-    if (selectedService === 'pickle' || selectedService === 'picknow') googleLogout();
     navigate('/');
   };
 

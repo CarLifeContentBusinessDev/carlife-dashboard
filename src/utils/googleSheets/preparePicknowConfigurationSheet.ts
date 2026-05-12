@@ -90,7 +90,7 @@ export async function preparePicknowConfigurationSheet(
                 startRowIndex: 1,
                 endRowIndex: 2,
                 startColumnIndex: 1,
-                endColumnIndex: 21,
+                endColumnIndex: 26, // Z열
               },
               rows: [
                 {

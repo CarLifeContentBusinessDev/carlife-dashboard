@@ -16,10 +16,14 @@ export const PICKNOW_CONFIGURATION_HEADERS = [
   'User Agent String',
   'Whitelist',
   'BlackList',
+  '미지원 기능 팝업',
+  '미지원 바이너리',
+  'pinchZoom',
   'supportNewTab',
-  'MouseOnlyPage',
+  'mouseOnlyPage',
+  'sendStringOnEnter',
   'bookmarkSeq',
 ];
 
-export const PICKNOW_CONFIGURATION_HEADER_RANGE = 'B2:U2';
-export const PICKNOW_CONFIGURATION_DATA_RANGE = 'B3:U';
+export const PICKNOW_CONFIGURATION_HEADER_RANGE = 'B2:Z2';
+export const PICKNOW_CONFIGURATION_DATA_RANGE = 'B3:Z';
