@@ -90,7 +90,7 @@ export async function preparePicknowConfigurationSheet(
                 startRowIndex: 1,
                 endRowIndex: 2,
                 startColumnIndex: 1,
-                endColumnIndex: 26, // Z열
+                endColumnIndex: 25,
               },
               rows: [
                 {
@@ -113,6 +113,7 @@ export async function preparePicknowConfigurationSheet(
                 'userEnteredFormat.backgroundColor,userEnteredFormat.horizontalAlignment,userEnteredFormat.textFormat.bold',
             },
           },
+          // 텍스트 정렬 및 줄바꿈 설정
           {
             repeatCell: {
               range: {
@@ -120,19 +121,20 @@ export async function preparePicknowConfigurationSheet(
                 startRowIndex: 2,
                 endRowIndex: 1000,
                 startColumnIndex: 0,
-                endColumnIndex: 21,
+                endColumnIndex: 24,
               },
               cell: {
                 userEnteredFormat: {
                   horizontalAlignment: 'LEFT',
                   verticalAlignment: 'MIDDLE',
-                  wrapStrategy: 'CLIP',
+                  wrapStrategy: 'WRAP',
                 },
               },
               fields:
                 'userEnteredFormat(horizontalAlignment,verticalAlignment,wrapStrategy)',
             },
           },
+          // 열 너비 설정
           {
             updateDimensionProperties: {
               range: {
@@ -148,6 +150,105 @@ export async function preparePicknowConfigurationSheet(
             },
           },
           {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 1,
+                endIndex: 2,
+              },
+              properties: {
+                pixelSize: 60,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 2,
+                endIndex: 4,
+              },
+              properties: {
+                pixelSize: 180,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 5,
+                endIndex: 7,
+              },
+              properties: {
+                pixelSize: 180,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 7,
+                endIndex: 11,
+              },
+              properties: {
+                pixelSize: 80,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 15,
+                endIndex: 20,
+              },
+              properties: {
+                pixelSize: 200,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 20,
+                endIndex: 24,
+              },
+              properties: {
+                pixelSize: 140,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          {
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: 24,
+                endIndex: 25,
+              },
+              properties: {
+                pixelSize: 20,
+              },
+              fields: 'pixelSize',
+            },
+          },
+          // 필터 영역 설정
+          {
             setBasicFilter: {
               filter: {
                 range: {
@@ -155,7 +256,7 @@ export async function preparePicknowConfigurationSheet(
                   startRowIndex: 1, // 헤더 2행
                   endRowIndex: 1000,
                   startColumnIndex: 1, // B열
-                  endColumnIndex: 21, // U열
+                  endColumnIndex: 24, // X열
                 },
               },
             },
@@ -165,7 +266,7 @@ export async function preparePicknowConfigurationSheet(
               properties: {
                 sheetId,
                 gridProperties: {
-                  columnCount: 21,
+                  columnCount: 25,
                   frozenRowCount: 2,
                 },
               },

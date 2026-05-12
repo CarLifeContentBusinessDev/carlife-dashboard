@@ -1,5 +1,5 @@
 export const PICKNOW_CONFIGURATION_HEADERS = [
-  'index',
+  'No.',
   'OEM',
   'Device',
   'Category',
@@ -22,8 +22,7 @@ export const PICKNOW_CONFIGURATION_HEADERS = [
   'supportNewTab',
   'mouseOnlyPage',
   'sendStringOnEnter',
-  'bookmarkSeq',
 ];
 
-export const PICKNOW_CONFIGURATION_HEADER_RANGE = 'B2:Z2';
-export const PICKNOW_CONFIGURATION_DATA_RANGE = 'B3:Z';
+export const PICKNOW_CONFIGURATION_HEADER_RANGE = 'B2:X2';
+export const PICKNOW_CONFIGURATION_DATA_RANGE = 'B3:X';

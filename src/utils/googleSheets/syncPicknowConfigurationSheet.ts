@@ -74,6 +74,8 @@ interface PicknowBookmarkDetail {
     };
     whiteList?: string[];
     blackList?: string[];
+    duplicateDomainList?: string[];
+    unSupportedDomainList?: Record<string, string[]>;
     mobilePage?: boolean;
     pinchZoom?: boolean;
     supportNewTab?: boolean;
@@ -94,6 +96,24 @@ interface PicknowBookmarkDetail {
   remark: string;
   binaryCds: string[];
   configurationYn?: string;
+}
+
+interface BinaryCodeItem {
+  comCodeSeq: number;
+  comCodeGroupCd: string;
+  comCodeCd: string;
+  comCodeName: string;
+  sortOrder: number;
+  usageYn: string;
+  attribute1: string;
+  attribute2: string;
+  attribute3: string;
+}
+
+interface BinaryCodeResponse {
+  resultCode: string;
+  resultMessage: string;
+  data: BinaryCodeItem[];
 }
 
 interface PicknowOemDeviceResponse {
@@ -276,6 +296,44 @@ const getValueFromConfig = (
 const stringifyBooleanArray = (values?: string[]): string => {
   if (!values || values.length === 0) return '';
   return values.join('\n');
+};
+
+const formatUnSupportedDomainList = (
+  map?: Record<string, string[]>
+): string => {
+  if (!map) return '';
+  const entries = Object.entries(map).filter(([domain]) => domain !== '');
+  if (entries.length === 0) return '';
+  return entries
+    .map(([domain, keywords]) => `${domain}\n→ ${keywords.join(', ')}`)
+    .join('\n\n');
+};
+
+const formatBinaryCodes = (
+  codes: string[],
+  map: Map<string, BinaryCodeItem>,
+  oem: string,
+  device: string
+): string => {
+  if (!codes || codes.length === 0) return '';
+  const targetOem = normalizeText(oem);
+  const targetDevice = normalizeText(device);
+
+  return codes
+    .map((code) => {
+      const item = map.get(code);
+      if (!item) return '';
+
+      const itemOem = normalizeText(item.attribute1);
+      const itemDevice = normalizeText(item.attribute2);
+      if (itemOem !== targetOem || itemDevice !== targetDevice) {
+        return '';
+      }
+
+      return item.comCodeName.trim();
+    })
+    .filter(Boolean)
+    .join('\n');
 };
 
 const joinUniqueValues = (values: string[]): string => {
@@ -465,6 +523,14 @@ export async function syncPicknowConfigurationSheet(
   // fetch Setting sheet to determine device resolution / orientation
   const settingRows: SettingRow[] = await fetchSettingData();
 
+  const binaryCodeResponse = await picknowApi.get<BinaryCodeResponse>(
+    '/admin/common-code/common-codes/BinaryCode',
+    { params: { comCodeGroupCd: 'BinaryCode' } }
+  );
+  const binaryCodeMap = new Map<string, BinaryCodeItem>(
+    (binaryCodeResponse.data.data ?? []).map((item) => [item.comCodeCd, item])
+  );
+
   const findSettingRow = (oem: string, device: string) => {
     const selOem = normalizeText(oem);
     const selDevice = normalizeText(device);
@@ -641,8 +707,13 @@ export async function syncPicknowConfigurationSheet(
           resolvedUA.value,
           stringifyBooleanArray(detail.urlConfig?.whiteList),
           stringifyBooleanArray(detail.urlConfig?.blackList),
-          // 미지원 기능 팝업
-          // 미지원 바이너리
+          formatUnSupportedDomainList(detail.urlConfig?.unSupportedDomainList),
+          formatBinaryCodes(
+            detail.binaryCds ?? [],
+            binaryCodeMap,
+            mapping.oem,
+            mapping.device
+          ),
           toBooleanText(detail.urlConfig?.pinchZoom),
           toBooleanText(detail.urlConfig?.supportNewTab),
           toBooleanText(detail.urlConfig?.mouseOnlyPage),
@@ -683,7 +754,10 @@ export async function syncPicknowConfigurationSheet(
       // fallback: alphabetical by country code
       return aCountry.localeCompare(bCountry, 'en');
     })
-    .map((item, index) => [index + 1, ...item.row]);
+    .map((item) => {
+      const bookmarkSeq = item.row[item.row.length - 1];
+      return [bookmarkSeq, ...item.row.slice(0, -1)];
+    });
 
   if (rows.length === 0) {
     throw new Error(
