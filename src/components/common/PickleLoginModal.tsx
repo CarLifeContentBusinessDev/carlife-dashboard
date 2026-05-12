@@ -14,7 +14,11 @@ interface LoginApiResponse {
   data: LoginResponseData;
 }
 
-export default function PickleLogin() {
+interface Props {
+  onClose: () => void;
+}
+
+export default function PickleLoginModal({ onClose }: Props) {
   const navigate = useNavigate();
   const { setAccessToken } = useAccessTokenStore();
   const { clearLoginToken } = useLoginTokenStore();
@@ -37,7 +41,6 @@ export default function PickleLogin() {
     setError('');
 
     try {
-      // 테스트 계정 체크
       const testId = import.meta.env.VITE_TEST_ID;
       const testPw = import.meta.env.VITE_TEST_PW;
       if (testId && testPw && id === testId && password === testPw) {
@@ -48,7 +51,6 @@ export default function PickleLogin() {
           localStorage.removeItem('rememberId_pickle');
         }
 
-        // Supabase 로그인으로 데모 기능 사용 가능하게
         let supabaseToken = 'TEST_TOKEN';
         const { data: supabaseData } = await supabase.auth.signInWithPassword({
           email: testId,
@@ -62,11 +64,11 @@ export default function PickleLogin() {
         setAccessToken(supabaseToken);
         setServiceToken('pickle', supabaseToken);
         toast.success('테스트 계정으로 로그인했습니다.');
+        onClose();
         navigate('/episode-list');
         return;
       }
 
-      // API 로그인 먼저
       let apiLoginData: LoginResponseData | null = null;
       try {
         const res = await api.post<LoginApiResponse>(
@@ -78,7 +80,7 @@ export default function PickleLogin() {
           apiLoginData = res.data.data;
         }
       } catch {
-        // API 호출 자체 실패 (네트워크 오류 등)
+        // 네트워크 오류 등
       }
 
       if (!apiLoginData) {
@@ -90,11 +92,8 @@ export default function PickleLogin() {
       setServiceToken('pickle', apiLoginData.accessToken);
       localStorage.setItem('refreshToken', apiLoginData.refreshToken);
 
-      // API 성공 후 Supabase 세션도 연동 (실패해도 무시)
       supabase.auth.signInWithPassword({ email: id, password }).catch(() => {
-        console.warn(
-          'Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.'
-        );
+        console.warn('Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.');
       });
 
       if (remember) {
@@ -104,7 +103,7 @@ export default function PickleLogin() {
       }
 
       toast.success('로그인에 성공하였습니다.');
-      navigate('/episode-list');
+      onClose();
     } catch (err) {
       console.error(err);
       setError('서버와 연결할 수 없습니다.');
@@ -119,25 +118,29 @@ export default function PickleLogin() {
   };
 
   return (
-    <div className='min-h-screen bg-[#F6F7FA] flex items-center justify-center'>
-      <div className='bg-white rounded-2xl shadow-lg p-10 w-96 flex flex-col gap-6'>
+    <div
+      className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className='bg-white rounded-2xl shadow-xl p-8 w-96 flex flex-col gap-5'>
         <div className='text-center'>
           <img
             src='/pickle_logo.svg'
             alt='로고'
-            width={48}
-            height={48}
+            width={40}
+            height={40}
             className='mx-auto mb-3'
           />
-          <h2 className='text-2xl font-bold text-[#1B1E2F]'>Pickle Admin</h2>
-          <p className='text-sm text-gray-500 mt-1'>
-            관리자 계정으로 로그인하세요
-          </p>
+          <h2 className='text-xl font-bold text-[#1B1E2F]'>Pickle Admin</h2>
+          <p className='text-sm text-gray-500 mt-1'>관리자 계정으로 로그인하세요</p>
         </div>
 
         <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-          {error && <p className='text-red-500 text-sm text-center'>{error}</p>}
-
+          {error && (
+            <p className='text-red-500 text-sm text-center'>{error}</p>
+          )}
           <input
             type='text'
             placeholder='아이디'
@@ -145,7 +148,6 @@ export default function PickleLogin() {
             onChange={(e) => setId(e.target.value)}
             className='border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
           />
-
           <input
             type='password'
             placeholder='비밀번호'
@@ -154,7 +156,6 @@ export default function PickleLogin() {
             onChange={(e) => setPassword(e.target.value)}
             className='border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
           />
-
           <label className='flex items-center gap-2 text-sm'>
             <input
               type='checkbox'
@@ -164,21 +165,20 @@ export default function PickleLogin() {
             />
             아이디 저장하기
           </label>
-
           <button
             disabled={loading}
             type='submit'
-            className='bg-[#1B1E2F] cursor-pointer text-white rounded-md p-3 mt-2 hover:opacity-90 transition disabled:opacity-50'
+            className='bg-[#1B1E2F] cursor-pointer text-white rounded-md p-3 mt-1 hover:opacity-90 transition disabled:opacity-50'
           >
             {loading ? '로그인 중...' : '로그인'}
           </button>
         </form>
 
         <button
-          onClick={() => navigate('/')}
+          onClick={onClose}
           className='text-sm text-gray-400 text-center hover:text-gray-600 cursor-pointer'
         >
-          ← 서비스 선택으로 돌아가기
+          취소
         </button>
       </div>
     </div>

@@ -12,7 +12,8 @@ import { buildSheetRange } from '../excel/sheetRange';
 
 export async function preparePicknowConfigurationSheet(
   sheetName: string,
-  spreadsheetId: string = import.meta.env.VITE_PICKNOW_SPREADSHEET_ID as string
+  spreadsheetId: string = import.meta.env
+    .VITE_PICKNOW_SPREADSHEET_ID_STG as string
 ): Promise<number> {
   const targetSheetName = sheetName.trim();
 

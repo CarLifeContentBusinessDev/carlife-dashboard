@@ -15,7 +15,7 @@ export interface SettingRow {
   Orientation: string;
 }
 
-export async function fetchSettingData(): Promise<SettingRow[]> {
+export async function fetchSettingData(spreadsheetId: string): Promise<SettingRow[]> {
   await initializeGoogleAPI();
 
   // 로그인 토큰이 없으면 GIS를 통해 토큰을 획득 시도
@@ -33,7 +33,6 @@ export async function fetchSettingData(): Promise<SettingRow[]> {
   gapi.client.setToken({ access_token: token });
 
   const sheets = getSheetsClient();
-  const spreadsheetId = import.meta.env.VITE_PICKNOW_SPREADSHEET_ID as string;
 
   let response;
   try {
