@@ -25,6 +25,7 @@ import { findChangedData } from '../../../../utils/excel/updateLogs';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
 import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState';
+import PickleLoginBanner from '../../../../components/common/PickleLoginBanner';
 
 const CATEGORY = 'episode';
 const PROD_PAGE_SIZE = 10;
@@ -218,7 +219,12 @@ const EpisodeLayout = () => {
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=1925187377#gid=1925187377`;
 
   return (
-    <div className='p-10 flex flex-col h-full'>
+    <div className='flex flex-col h-full'>
+      <PickleLoginBanner
+        serverId={isStaging ? 'stg' : 'prod'}
+        serverLabel={isStaging ? 'STG' : '상용'}
+      />
+      <div className='p-10 flex flex-col h-full'>
       <h1 className='text-3xl font-bold mb-4 indent-1'>
         에피소드 관리{isStaging ? ' (스테이징)' : ''}
       </h1>
@@ -335,6 +341,7 @@ const EpisodeLayout = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };

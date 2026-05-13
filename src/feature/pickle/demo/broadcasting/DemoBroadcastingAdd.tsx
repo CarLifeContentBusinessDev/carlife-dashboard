@@ -58,12 +58,12 @@ const DemoBroadcastingAdd = () => {
 
   const handleSave = async () => {
     if (!form.title.trim()) {
-      setError('방송사 이름은 필수입니다.');
+      setError('방송사명을 입력하세요.');
       return;
     }
 
     if (form.language.length === 0) {
-      setError('최소 한 개 이상의 언어를 선택하세요.');
+      setError('최소 한 개 이상의 국가를 선택하세요.');
       return;
     }
 
@@ -107,7 +107,7 @@ const DemoBroadcastingAdd = () => {
       </div>
 
       <div className='flex flex-col gap-10 mb-10'>
-        <FormField label='국가 선택'>
+        <FormField label='국가 선택 *'>
           <div className='flex gap-3 flex-wrap'>
             {LANG_OPTIONS.map((lang) => {
               const selected = form.language.includes(lang.code);
@@ -138,7 +138,7 @@ const DemoBroadcastingAdd = () => {
           </div>
 
           <div className='flex flex-col gap-2'>
-            <FormField label='Title (필수)'>
+            <FormField label='Title *'>
               <input
                 name='title'
                 value={form.title}
@@ -189,8 +189,6 @@ const DemoBroadcastingAdd = () => {
           </FormField>
         </div>
       </div>
-
-      {error && <div className='text-red-500 text-sm mt-4'>{error}</div>}
     </FormLayout>
   );
 };

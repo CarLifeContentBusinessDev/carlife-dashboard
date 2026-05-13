@@ -5,7 +5,6 @@ import { useAccessTokenStore } from './store/useAccessTokenStore';
 import AuthGuard from './components/common/AuthGuard';
 import Layout from './layout/Layout';
 import { ServiceEntryPage } from './feature/service-entry/ServiceEntryPage';
-import PickleLogin from './feature/login/PickleLogin';
 import PicknowLogin from './feature/login/PicknowLogin';
 import Configuration from './feature/picknow/Configuration';
 import ChannelLayout from './feature/pickle/production/channel-book/ChannelLayout';
@@ -83,7 +82,6 @@ function App() {
       <Routes>
         {/* 서비스 선택 및 로그인 (Layout 없음) */}
         <Route path='/' element={<ServiceEntryPage />} />
-        <Route path='/pickle/login' element={<PickleLogin />} />
         <Route path='/picknow/login' element={<PicknowLogin />} />
 
         {/* 인증된 어드민 페이지 */}

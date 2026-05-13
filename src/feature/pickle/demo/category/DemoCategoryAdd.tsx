@@ -43,7 +43,7 @@ const DemoCategoryAdd = () => {
 
     setForm((prev) => ({
       ...prev,
-      [name]: name === 'order' ? Number(value) : value,
+      [name]: value,
     }));
   };
 
@@ -63,10 +63,24 @@ const DemoCategoryAdd = () => {
   };
 
   const handleSave = async () => {
+    if (!form.title.trim()) {
+      setError('카테고리 제목은 필수입니다.');
+      return;
+    }
+
+    const orderValue =
+      form.order.trim() === '' ? null : Number(form.order.trim());
+    if (orderValue != null && !Number.isFinite(orderValue)) {
+      setError('Order는 숫자로 입력하세요.');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
-    const { error } = await supabase.from('categories').insert([form]);
+    const { error } = await supabase
+      .from('categories')
+      .insert([{ ...form, order: orderValue }]);
 
     setSaving(false);
 
@@ -150,7 +164,7 @@ const DemoCategoryAdd = () => {
               />
 
               <div className='flex flex-col gap-5 flex-1'>
-                <FormField label='Title'>
+                <FormField label='Title *'>
                   <input
                     name={lang.titleKey}
                     value={form[lang.titleKey]}
@@ -172,8 +186,6 @@ const DemoCategoryAdd = () => {
           </div>
         )
       )}
-
-      {error && <div className='text-red-500 text-sm mt-4'>{error}</div>}
     </FormLayout>
   );
 };

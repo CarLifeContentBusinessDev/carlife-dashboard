@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useServiceStore, getServiceToken } from '../../store/useServiceStore';
+import { useServiceStore } from '../../store/useServiceStore';
 import type { ServiceType } from '../../store/useServiceStore';
 
 const SERVICE_HOME: Record<ServiceType, string> = {
@@ -13,8 +13,7 @@ export function ServiceEntryPage() {
 
   const handleSelect = (service: ServiceType) => {
     setSelectedService(service);
-    const existingToken = getServiceToken(service);
-    navigate(existingToken ? SERVICE_HOME[service] : `/${service}/login`);
+    navigate(SERVICE_HOME[service]);
   };
 
   return (

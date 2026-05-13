@@ -155,27 +155,14 @@ const DemoProgramAdd = () => {
     }
 
     if (form.language.length === 0) {
-      setError('최소 한 개 이상의 언어를 선택하세요.');
+      setError('최소 한 개 이상의 국가를 선택하세요.');
       return;
     }
 
-    if (!form.category_id || !form.broadcasting_id) {
-      setError('카테고리와 방송사를 선택하세요.');
-      return;
-    }
-
-    const categoryId = Number(form.category_id);
-    const broadcastingId = Number(form.broadcasting_id);
-
-    if (!Number.isInteger(categoryId) || categoryId <= 0) {
-      setError('카테고리 ID는 숫자로 입력하세요.');
-      return;
-    }
-
-    if (!Number.isInteger(broadcastingId) || broadcastingId <= 0) {
-      setError('방송사 ID는 숫자로 입력하세요.');
-      return;
-    }
+    const categoryId = form.category_id ? Number(form.category_id) : null;
+    const broadcastingId = form.broadcasting_id
+      ? Number(form.broadcasting_id)
+      : null;
 
     setSaving(true);
     setError('');
@@ -199,7 +186,7 @@ const DemoProgramAdd = () => {
       .select('id')
       .single();
 
-    if (!error && insertedProgram) {
+    if (!error && insertedProgram && categoryId) {
       const categoryMappingRows = form.language.map((lang) => ({
         category_id: categoryId,
         program_id: insertedProgram.id,
@@ -246,7 +233,7 @@ const DemoProgramAdd = () => {
       </div>
 
       <div className='flex flex-col gap-10 mb-10'>
-        <FormField label='국가 선택'>
+        <FormField label='국가 선택 *'>
           <div className='flex gap-3 flex-wrap'>
             {LANG_OPTIONS.map((lang) => {
               const selected = form.language.includes(lang.code);
@@ -277,7 +264,7 @@ const DemoProgramAdd = () => {
           </div>
 
           <div className='flex flex-col gap-2 flex-1'>
-            <FormField label='Title (필수)'>
+            <FormField label='Title *'>
               <input
                 name='title'
                 value={form.title}
@@ -490,8 +477,6 @@ const DemoProgramAdd = () => {
           </FormField>
         </div>
       </div>
-
-      {error && <div className='text-red-500 text-sm mt-4'>{error}</div>}
     </FormLayout>
   );
 };

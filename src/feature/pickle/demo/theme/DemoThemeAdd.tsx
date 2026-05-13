@@ -141,7 +141,7 @@ const DemoThemeAdd = () => {
     }
 
     if (form.language.length === 0) {
-      setError('최소 한 개 이상의 언어를 선택하세요.');
+      setError('최소 한 개 이상의 국가를 선택하세요.');
       return;
     }
 
@@ -223,7 +223,7 @@ const DemoThemeAdd = () => {
       </div>
 
       <div className='flex flex-col gap-10 mb-10'>
-        <FormField label='국가 선택'>
+        <FormField label='국가 선택 *'>
           <div className='flex gap-3 flex-wrap'>
             {LANG_OPTIONS.map((lang) => {
               const selected = form.language.includes(lang.code);
@@ -254,7 +254,7 @@ const DemoThemeAdd = () => {
           </div>
 
           <div className='flex flex-col gap-2 flex-1'>
-            <FormField label='Title (필수)'>
+            <FormField label='Title *'>
               <input
                 name='title'
                 value={form.title}
@@ -271,7 +271,7 @@ const DemoThemeAdd = () => {
               />
             </FormField>
 
-            <FormField label='섹션 (필수)'>
+            <FormField label='섹션 *'>
               <div className='flex flex-col gap-2'>
                 <div className='flex gap-2'>
                   <input
@@ -359,7 +359,7 @@ const DemoThemeAdd = () => {
           </FormField>
         </div>
 
-        <FormField label='프로그램 매핑 (필수)'>
+        <FormField label='프로그램 매핑 *'>
           <div className='flex flex-col gap-2'>
             <div className='flex gap-2'>
               <input
@@ -418,8 +418,6 @@ const DemoThemeAdd = () => {
           </div>
         </FormField>
       </div>
-
-      {error && <div className='text-red-500 text-sm mt-4'>{error}</div>}
     </FormLayout>
   );
 };

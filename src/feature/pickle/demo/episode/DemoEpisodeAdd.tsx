@@ -131,7 +131,7 @@ const DemoEpisodeAdd = () => {
     }
 
     if (form.language.length === 0) {
-      setError('최소 한 개 이상의 언어를 선택하세요.');
+      setError('최소 한 개 이상의 국가를 선택하세요.');
       return;
     }
 
@@ -192,7 +192,7 @@ const DemoEpisodeAdd = () => {
       </div>
 
       <div className='flex flex-col gap-10 mb-10'>
-        <FormField label='국가 선택'>
+        <FormField label='국가 선택 *'>
           <div className='flex gap-3 flex-wrap'>
             {LANG_OPTIONS.map((lang) => {
               const selected = form.language.includes(lang.code);
@@ -223,7 +223,7 @@ const DemoEpisodeAdd = () => {
           </div>
 
           <div className='flex flex-col gap-2 flex-1'>
-            <FormField label='Title (필수)'>
+            <FormField label='Title *'>
               <input
                 name='title'
                 value={form.title}
@@ -239,7 +239,7 @@ const DemoEpisodeAdd = () => {
                 className='w-full px-4 h-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
               />
             </FormField>
-            <FormField label='프로그램 (필수)'>
+            <FormField label='프로그램 *'>
               <div className='flex flex-col gap-2'>
                 <div className='flex gap-2'>
                   <input
@@ -462,8 +462,6 @@ const DemoEpisodeAdd = () => {
           </div>
         )}
       </div>
-
-      {error && <div className='text-red-500 text-sm mt-4'>{error}</div>}
     </FormLayout>
   );
 };
