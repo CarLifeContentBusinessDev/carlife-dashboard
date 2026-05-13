@@ -37,9 +37,8 @@ export default function Configuration() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const { isServerLoggedIn: check } = usePicknowServerStore.getState();
     const loggedInServers = PICKNOW_SERVERS.filter(
-      (s) => selectedServerIds.includes(s.id) && check(s.id)
+      (s) => selectedServerIds.includes(s.id) && isServerLoggedIn(s.id)
     );
     if (!loginToken || loggedInServers.length === 0) return;
 
