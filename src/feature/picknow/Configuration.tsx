@@ -13,8 +13,12 @@ import ServerLoginModal from '../../components/common/ServerLoginModal';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();
-  const { selectedServerIds, toggleSelectedServer, isServerLoggedIn } =
-    usePicknowServerStore();
+  const {
+    selectedServerIds,
+    toggleSelectedServer,
+    isServerLoggedIn,
+    serverTokens,
+  } = usePicknowServerStore();
   const selectedServers: PicknowServer[] = PICKNOW_SERVERS.filter((s) =>
     selectedServerIds.includes(s.id)
   );
@@ -67,7 +71,7 @@ export default function Configuration() {
       }
     };
     load();
-  }, [loginToken, selectedServerIds.join(',')]);
+  }, [loginToken, selectedServerIds.join(','), JSON.stringify(serverTokens)]);
 
   const handleExtractData = async () => {
     if (selectedClients.length === 0) {

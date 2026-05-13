@@ -215,7 +215,8 @@ function createPickleServerInstance(server: PickleServer) {
       return new Promise<typeof response>((resolve) => {
         pendingServerCallbacks.push((token) => {
           response.config.headers.Authorization = `Bearer ${token}`;
-          (response.config as unknown as Record<string, unknown>)._refreshed = true;
+          (response.config as unknown as Record<string, unknown>)._refreshed =
+            true;
           resolve(instance(response.config));
         });
       });
@@ -233,9 +234,13 @@ function createPickleServerInstance(server: PickleServer) {
         const newAccess = res.data?.data?.accessToken;
         const newRefresh = res.data?.data?.refreshToken;
         if (newAccess) {
-          localStorage.setItem(pickleTokenKey(server.id), newAccess);
-          if (newRefresh)
-            localStorage.setItem(pickleRefreshKey(server.id), newRefresh);
+          import('../../store/usePicknowServerStore').then(
+            ({ usePicknowServerStore }) => {
+              usePicknowServerStore
+                .getState()
+                .setServerToken(server.id, newAccess, newRefresh ?? undefined);
+            }
+          );
           newToken = newAccess;
         }
       }
@@ -262,10 +267,14 @@ function createPickleServerInstance(server: PickleServer) {
 }
 
 function doPickleServerLogout(server: PickleServer) {
-  import('../../store/usePickleServerStore').then(({ usePickleServerStore }) => {
-    usePickleServerStore.getState().clearServerToken(server.id);
-  });
-  toast.error(`Pickle ${server.label} 로그인이 만료되었습니다. 다시 로그인해주세요.`);
+  import('../../store/usePickleServerStore').then(
+    ({ usePickleServerStore }) => {
+      usePickleServerStore.getState().clearServerToken(server.id);
+    }
+  );
+  toast.error(
+    `Pickle ${server.label} 로그인이 만료되었습니다. 다시 로그인해주세요.`
+  );
 }
 
 export const api = getPickleServerApi(PICKLE_SERVERS[0]);
@@ -273,7 +282,10 @@ export const stgApi = getPickleServerApi(PICKLE_SERVERS[1]);
 
 // ── Picknow 다중 서버 지원 ─────────────────────────────────────────────────
 
-const picknowServerApiCache = new Map<string, ReturnType<typeof axios.create>>();
+const picknowServerApiCache = new Map<
+  string,
+  ReturnType<typeof axios.create>
+>();
 
 export function getPicknowServerApi(server: PicknowServer) {
   if (!picknowServerApiCache.has(server.id)) {
@@ -310,7 +322,8 @@ function createPicknowServerInstance(server: PicknowServer) {
       return new Promise<typeof response>((resolve) => {
         pendingServerCallbacks.push((token) => {
           response.config.headers.Authorization = `Bearer ${token}`;
-          (response.config as unknown as Record<string, unknown>)._refreshed = true;
+          (response.config as unknown as Record<string, unknown>)._refreshed =
+            true;
           resolve(instance(response.config));
         });
       });
@@ -358,8 +371,10 @@ function createPicknowServerInstance(server: PicknowServer) {
 
 function doPicknowServerLogout(server: PicknowServer) {
   // store import를 지연해서 순환 참조 방지
-  import('../../store/usePicknowServerStore').then(({ usePicknowServerStore }) => {
-    usePicknowServerStore.getState().clearServerToken(server.id);
-  });
+  import('../../store/usePicknowServerStore').then(
+    ({ usePicknowServerStore }) => {
+      usePicknowServerStore.getState().clearServerToken(server.id);
+    }
+  );
   toast.error(`${server.label} 로그인이 만료되었습니다. 다시 로그인해주세요.`);
 }

@@ -36,6 +36,10 @@ export default function ServerLoginModal({ server, onClose }: Props) {
   }, [server.id]);
 
   const handleLogin = async () => {
+    if (!id.trim() || !password.trim()) {
+      setError('아이디와 비밀번호를 입력해주세요.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -102,9 +106,7 @@ export default function ServerLoginModal({ server, onClose }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-          {error && (
-            <p className='text-red-500 text-sm text-center'>{error}</p>
-          )}
+          {error && <p className='text-red-500 text-sm text-center'>{error}</p>}
           <input
             type='text'
             placeholder='아이디'

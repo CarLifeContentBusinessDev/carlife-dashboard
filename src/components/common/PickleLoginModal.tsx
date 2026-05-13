@@ -40,6 +40,10 @@ export default function PickleLoginModal({ server, onClose }: Props) {
 
   const handleLogin = async () => {
     setLoading(true);
+    if (!id.trim() || !password.trim()) {
+      setError('아이디와 비밀번호를 입력해주세요.');
+      return;
+    }
     setError('');
 
     try {
@@ -106,7 +110,9 @@ export default function PickleLoginModal({ server, onClose }: Props) {
 
       if (server.id === 'prod') {
         supabase.auth.signInWithPassword({ email: id, password }).catch(() => {
-          console.warn('Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.');
+          console.warn(
+            'Supabase 세션 연동 실패 - 일부 기능이 제한될 수 있습니다.'
+          );
         });
       }
 
@@ -150,13 +156,13 @@ export default function PickleLoginModal({ server, onClose }: Props) {
           <h2 className='text-xl font-bold text-[#1B1E2F]'>
             Pickle {server.label}
           </h2>
-          <p className='text-sm text-gray-500 mt-1'>관리자 계정으로 로그인하세요</p>
+          <p className='text-sm text-gray-500 mt-1'>
+            관리자 계정으로 로그인하세요
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-          {error && (
-            <p className='text-red-500 text-sm text-center'>{error}</p>
-          )}
+          {error && <p className='text-red-500 text-sm text-center'>{error}</p>}
           <input
             type='text'
             placeholder={server.id === 'web-demo' ? '이메일' : '아이디'}
