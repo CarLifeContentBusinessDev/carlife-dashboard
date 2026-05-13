@@ -25,7 +25,9 @@ const FormActionsButton = ({
   };
   return (
     <>
-      <div className='flex justify-end gap-3 mt-auto'>
+      <div className='flex justify-center items-center gap-3 mt-auto'>
+        {error && <div className='text-red-500 text-sm'>{error}</div>}
+
         <button
           onClick={onCancel}
           className='px-5 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50'
@@ -44,8 +46,6 @@ const FormActionsButton = ({
           {saving ? '저장 중...' : '저장하기'}
         </button>
       </div>
-
-      {error && <div className='text-red-500 text-sm mt-4'>{error}</div>}
     </>
   );
 };
