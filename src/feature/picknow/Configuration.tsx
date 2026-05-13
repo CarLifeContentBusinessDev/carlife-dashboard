@@ -1,13 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useLoginTokenStore } from '../../store/useLoginTokenStore';
+import { usePicknowServerStore } from '../../store/usePicknowServerStore';
+import { PICKNOW_SERVERS } from '../../constants/servers';
+import type { PicknowServer } from '../../constants/servers';
 import type { SettingRow } from '../../utils/googleSheets/fetchSettingData';
 import { fetchSettingData } from '../../utils/googleSheets/fetchSettingData';
 import { syncPicknowConfigurationSheet } from '../../utils/googleSheets/syncPicknowConfigurationSheet';
+import { getPicknowServerApi } from '../../utils/api/api';
 import Button from '../../components/common/Button';
+import ServerLoginModal from '../../components/common/ServerLoginModal';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();
+  const {
+    selectedServerIds,
+    toggleSelectedServer,
+    isServerLoggedIn,
+    serverTokens,
+  } = usePicknowServerStore();
+  const selectedServers: PicknowServer[] = PICKNOW_SERVERS.filter((s) =>
+    selectedServerIds.includes(s.id)
+  );
+  const [loginModalServer, setLoginModalServer] =
+    useState<PicknowServer | null>(null);
+
   const [rows, setRows] = useState<SettingRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -20,13 +37,29 @@ export default function Configuration() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (!loginToken) return;
+    const loggedInServers = PICKNOW_SERVERS.filter(
+      (s) => selectedServerIds.includes(s.id) && isServerLoggedIn(s.id)
+    );
+    if (!loginToken || loggedInServers.length === 0) return;
+
     const load = async () => {
       setLoading(true);
       setError(null);
+      setRows([]);
+      setSelectedDevices(new Set());
       try {
-        const data = await fetchSettingData();
-        setRows(data);
+        const allData = await Promise.all(
+          loggedInServers.map((s) => fetchSettingData(s.spreadsheetId))
+        );
+        const merged = allData.flat();
+        const seen = new Set<string>();
+        const deduped = merged.filter((row) => {
+          const key = `${row.고객사}::${row.OEM}::${row.DEVICE}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setRows(deduped);
       } catch (err) {
         setError(
           '데이터를 불러오는 데 실패했습니다. Google Sheets 로그인 상태를 확인해주세요.'
@@ -37,7 +70,7 @@ export default function Configuration() {
       }
     };
     load();
-  }, [loginToken]);
+  }, [loginToken, selectedServerIds.join(','), JSON.stringify(serverTokens)]);
 
   const handleExtractData = async () => {
     if (selectedClients.length === 0) {
@@ -51,35 +84,54 @@ export default function Configuration() {
       failed: [],
     };
 
+    const { isServerLoggedIn: check } = usePicknowServerStore.getState();
+    const targetServers = PICKNOW_SERVERS.filter(
+      (s) => selectedServerIds.includes(s.id) && check(s.id)
+    );
+
+    if (targetServers.length === 0) {
+      toast.error('로그인된 서버가 없습니다.');
+      setExportLoading(false);
+      return;
+    }
+
     try {
-      for (const customerName of selectedClients) {
-        const selections = [...selectedDevices]
-          .map((key) => {
-            const [client, oem, device] = key.split('::');
-            return { client, oem, device };
-          })
-          .filter((item) => item.client === customerName);
+      for (const server of targetServers) {
+        const apiInstance = getPicknowServerApi(server);
+        for (const customerName of selectedClients) {
+          const selections = [...selectedDevices]
+            .map((key) => {
+              const [client, oem, device] = key.split('::');
+              return { client, oem, device };
+            })
+            .filter((item) => item.client === customerName);
 
-        if (selections.length === 0) {
-          results.failed.push(customerName);
-          continue;
-        }
-
-        try {
-          const syncResult = await syncPicknowConfigurationSheet(
-            customerName,
-            selections
-          );
-          results.success.push(customerName);
-          if (syncResult.failedBookmarkSeqs.length > 0) {
-            console.warn(
-              `${customerName} 일부 bookmark 상세 조회 실패:`,
-              syncResult.failedBookmarkSeqs
-            );
+          if (selections.length === 0) {
+            results.failed.push(`${server.label} / ${customerName}`);
+            continue;
           }
-        } catch (err) {
-          console.error(`${customerName} 시트 생성 실패:`, err);
-          results.failed.push(customerName);
+
+          try {
+            const syncResult = await syncPicknowConfigurationSheet(
+              customerName,
+              selections,
+              apiInstance,
+              server.spreadsheetId
+            );
+            results.success.push(`${server.label} / ${customerName}`);
+            if (syncResult.failedBookmarkSeqs.length > 0) {
+              console.warn(
+                `[${server.label}] ${customerName} 일부 bookmark 상세 조회 실패:`,
+                syncResult.failedBookmarkSeqs
+              );
+            }
+          } catch (err) {
+            console.error(
+              `[${server.label}] ${customerName} 시트 생성 실패:`,
+              err
+            );
+            results.failed.push(`${server.label} / ${customerName}`);
+          }
         }
       }
 
@@ -264,16 +316,63 @@ export default function Configuration() {
             OEM과 디바이스를 선택해 데이터를 추출하세요
           </span>
         </div>
-        <Button
-          onClick={() => {
-            window.open(
-              `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_PICKNOW_SPREADSHEET_ID}/edit`,
-              '_blank'
+        <div className='flex gap-2'>
+          {selectedServers
+            .filter((s) => isServerLoggedIn(s.id))
+            .map((s) => (
+              <Button
+                key={s.id}
+                onClick={() =>
+                  window.open(
+                    `https://docs.google.com/spreadsheets/d/${s.spreadsheetId}/edit`,
+                    '_blank'
+                  )
+                }
+              >
+                {s.label} 시트
+              </Button>
+            ))}
+        </div>
+      </div>
+
+      {/* 서버 선택 */}
+      <div className='flex items-center gap-3 mb-5'>
+        <span className='text-sm font-medium text-gray-500 shrink-0'>
+          서버 선택
+        </span>
+        <div className='flex gap-2 flex-wrap'>
+          {PICKNOW_SERVERS.map((server) => {
+            const connected = isServerLoggedIn(server.id);
+            const isSelected = selectedServerIds.includes(server.id);
+            return (
+              <button
+                key={server.id}
+                onClick={() => {
+                  if (!connected) {
+                    setLoginModalServer(server);
+                  } else {
+                    toggleSelectedServer(server.id);
+                  }
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
+                  isSelected && connected
+                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                    : connected
+                      ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                      : 'bg-gray-50 border-dashed border-gray-300 text-gray-400'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${connected ? (isSelected ? 'bg-white' : 'bg-green-500') : 'bg-gray-300'}`}
+                />
+                {server.label}
+                {!connected && (
+                  <span className='text-xs text-gray-400'>(미연결)</span>
+                )}
+              </button>
             );
-          }}
-        >
-          시트 바로가기
-        </Button>
+          })}
+        </div>
       </div>
 
       {!loginToken ? (
@@ -281,6 +380,10 @@ export default function Configuration() {
           <p className='text-gray-600 text-sm'>
             Google Sheets 로그인이 필요합니다.
           </p>
+        </div>
+      ) : selectedServers.filter((s) => isServerLoggedIn(s.id)).length === 0 ? (
+        <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3'>
+          <p className='text-gray-600 text-sm'>서버를 선택해 주세요</p>
         </div>
       ) : loading ? (
         <p className='text-sm text-gray-400'>데이터를 불러오는 중...</p>
@@ -568,6 +671,22 @@ export default function Configuration() {
             </div>
           )}
         </div>
+      )}
+      {loginModalServer && (
+        <ServerLoginModal
+          server={loginModalServer}
+          onClose={() => {
+            const server = loginModalServer;
+            setLoginModalServer(null);
+            if (
+              server &&
+              usePicknowServerStore.getState().isServerLoggedIn(server.id) &&
+              !selectedServerIds.includes(server.id)
+            ) {
+              toggleSelectedServer(server.id);
+            }
+          }}
+        />
       )}
     </div>
   );

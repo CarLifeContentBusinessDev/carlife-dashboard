@@ -1,4 +1,4 @@
-import { picknowApi } from '../api/api';
+import type { AxiosInstance } from 'axios';
 import { executeWithConcurrencyLimit } from '../api/requestPool';
 import {
   getGoogleToken,
@@ -492,7 +492,8 @@ const resolveSelectedSeqs = (
 export async function syncPicknowConfigurationSheet(
   sheetName: string,
   selections: PicknowSelection[],
-  spreadsheetId: string = import.meta.env.VITE_PICKNOW_SPREADSHEET_ID as string
+  apiInstance: AxiosInstance,
+  spreadsheetId: string
 ): Promise<SyncPicknowConfigurationResult> {
   const targetSheetName = sheetName.trim();
 
@@ -521,9 +522,9 @@ export async function syncPicknowConfigurationSheet(
   );
 
   // fetch Setting sheet to determine device resolution / orientation
-  const settingRows: SettingRow[] = await fetchSettingData();
+  const settingRows: SettingRow[] = await fetchSettingData(spreadsheetId);
 
-  const binaryCodeResponse = await picknowApi.get<BinaryCodeResponse>(
+  const binaryCodeResponse = await apiInstance.get<BinaryCodeResponse>(
     '/admin/common-code/common-codes/BinaryCode',
     { params: { comCodeGroupCd: 'BinaryCode' } }
   );
@@ -546,7 +547,7 @@ export async function syncPicknowConfigurationSheet(
   };
 
   const sheets = getSheetsClient();
-  const oemDeviceResponse = await picknowApi.get<PicknowOemDeviceResponse>(
+  const oemDeviceResponse = await apiInstance.get<PicknowOemDeviceResponse>(
     '/admin/v2/oem-device'
   );
   const oemDevices = oemDeviceResponse.data.data ?? [];
@@ -562,7 +563,7 @@ export async function syncPicknowConfigurationSheet(
   }
 
   const bookmarkListResponse =
-    await picknowApi.get<PicknowBookmarkListResponse>('/admin/v2/bookmark', {
+    await apiInstance.get<PicknowBookmarkListResponse>('/admin/v2/bookmark', {
       params: {
         version: 2,
         oemDeviceSeqs: matchedSeqs.join(','),
@@ -579,7 +580,7 @@ export async function syncPicknowConfigurationSheet(
   const detailResults = await executeWithConcurrencyLimit(
     uniqueBookmarks.map((bookmark) => async () => {
       const detailResponse =
-        await picknowApi.get<PicknowBookmarkDetailResponse>(
+        await apiInstance.get<PicknowBookmarkDetailResponse>(
           `/admin/v2/bookmark/${bookmark.bookmarkSeq}`
         );
 
@@ -613,9 +614,9 @@ export async function syncPicknowConfigurationSheet(
     }
 
     const sourceMappings =
-      detail.oemDeviceMappings?.length > 0
+      (detail.oemDeviceMappings?.length > 0
         ? detail.oemDeviceMappings
-        : listBookmark.oemDevices;
+        : listBookmark.oemDevices) ?? [];
 
     const selectedMappings = sourceMappings.filter((mapping) =>
       matchedSeqs.includes(mapping.oemDeviceSeq)

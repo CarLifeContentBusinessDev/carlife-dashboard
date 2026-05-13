@@ -24,6 +24,7 @@ import { overwriteCurationExcelData } from '../../../../utils/excel/updateCurati
 import ProdCurationList from './ProdCurationList';
 import UsageFilterRadio from '../../../../components/filter/UsageFilterRadio';
 import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState';
+import PickleLoginBanner from '../../../../components/common/PickleLoginBanner';
 
 const DATA_PAGE_SIZE = 10;
 
@@ -295,7 +296,12 @@ const CurationLayout = () => {
     syncPreviewMode === 'new' ? newCurations : allCurations;
 
   return (
-    <div className='p-10 flex flex-col h-[90vh]'>
+    <div className='flex flex-col h-[90vh]'>
+      <PickleLoginBanner
+        serverId={isStaging ? 'stg' : 'prod'}
+        serverLabel={isStaging ? 'STG' : '상용'}
+      />
+      <div className='p-10 flex flex-col h-full'>
       <h1 className='text-3xl font-bold mb-4 indent-1'>
         큐레이션 관리{isStaging ? ' (스테이징)' : ''}
       </h1>
@@ -416,6 +422,7 @@ const CurationLayout = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };

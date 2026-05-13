@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import usePagination from '../../hook/usePagination';
 import { deleteRow } from '../../utils/excel/deleteRow';
-import { useAccessTokenStore } from '../../store/useAccessTokenStore';
+import { usePickleServerStore } from '../../store/usePickleServerStore';
 import ImageCell from '../table/ImageCell';
 import LanguageBadge from '../language/LanguageBadge';
 import Pagination from '../common/Pagination';
@@ -31,7 +31,8 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
   onDeleted,
 }) => {
   const navigate = useNavigate();
-  const { accessToken } = useAccessTokenStore();
+  const { isServerLoggedIn } = usePickleServerStore();
+  const accessToken = isServerLoggedIn('web-demo');
   const { page, setPage, totalPages, pagedData } = usePagination(data);
 
   // 언어 변경 시 1페이지로 이동
@@ -41,7 +42,7 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
 
   const handleDelete = async (id: number) => {
     if (!accessToken) {
-      toast.warn('관리자 로그인이 필요합니다.');
+      toast.warn('웹데모 로그인이 필요합니다.');
       return;
     }
 
@@ -103,7 +104,7 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               if (!accessToken) {
-                toast.warn('관리자 로그인이 필요합니다.');
+                toast.warn('웹데모 로그인이 필요합니다.');
                 return;
               }
               navigate(`${editPath}/${row.id}?lang=${selectedLang}`);

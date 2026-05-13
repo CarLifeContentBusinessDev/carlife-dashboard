@@ -478,7 +478,7 @@ const DemoEntityDetail = ({
               className='px-3 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition text-sm'
               onClick={() => {
                 if (!accessToken) {
-                  toast.warn('관리자 로그인이 필요합니다.');
+                  toast.warn('웹데모 로그인이 필요합니다.');
                   return;
                 }
                 navigate(`${editPath}/${id}?lang=${lang}`);
