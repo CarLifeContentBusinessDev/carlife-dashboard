@@ -6,7 +6,7 @@ import FormLayout from '../../../../components/form/FormLayout';
 import FormTabs from '../../../../components/form/FormTabs';
 import { ThumbnailPreview } from '../../../../components/table/ThumbnailPreview';
 import { supabase } from '../../../../lib/supabase';
-import type { Category } from '../../../../types/demoContents';
+import type { Category } from '../../../../types/pickleDemoContents';
 
 const LANG_SECTIONS = [
   { lang: 'en', label: '북미', titleKey: 'en_title', imgKey: 'en_img_url' },

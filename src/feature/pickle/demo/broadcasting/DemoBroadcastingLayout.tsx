@@ -5,7 +5,7 @@ import { type LanguageCode } from '../../../../constants/languages';
 import DemoListLayout, {
   type StatusFilter,
 } from '../../../../components/demo/DemoListLayout';
-import type { Broadcasting } from '../../../../types/demoContents';
+import type { Broadcasting } from '../../../../types/pickleDemoContents';
 import parseLanguages from '../../../../utils/format/parseLanguages';
 import DemoBroadcastingList from './DemoBroadcastingList';
 import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';

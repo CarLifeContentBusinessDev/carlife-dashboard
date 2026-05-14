@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { usingCurationExcelProps } from '../../../../types/type';
+import type { usingCurationExcelProps } from '../../../../types/pickleProdContents';
 import formatDateString from '../../../../utils/format/formatDateString';
 import { normalizeUsageYn } from '../../../../utils/format/normalizeUsageYn';
 

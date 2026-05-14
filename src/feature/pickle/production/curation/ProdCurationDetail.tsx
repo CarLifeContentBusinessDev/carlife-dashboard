@@ -5,9 +5,9 @@ import type {
   curationDetailEpisodeProps,
   curationDetailProps,
   usingCurationExcelProps,
-} from '../../../../types/type';
-import formatDateString from '../../../../utils/format/formatDateString';
+} from '../../../../types/pickleProdContents';
 import { api, stgApi } from '../../../../utils/api/api';
+import formatDateString from '../../../../utils/format/formatDateString';
 import { normalizeUsageYn } from '../../../../utils/format/normalizeUsageYn';
 import { mapCurationStatus } from '../../../../utils/format/statusMapper';
 

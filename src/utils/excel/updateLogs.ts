@@ -1,4 +1,4 @@
-import type { usingDataProps } from '../../types/type';
+import type { usingDataProps } from '../../types/pickleProdContents';
 import { api } from '../api/api';
 import { getExcelData } from './updateExcel';
 

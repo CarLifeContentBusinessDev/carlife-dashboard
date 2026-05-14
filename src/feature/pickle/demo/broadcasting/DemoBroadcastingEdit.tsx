@@ -6,7 +6,7 @@ import FormLayout from '../../../../components/form/FormLayout';
 import FormTabs from '../../../../components/form/FormTabs';
 import { ThumbnailPreview } from '../../../../components/table/ThumbnailPreview';
 import { supabase } from '../../../../lib/supabase';
-import type { Broadcasting } from '../../../../types/demoContents';
+import type { Broadcasting } from '../../../../types/pickleDemoContents';
 
 const DemoBroadcastingEdit = () => {
   const { id } = useParams();

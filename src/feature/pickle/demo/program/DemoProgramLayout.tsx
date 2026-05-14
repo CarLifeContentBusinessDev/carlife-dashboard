@@ -7,7 +7,7 @@ import DemoProgramList from './DemoProgramList';
 import type { LanguageCode } from '../../../../constants/languages';
 import { useNavigate } from 'react-router-dom';
 import SortControls from '../../../../components/table/SortControls';
-import type { Program } from '../../../../types/demoContents';
+import type { Program } from '../../../../types/pickleDemoContents';
 import useListSort from '../../../../hook/useListSort';
 import parseLanguages from '../../../../utils/format/parseLanguages';
 import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';

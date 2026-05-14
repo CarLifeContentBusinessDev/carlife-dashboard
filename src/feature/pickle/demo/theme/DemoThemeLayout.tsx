@@ -11,7 +11,7 @@ import DemoThemeList from './DemoThemeList';
 import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';
 import parseLanguages from '../../../../utils/format/parseLanguages';
 import useListSort from '../../../../hook/useListSort';
-import type { Theme } from '../../../../types/demoContents';
+import type { Theme } from '../../../../types/pickleDemoContents';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [
   { value: 'id', label: 'ID 기준' },

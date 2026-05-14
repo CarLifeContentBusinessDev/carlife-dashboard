@@ -6,7 +6,7 @@ import LoadingOverlay from '../../../../components/common/LoadingOverlay';
 import { type LanguageCode } from '../../../../constants/languages';
 import { useNavigate } from 'react-router-dom';
 import SortControls from '../../../../components/table/SortControls';
-import type { Episode } from '../../../../types/demoContents';
+import type { Episode } from '../../../../types/pickleDemoContents';
 import useListSort from '../../../../hook/useListSort';
 import parseLanguages from '../../../../utils/format/parseLanguages';
 import DemoEpisodeList from './DemoEpisodeList';

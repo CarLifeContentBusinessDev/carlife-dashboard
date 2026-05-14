@@ -1,5 +1,5 @@
 import { toast } from 'react-toastify';
-import type { usingCurationExcelProps } from '../../types/type';
+import type { usingCurationExcelProps } from '../../types/pickleProdContents';
 import { getGoogleToken, getSheetsClient } from '../auth/auth';
 import formatDateString from '../format/formatDateString';
 import { formatPlayTime, parsePlayTime } from '../format/formatPlayTime';

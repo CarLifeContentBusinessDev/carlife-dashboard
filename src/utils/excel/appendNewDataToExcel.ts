@@ -1,5 +1,8 @@
 import { toast } from 'react-toastify';
-import type { usingChannelProps, usingDataProps } from '../../types/type';
+import type {
+  usingChannelProps,
+  usingDataProps,
+} from '../../types/pickleProdContents';
 import { getGoogleToken, getSheetsClient } from '../auth/auth';
 import formatDateString from '../format/formatDateString';
 import { formatPlayTime } from '../format/formatPlayTime';

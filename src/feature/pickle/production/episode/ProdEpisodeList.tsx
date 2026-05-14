@@ -1,6 +1,6 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import type { usingDataProps } from '../../../../types/type';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { usingDataProps } from '../../../../types/pickleProdContents';
 import formatDateString from '../../../../utils/format/formatDateString';
 import { formatPlayTime } from '../../../../utils/format/formatPlayTime';
 import { normalizeUsageYn } from '../../../../utils/format/normalizeUsageYn';

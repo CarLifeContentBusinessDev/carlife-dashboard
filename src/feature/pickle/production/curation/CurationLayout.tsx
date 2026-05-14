@@ -2,29 +2,29 @@ import { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '../../../../components/common/LoadingOverlay';
 import Pagination from '../../../../components/common/Pagination';
-import SheetSelector from '../../../../components/filter/SheetSelector';
-import SyncCountHeader from '../../../../components/sync/SyncCountHeader';
-import SyncToolbar from '../../../../components/sync/SyncToolbar';
+import PickleLoginBanner from '../../../../components/common/PickleLoginBanner';
 import TabHeader from '../../../../components/common/TabHeader';
+import SheetSelector from '../../../../components/filter/SheetSelector';
+import UsageFilterRadio from '../../../../components/filter/UsageFilterRadio';
+import SyncCountHeader from '../../../../components/sync/SyncCountHeader';
+import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState';
+import SyncToolbar from '../../../../components/sync/SyncToolbar';
 import { useProdPagination } from '../../../../hook/useProdPagination';
 import { useSheetSelection } from '../../../../hook/useSheetSelection';
 import { useStagingEnv } from '../../../../hook/useStagingEnv';
-import { useSyncState, SYNC_PAGE_SIZE } from '../../../../hook/useSyncState';
+import { SYNC_PAGE_SIZE, useSyncState } from '../../../../hook/useSyncState';
 import { useLoginTokenStore } from '../../../../store/useLoginTokenStore';
 import type {
   curationListItemProps,
   usingCurationExcelProps,
-} from '../../../../types/type';
-import { appendNewCurationToExcel } from '../../../../utils/excel/appendNewCurationToExcel';
+} from '../../../../types/pickleProdContents';
 import { fetchAllCurationData } from '../../../../utils/api/fetchAllData';
+import { appendNewCurationToExcel } from '../../../../utils/excel/appendNewCurationToExcel';
 import { getNewCurationData } from '../../../../utils/excel/getNewCuration';
-import { mapCurationStatus } from '../../../../utils/format/statusMapper';
-import { updateSheetSyncTime } from '../../../../utils/excel/updateSheetSyncTime';
 import { overwriteCurationExcelData } from '../../../../utils/excel/updateCuration';
+import { updateSheetSyncTime } from '../../../../utils/excel/updateSheetSyncTime';
+import { mapCurationStatus } from '../../../../utils/format/statusMapper';
 import ProdCurationList from './ProdCurationList';
-import UsageFilterRadio from '../../../../components/filter/UsageFilterRadio';
-import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState';
-import PickleLoginBanner from '../../../../components/common/PickleLoginBanner';
 
 const DATA_PAGE_SIZE = 10;
 
@@ -302,127 +302,132 @@ const CurationLayout = () => {
         serverLabel={isStaging ? 'STG' : '상용'}
       />
       <div className='p-10 flex flex-col h-full'>
-      <h1 className='text-3xl font-bold mb-4 indent-1'>
-        큐레이션 관리{isStaging ? ' (스테이징)' : ''}
-      </h1>
-      <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
-        <TabHeader activeTab={activeTab} onChange={setActiveTab} />
+        <h1 className='text-3xl font-bold mb-4 indent-1'>
+          큐레이션 관리{isStaging ? ' (스테이징)' : ''}
+        </h1>
+        <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
+          <TabHeader activeTab={activeTab} onChange={setActiveTab} />
 
-        {activeTab === 'data' && (
-          <div className='flex-1 p-8 flex flex-col'>
-            <div className='flex justify-between items-center flex-shrink-0 mb-4'>
-              <h3 className='text-point-color font-semibold'>
-                큐레이션 총{' '}
-                <span className='font-extrabold'>{prodTotalCount}</span>개
-              </h3>
-              <div className='flex gap-6 items-center'>
-                <UsageFilterRadio
-                  name='usageFilter'
-                  value={usageFilter}
-                  onChange={handleUsageFilterChange}
-                />
-                <UsageFilterRadio
-                  name='exhibitionFilter'
-                  label='전시 상태'
-                  options={EXHIBITION_OPTIONS}
-                  value={exhibitionFilter}
-                  onChange={handleExhibitionFilterChange}
-                />
-                <input
-                  type='text'
-                  value={prodSearchQuery}
-                  onChange={(e) => setProdSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder='큐레이션명 검색'
-                  className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
-                />
-                <button
-                  onClick={handleSearch}
-                  className='cursor-pointer'
-                  disabled={prodLoading}
-                >
-                  <img src='/redo.svg' alt='새로고침' width={22} height={22} />
-                </button>
+          {activeTab === 'data' && (
+            <div className='flex-1 p-8 flex flex-col'>
+              <div className='flex justify-between items-center flex-shrink-0 mb-4'>
+                <h3 className='text-point-color font-semibold'>
+                  큐레이션 총{' '}
+                  <span className='font-extrabold'>{prodTotalCount}</span>개
+                </h3>
+                <div className='flex gap-6 items-center'>
+                  <UsageFilterRadio
+                    name='usageFilter'
+                    value={usageFilter}
+                    onChange={handleUsageFilterChange}
+                  />
+                  <UsageFilterRadio
+                    name='exhibitionFilter'
+                    label='전시 상태'
+                    options={EXHIBITION_OPTIONS}
+                    value={exhibitionFilter}
+                    onChange={handleExhibitionFilterChange}
+                  />
+                  <input
+                    type='text'
+                    value={prodSearchQuery}
+                    onChange={(e) => setProdSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder='큐레이션명 검색'
+                    className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
+                  />
+                  <button
+                    onClick={handleSearch}
+                    className='cursor-pointer'
+                    disabled={prodLoading}
+                  >
+                    <img
+                      src='/redo.svg'
+                      alt='새로고침'
+                      width={22}
+                      height={22}
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
-            <LoadingOverlay loading={prodLoading}>
-              큐레이션 목록을 불러오는 중입니다.
-              <br />
-              잠시만 기다려주세요!
-            </LoadingOverlay>
-            {!prodLoading && (
-              <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                <ProdCurationList data={prodData} isStaging={isStaging} />
-              </div>
-            )}
-            <Pagination
-              page={prodPage}
-              totalPages={prodTotalPages}
-              onChange={handleProdPageChange}
-            />
-          </div>
-        )}
-
-        {activeTab === 'sync' && (
-          <div className='flex-1 p-8 flex flex-col min-h-0'>
-            <SyncToolbar
-              onSearchNew={handleSearchNew}
-              onLoadAll={handleLoadAllCurations}
-              excelHref={excelHref}
-              onSync={handleSyncExcel}
-              loading={loading}
-              excelLoading={excelLoading}
-              progress={progress}
-              syncPreviewMode={syncPreviewMode}
-            />
-            <div className='flex justify-between items-center flex-shrink-0'>
-              <SyncCountHeader
-                syncPreviewMode={syncPreviewMode}
-                newCount={newCurations.length}
-                allCount={allCurations.length}
-              />
-              <div className='flex gap-8 items-center'>
-                <SheetSelector
-                  sheetList={sheetList}
-                  selectedSheet={selectedSheet}
-                  isStaging={isStaging}
-                  onChange={handleSelectSheet}
-                />
-              </div>
-            </div>
-            <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
-              <LoadingOverlay progress={progress} loading={loading}>
+              <LoadingOverlay loading={prodLoading}>
                 큐레이션 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!loading && syncPreviewMode && (
-                <>
-                  <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
-                    <ProdCurationList
-                      data={syncDisplayData.slice(
-                        (syncPage - 1) * SYNC_PAGE_SIZE,
-                        syncPage * SYNC_PAGE_SIZE
-                      )}
-                      isStaging={isStaging}
-                    />
-                  </div>
-                  <Pagination
-                    page={syncPage}
-                    totalPages={syncTotalPages}
-                    onChange={handleSyncPageChange}
-                  />
-                </>
+              {!prodLoading && (
+                <div className='overflow-x-scroll episode-table-scroll pb-1'>
+                  <ProdCurationList data={prodData} isStaging={isStaging} />
+                </div>
               )}
-              <SyncEmptyState
-                loading={loading}
-                syncPreviewMode={!!syncPreviewMode}
+              <Pagination
+                page={prodPage}
+                totalPages={prodTotalPages}
+                onChange={handleProdPageChange}
               />
             </div>
-          </div>
-        )}
+          )}
+
+          {activeTab === 'sync' && (
+            <div className='flex-1 p-8 flex flex-col min-h-0'>
+              <SyncToolbar
+                onSearchNew={handleSearchNew}
+                onLoadAll={handleLoadAllCurations}
+                excelHref={excelHref}
+                onSync={handleSyncExcel}
+                loading={loading}
+                excelLoading={excelLoading}
+                progress={progress}
+                syncPreviewMode={syncPreviewMode}
+              />
+              <div className='flex justify-between items-center flex-shrink-0'>
+                <SyncCountHeader
+                  syncPreviewMode={syncPreviewMode}
+                  newCount={newCurations.length}
+                  allCount={allCurations.length}
+                />
+                <div className='flex gap-8 items-center'>
+                  <SheetSelector
+                    sheetList={sheetList}
+                    selectedSheet={selectedSheet}
+                    isStaging={isStaging}
+                    onChange={handleSelectSheet}
+                  />
+                </div>
+              </div>
+              <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
+                <LoadingOverlay progress={progress} loading={loading}>
+                  큐레이션 목록을 불러오는 중입니다.
+                  <br />
+                  잠시만 기다려주세요!
+                </LoadingOverlay>
+                {!loading && syncPreviewMode && (
+                  <>
+                    <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                      <ProdCurationList
+                        data={syncDisplayData.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
+                        isStaging={isStaging}
+                      />
+                    </div>
+                    <Pagination
+                      page={syncPage}
+                      totalPages={syncTotalPages}
+                      onChange={handleSyncPageChange}
+                    />
+                  </>
+                )}
+                <SyncEmptyState
+                  loading={loading}
+                  syncPreviewMode={!!syncPreviewMode}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 };

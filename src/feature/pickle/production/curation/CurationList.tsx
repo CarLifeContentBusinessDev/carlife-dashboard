@@ -1,6 +1,6 @@
-import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { usingCurationExcelProps } from '../../../../types/type';
+import { useRef } from 'react';
+import type { usingCurationExcelProps } from '../../../../types/pickleProdContents';
 import formatDateString from '../../../../utils/format/formatDateString';
 
 interface HeaderColumnProps {

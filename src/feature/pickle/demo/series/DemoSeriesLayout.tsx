@@ -7,7 +7,7 @@ import SortControls from '../../../../components/table/SortControls';
 import type { LanguageCode } from '../../../../constants/languages';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Series } from '../../../../types/demoContents';
+import type { Series } from '../../../../types/pickleDemoContents';
 import useListSort from '../../../../hook/useListSort';
 import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';
 import parseLanguages from '../../../../utils/format/parseLanguages';
