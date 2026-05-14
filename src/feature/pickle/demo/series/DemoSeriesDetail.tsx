@@ -38,17 +38,15 @@ const SERIES_RELATED_LIST: RelatedListConfig[] = [
     tableName: 'episodes',
     detailPath: '/demo/episode/detail',
     editPath: '/demo/episode',
-    columns: [
-      { key: 'id', label: 'ID' },
-      { key: 'title', label: 'title' },
-      { key: 'programs.title', label: '프로그램' },
-      { key: 'date', label: '날짜' },
-      { key: 'duration', label: '길이' },
-      { key: 'is_active', label: '상태' },
-      { key: 'language', label: '국가' },
+    columnDefs: [
+      { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
+      { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
+      { key: 'programs.title', label: '프로그램', width: 'minmax(80px,1.5fr)' },
+      { key: 'date', label: '날짜', width: 'minmax(80px,1fr)' },
+      { key: 'duration', label: '길이', width: 'minmax(80px,1fr)' },
+      { key: 'is_active', label: '상태', width: 'minmax(80px,1fr)' },
+      { key: 'language', label: '국가', width: 'minmax(80px,0.5fr)' },
     ],
-    gridCols:
-      'minmax(40px,0.5fr) minmax(80px,2fr) minmax(80px,1.5fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,0.5fr)',
     query: {
       type: 'junction',
       junctionTable: 'series_episodes',

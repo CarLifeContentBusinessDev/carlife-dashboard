@@ -42,17 +42,15 @@ const CATEGORY_RELATED_LIST: RelatedListConfig[] = [
     tableName: 'programs',
     detailPath: '/demo/program/detail',
     editPath: '/demo/program',
-    columns: [
-      { key: 'id', label: 'ID' },
-      { key: 'img_url', label: '썸네일' },
-      { key: 'title', label: 'title' },
-      { key: 'type', label: 'type' },
-      { key: 'broadcastings.title', label: '방송사' },
-      { key: 'language', label: '국가' },
-      { key: 'is_active', label: '상태' },
+    columnDefs: [
+      { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
+      { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
+      { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
+      { key: 'type', label: 'type', width: 'minmax(40px,1fr)' },
+      { key: 'broadcastings.title', label: '방송사', width: 'minmax(40px,1.5fr)' },
+      { key: 'language', label: '국가', width: 'minmax(80px,1fr)' },
+      { key: 'is_active', label: '상태', width: 'minmax(40px,1fr)' },
     ],
-    gridCols:
-      'minmax(40px,0.5fr) minmax(80px,1fr) minmax(80px,2fr) minmax(40px,1fr) minmax(40px,1.5fr) minmax(80px,1fr) minmax(40px,1fr)',
     query: {
       type: 'direct',
       filterColumn: 'category_id',

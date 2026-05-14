@@ -28,8 +28,7 @@ export interface RelatedListConfig {
   tableName: string;
   detailPath: string;
   editPath: string;
-  columns: { key: string; label: string }[];
-  gridCols: string;
+  columnDefs: { key: string; label: string; width: string }[];
   query: RelatedListQuery;
   enableLangFilter?: boolean;
 }
@@ -753,8 +752,7 @@ const DemoEntityDetail = ({
                 tableName={config.tableName}
                 detailPath={config.detailPath}
                 editPath={config.editPath}
-                columns={config.columns}
-                gridCols={config.gridCols}
+                columnDefs={config.columnDefs}
               />
             )}
           </div>

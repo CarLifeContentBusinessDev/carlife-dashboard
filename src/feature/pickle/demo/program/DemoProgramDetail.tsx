@@ -58,16 +58,14 @@ const PROGRAM_RELATED_LIST: RelatedListConfig[] = [
     tableName: 'episodes',
     detailPath: '/demo/episode/detail',
     editPath: '/demo/episode',
-    columns: [
-      { key: 'id', label: 'ID' },
-      { key: 'title', label: 'title' },
-      { key: 'date', label: '날짜' },
-      { key: 'duration', label: '길이' },
-      { key: 'is_active', label: '상태' },
-      { key: 'language', label: '국가' },
+    columnDefs: [
+      { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
+      { key: 'title', label: 'title', width: 'minmax(80px,3fr)' },
+      { key: 'date', label: '날짜', width: 'minmax(80px,1fr)' },
+      { key: 'duration', label: '길이', width: 'minmax(80px,1fr)' },
+      { key: 'is_active', label: '상태', width: 'minmax(80px,1fr)' },
+      { key: 'language', label: '국가', width: 'minmax(80px,0.5fr)' },
     ],
-    gridCols:
-      'minmax(40px,0.5fr) minmax(80px,3fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,0.5fr)',
     query: {
       type: 'direct',
       filterColumn: 'program_id',

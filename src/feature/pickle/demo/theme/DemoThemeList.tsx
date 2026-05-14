@@ -19,9 +19,6 @@ const columnDefs = [
   { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
 
-const columns = columnDefs.map(({ key, label }) => ({ key, label }));
-const gridCols = columnDefs.map(({ width }) => width).join(' ');
-
 const DemoThemeList: React.FC<DemoThemeListProps> = ({
   themes,
   selectedLang,
