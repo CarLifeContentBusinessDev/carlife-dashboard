@@ -1,4 +1,5 @@
 import DemoEntityDetail from '@/components/demo/DemoEntityDetail';
+import type { RelatedListConfig } from '@/components/demo/DemoEntityDetail';
 
 const PROGRAM_FIELD_LABELS = {
   id: 'ID',
@@ -51,6 +52,30 @@ const PROGRAM_HIDDEN_FIELDS = [
   'order_popular',
 ];
 
+const PROGRAM_RELATED_LIST: RelatedListConfig[] = [
+  {
+    title: '에피소드 목록',
+    tableName: 'episodes',
+    detailPath: '/demo/episode/detail',
+    editPath: '/demo/episode',
+    columns: [
+      { key: 'id', label: 'ID' },
+      { key: 'title', label: 'title' },
+      { key: 'date', label: '날짜' },
+      { key: 'duration', label: '길이' },
+      { key: 'is_active', label: '상태' },
+      { key: 'language', label: '국가' },
+    ],
+    gridCols:
+      'minmax(40px,0.5fr) minmax(80px,3fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,1fr) minmax(80px,0.5fr)',
+    query: {
+      type: 'direct',
+      filterColumn: 'program_id',
+      select: '*, programs(title)',
+    },
+  },
+];
+
 const DemoProgramDetail = () => {
   return (
     <DemoEntityDetail
@@ -64,6 +89,7 @@ const DemoProgramDetail = () => {
       fieldOrder={PROGRAM_FIELD_ORDER}
       summaryFields={PROGRAM_SUMMARY_FIELDS}
       hiddenFields={PROGRAM_HIDDEN_FIELDS}
+      relatedList={PROGRAM_RELATED_LIST}
     />
   );
 };

@@ -1,4 +1,5 @@
 import DemoEntityDetail from '@/components/demo/DemoEntityDetail';
+import type { RelatedListConfig } from '@/components/demo/DemoEntityDetail';
 
 const CATEGORY_FIELD_LABELS = {
   id: 'ID',
@@ -35,6 +36,32 @@ const CATEGORY_SUMMARY_FIELDS = [
   { key: 'id', label: '카테고리 ID' },
 ];
 
+const CATEGORY_RELATED_LIST: RelatedListConfig[] = [
+  {
+    title: '프로그램 목록',
+    tableName: 'programs',
+    detailPath: '/demo/program/detail',
+    editPath: '/demo/program',
+    columns: [
+      { key: 'id', label: 'ID' },
+      { key: 'img_url', label: '썸네일' },
+      { key: 'title', label: 'title' },
+      { key: 'type', label: 'type' },
+      { key: 'broadcastings.title', label: '방송사' },
+      { key: 'language', label: '국가' },
+      { key: 'is_active', label: '상태' },
+    ],
+    gridCols:
+      'minmax(40px,0.5fr) minmax(80px,1fr) minmax(80px,2fr) minmax(40px,1fr) minmax(40px,1.5fr) minmax(80px,1fr) minmax(40px,1fr)',
+    query: {
+      type: 'direct',
+      filterColumn: 'category_id',
+      select: '*, categories(title), broadcastings(title, channel)',
+    },
+    enableLangFilter: true,
+  },
+];
+
 const DemoCategoryDetail = () => {
   return (
     <DemoEntityDetail
@@ -47,6 +74,7 @@ const DemoCategoryDetail = () => {
       fieldLabels={CATEGORY_FIELD_LABELS}
       fieldOrder={CATEGORY_FIELD_ORDER}
       summaryFields={CATEGORY_SUMMARY_FIELDS}
+      relatedList={CATEGORY_RELATED_LIST}
     />
   );
 };

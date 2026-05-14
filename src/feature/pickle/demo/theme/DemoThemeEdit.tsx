@@ -393,59 +393,58 @@ const DemoThemeEdit = () => {
             </div>
 
             <FormField label='프로그램 매핑 (필수)'>
-              <div className='flex flex-col gap-2'>
-                <div className='flex gap-2'>
+              <div className='rounded-xl border border-gray-200 overflow-hidden'>
+                <div className='flex gap-2 p-2 bg-gray-50'>
                   <input
                     value={programIdsInput}
                     onChange={(e) => setProgramIdsInput(e.target.value)}
                     placeholder='프로그램 ID를 쉼표로 입력 (예: 10,11,12)'
-                    className='w-full px-4 h-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
+                    className='w-full px-3 h-9 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
                   />
                   <button
                     type='button'
-                    onClick={() => setIsProgramSearchOpen((prev) => !prev)}
-                    className='px-4 h-10 rounded-xl border border-gray-200 text-sm whitespace-nowrap bg-white hover:bg-gray-50'
+                    onClick={() => {
+                      setProgramQuery('');
+                      setIsProgramSearchOpen(true);
+                    }}
+                    className='px-3 h-9 rounded-lg border border-gray-200 text-sm whitespace-nowrap bg-white hover:bg-gray-100 shrink-0'
                   >
-                    {isProgramSearchOpen ? '검색 닫기' : '검색해서 추가'}
+                    검색해서 추가
                   </button>
                 </div>
 
-                {mappedProgramIds.length > 0 && (
-                  <p className='text-xs text-gray-500'>
-                    선택된 프로그램 ID: {mappedProgramIds.join(', ')}
+                {mappedProgramIds.length === 0 ? (
+                  <p className='px-4 py-3 text-xs text-gray-400'>
+                    선택된 프로그램이 없습니다.
                   </p>
-                )}
-
-                {isProgramSearchOpen && (
-                  <div className='rounded-xl border border-gray-200 p-3 bg-white'>
-                    <input
-                      value={programQuery}
-                      onChange={(e) => setProgramQuery(e.target.value)}
-                      placeholder='ID 또는 제목으로 검색'
-                      className='w-full px-3 h-10 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
-                    />
-                    <div className='mt-2 max-h-52 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-lg'>
-                      {filteredPrograms.length === 0 && (
-                        <p className='px-3 py-2 text-sm text-gray-500'>
-                          검색 결과가 없습니다.
-                        </p>
-                      )}
-                      {filteredPrograms.map((program) => (
-                        <button
-                          key={program.id}
-                          type='button'
-                          onClick={() => {
-                            const next = Array.from(
-                              new Set([...mappedProgramIds, program.id])
-                            );
-                            setProgramIdsInput(next.join(','));
-                          }}
-                          className='w-full text-left px-3 py-2 text-sm hover:bg-gray-50'
+                ) : (
+                  <div className='divide-y divide-gray-100'>
+                    {mappedProgramIds.map((id) => {
+                      const program = programs.find((p) => p.id === id);
+                      return (
+                        <div
+                          key={id}
+                          className='flex items-center justify-between px-4 py-2.5 bg-white hover:bg-gray-50'
                         >
-                          #{program.id} {program.title}
-                        </button>
-                      ))}
-                    </div>
+                          <span className='text-sm text-gray-700'>
+                            <span className='text-gray-400 mr-1'>#{id}</span>
+                            {program?.title ?? '(제목 없음)'}
+                          </span>
+                          <button
+                            type='button'
+                            onClick={() => {
+                              const next = mappedProgramIds.filter(
+                                (v) => v !== id
+                              );
+                              setProgramIdsInput(next.join(','));
+                            }}
+                            className='ml-2 text-gray-400 hover:text-red-500 text-xs shrink-0'
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -453,6 +452,95 @@ const DemoThemeEdit = () => {
           </div>
         )}
       </div>
+
+      {isProgramSearchOpen && (
+        <div
+          className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'
+          onClick={() => setIsProgramSearchOpen(false)}
+        >
+          <div
+            className='bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[80vh]'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='flex items-center justify-between px-5 py-4 border-b border-gray-100'>
+              <h3 className='text-sm font-semibold text-gray-900'>
+                프로그램 검색
+              </h3>
+              <button
+                type='button'
+                onClick={() => setIsProgramSearchOpen(false)}
+                className='text-gray-400 hover:text-gray-600 text-lg leading-none'
+              >
+                ×
+              </button>
+            </div>
+
+            <div className='px-5 pt-4 pb-2'>
+              <input
+                autoFocus
+                value={programQuery}
+                onChange={(e) => setProgramQuery(e.target.value)}
+                placeholder='ID 또는 제목으로 검색'
+                className='w-full px-3 h-10 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
+              />
+            </div>
+
+            <div className='flex-1 overflow-y-auto divide-y divide-gray-100 px-5 pb-2'>
+              {filteredPrograms.length === 0 && (
+                <p className='py-4 text-sm text-gray-400 text-center'>
+                  검색 결과가 없습니다.
+                </p>
+              )}
+              {filteredPrograms.map((program) => {
+                const isSelected = mappedProgramIds.includes(program.id);
+                return (
+                  <button
+                    key={program.id}
+                    type='button'
+                    onClick={() => {
+                      const next = isSelected
+                        ? mappedProgramIds.filter((v) => v !== program.id)
+                        : Array.from(
+                            new Set([...mappedProgramIds, program.id])
+                          );
+                      setProgramIdsInput(next.join(','));
+                    }}
+                    className={`w-full flex items-center justify-between py-2.5 text-sm text-left transition ${
+                      isSelected
+                        ? 'text-gray-900 font-medium'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>
+                      <span className='text-gray-400 mr-1'>#{program.id}</span>
+                      {program.title}
+                    </span>
+                    {isSelected ? (
+                      <span className='text-xs text-blue-500 shrink-0 ml-2'>
+                        선택됨
+                      </span>
+                    ) : (
+                      <span className='text-xs text-gray-400 shrink-0 ml-2'>
+                        + 추가
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className='px-5 py-4 border-t border-gray-100'>
+              <button
+                type='button'
+                onClick={() => setIsProgramSearchOpen(false)}
+                className='w-full h-10 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition'
+              >
+                완료 ({mappedProgramIds.length}개 선택됨)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </FormLayout>
   );
 };

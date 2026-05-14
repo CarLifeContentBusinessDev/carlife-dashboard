@@ -1,9 +1,37 @@
 import LoadingOverlay from '@/components/common/LoadingOverlay';
+import Dropdown from '@/components/common/Dropdown';
+import DemoTableList from '@/components/demo/DemoTableList';
+import { LANGUAGES } from '@/constants/languages';
 import { supabase } from '@/lib/supabase';
 import { useAccessTokenStore } from '@/store/useAccessTokenStore';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+
+export type RelatedListQuery =
+  | {
+      type: 'direct';
+      filterColumn: string;
+      select?: string;
+    }
+  | {
+      type: 'junction';
+      junctionTable: string;
+      junctionKey: string;
+      junctionForeignKey: string;
+      select?: string;
+    };
+
+export interface RelatedListConfig {
+  title: string;
+  tableName: string;
+  detailPath: string;
+  editPath: string;
+  columns: { key: string; label: string }[];
+  gridCols: string;
+  query: RelatedListQuery;
+  enableLangFilter?: boolean;
+}
 
 interface DemoEntityDetailProps {
   parentMenu: string;
@@ -16,6 +44,7 @@ interface DemoEntityDetailProps {
   fieldOrder?: string[];
   hiddenFields?: string[];
   summaryFields?: SummaryField[];
+  relatedList?: RelatedListConfig[];
 }
 
 interface SummaryField {
@@ -303,6 +332,7 @@ const DemoEntityDetail = ({
   fieldOrder = [],
   hiddenFields = [],
   summaryFields = [],
+  relatedList = [],
 }: DemoEntityDetailProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -313,6 +343,14 @@ const DemoEntityDetail = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [row, setRow] = useState<Record<string, unknown> | null>(null);
+
+  const [relatedData, setRelatedData] = useState<
+    Record<number, Record<string, unknown>[]>
+  >({});
+  const [relatedLoading, setRelatedLoading] = useState<
+    Record<number, boolean>
+  >({});
+  const [relatedLang, setRelatedLang] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -342,6 +380,64 @@ const DemoEntityDetail = ({
 
     fetchDetail();
   }, [id, tableName, select]);
+
+  useEffect(() => {
+    if (!id || !row || relatedList.length === 0) return;
+
+    const parsedId = parseId(id);
+
+    relatedList.forEach(async (config, index) => {
+      setRelatedLoading((prev) => ({ ...prev, [index]: true }));
+      try {
+        let data: Record<string, unknown>[] = [];
+
+        if (config.query.type === 'direct') {
+          const { filterColumn, select: relSelect } = config.query;
+          const { data: result } = await supabase
+            .from(config.tableName)
+            .select(relSelect ?? '*')
+            .eq(filterColumn, parsedId);
+          data = (result ?? []) as unknown as Record<string, unknown>[];
+        } else {
+          const {
+            junctionTable,
+            junctionKey,
+            junctionForeignKey,
+            select: relSelect,
+          } = config.query;
+
+          const { data: junctionRows } = await supabase
+            .from(junctionTable)
+            .select(`${junctionForeignKey}, order`)
+            .eq(junctionKey, parsedId)
+            .order('order', { ascending: true });
+
+          const foreignIds = (junctionRows as unknown as Record<string, unknown>[])
+            .map((r) => r[junctionForeignKey])
+            .filter((v): v is string | number => v != null);
+
+          if (foreignIds.length > 0) {
+            const { data: result } = await supabase
+              .from(config.tableName)
+              .select(relSelect ?? '*')
+              .in('id', foreignIds);
+
+            const rows = (result ?? []) as unknown as Record<string, unknown>[];
+            const resultMap = new Map(
+              rows.map((r) => [r.id as string | number, r])
+            );
+            data = foreignIds
+              .map((fid) => resultMap.get(fid))
+              .filter((r): r is Record<string, unknown> => r != null);
+          }
+        }
+
+        setRelatedData((prev) => ({ ...prev, [index]: data }));
+      } finally {
+        setRelatedLoading((prev) => ({ ...prev, [index]: false }));
+      }
+    });
+  }, [id, row]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const summaryKeySet = useMemo(() => {
     if (!row) return new Set<string>();
@@ -599,6 +695,68 @@ const DemoEntityDetail = ({
           </>
         )}
       </div>
+
+      {relatedList.map((config, index) => {
+        const selectedRelatedLang = relatedLang[index] ?? 'all';
+        const allData = relatedData[index] ?? [];
+        const filteredData =
+          config.enableLangFilter && selectedRelatedLang !== 'all'
+            ? allData.filter((r) => {
+                const language = r.language;
+                if (Array.isArray(language))
+                  return language.includes(selectedRelatedLang);
+                return language === selectedRelatedLang;
+              })
+            : allData;
+
+        return (
+          <div
+            key={config.title}
+            className='w-full rounded-2xl bg-white mt-4 p-8 flex flex-col gap-6 shadow-sm border border-gray-100'
+          >
+            <div className='flex items-center justify-between border-b border-gray-100 pb-4'>
+              <div>
+                <h2 className='text-lg font-semibold'>{config.title}</h2>
+                {!relatedLoading[index] && (
+                  <p className='text-sm text-gray-400 mt-1'>
+                    총 {filteredData.length}개
+                  </p>
+                )}
+              </div>
+              {config.enableLangFilter && (
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm text-gray-600 font-medium'>
+                    국가:
+                  </span>
+                  <Dropdown
+                    value={selectedRelatedLang}
+                    options={[...LANGUAGES]}
+                    onChange={(v) =>
+                      setRelatedLang((prev) => ({ ...prev, [index]: v }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
+
+            <LoadingOverlay loading={relatedLoading[index] ?? false}>
+              불러오는 중입니다.
+            </LoadingOverlay>
+
+            {!(relatedLoading[index] ?? false) && (
+              <DemoTableList
+                data={filteredData}
+                selectedLang={selectedRelatedLang}
+                tableName={config.tableName}
+                detailPath={config.detailPath}
+                editPath={config.editPath}
+                columns={config.columns}
+                gridCols={config.gridCols}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
