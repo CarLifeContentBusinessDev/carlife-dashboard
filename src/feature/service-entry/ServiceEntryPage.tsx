@@ -7,7 +7,7 @@ const SERVICE_HOME: Record<ServiceType, string> = {
   picknow: '/picknow/excel-sync',
 };
 
-export function ServiceEntryPage() {
+export default function ServiceEntryPage() {
   const navigate = useNavigate();
   const { setSelectedService } = useServiceStore();
 
