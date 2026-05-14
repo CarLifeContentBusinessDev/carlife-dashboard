@@ -1,16 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
-import { type LanguageCode } from '@/constants/languages';
-import DemoListLayout, {
-  type StatusFilter,
-} from '@/components/demo/DemoListLayout';
-import type { Broadcasting } from '@/types/pickleDemoContents';
-import parseLanguages from '@/utils/format/parseLanguages';
-import DemoBroadcastingList from './DemoBroadcastingList';
-import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
+import DemoListLayout from '@/components/demo/DemoListLayout';
 import SortControls from '@/components/table/SortControls';
+import useDemoFilter from '@/hook/useDemoFilter';
 import useListSort from '@/hook/useListSort';
+import type { Broadcasting } from '@/types/pickleDemoContents';
+import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DemoBroadcastingList from './DemoBroadcastingList';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [
   { value: 'id', label: 'ID 기준' },
@@ -22,14 +19,16 @@ const DemoBroadcastingLayout = () => {
   const [broadcasting, setBroadcasting] = useState<Broadcasting[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
   const [programCounts, setProgramCounts] = useState<Record<number, number>>(
     {}
   );
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
-
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    filteredData,
+    selectedLang,
+    setSelectedLang,
+    searchQuery,
+    setSearchQuery,
+  } = useDemoFilter(broadcasting);
 
   useEffect(() => {
     const fetchProgramCounts = async () => {
@@ -63,25 +62,10 @@ const DemoBroadcastingLayout = () => {
     fetchProgramCounts();
   }, [selectedLang]);
 
-  const filteredBroadcasting = useMemo(() => {
-    return broadcasting
-      .filter((brod) => {
-        if (selectedLang === 'all') return true;
-        return parseLanguages(brod.language).includes(selectedLang);
-      })
-      .filter((brod) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        return (
-          brod.title?.toLowerCase().includes(q) ||
-          brod.channel?.toLowerCase().includes(q)
-        );
-      })
-      .map((brod) => ({
-        ...brod,
-        programsCount: programCounts[brod.id] || 0,
-      }));
-  }, [broadcasting, selectedLang, searchQuery, programCounts]);
+  const mappedData = filteredData.map((item) => ({
+    ...item,
+    programsCount: programCounts[item.id] || 0,
+  }));
 
   const {
     sortKey,
@@ -90,7 +74,7 @@ const DemoBroadcastingLayout = () => {
     setSortDirection,
     sortedData: sortedBroadcasting,
   } = useListSort({
-    data: filteredBroadcasting,
+    data: mappedData,
     sortOptions: SORT_KEY_OPTIONS,
     initialSortKey: 'id',
     initialSortDirection: 'asc',
@@ -133,10 +117,6 @@ const DemoBroadcastingLayout = () => {
           onSortDirectionChange={setSortDirection}
         />
       }
-      statusFilter={statusFilter}
-      onStatusFilterChange={setStatusFilter}
-      searchableFilter={searchableFilter}
-      onSearchableFilterChange={setSearchableFilter}
       searchQuery={searchQuery}
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='방송사명 또는 채널명을 입력하세요.'

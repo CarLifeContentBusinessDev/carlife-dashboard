@@ -1,16 +1,13 @@
-import { useEffect, useState } from 'react';
-import DemoListLayout, {
-  type StatusFilter,
-} from '@/components/demo/DemoListLayout';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
-import { type LanguageCode } from '@/constants/languages';
-import { useNavigate } from 'react-router-dom';
+import DemoListLayout from '@/components/demo/DemoListLayout';
 import SortControls from '@/components/table/SortControls';
-import type { Episode } from '@/types/pickleDemoContents';
+import useDemoFilter from '@/hook/useDemoFilter';
 import useListSort from '@/hook/useListSort';
-import parseLanguages from '@/utils/format/parseLanguages';
-import DemoEpisodeList from './DemoEpisodeList';
+import type { Episode } from '@/types/pickleDemoContents';
 import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DemoEpisodeList from './DemoEpisodeList';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id'; label: string }> = [
   { value: 'id', label: 'ID 기준' },
@@ -21,10 +18,20 @@ const DemoEpisodeLayout = () => {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    filteredData,
+    selectedLang,
+    setSelectedLang,
+    statusFilter,
+    setStatusFilter,
+    searchableFilter,
+    setSearchableFilter,
+    searchQuery,
+    setSearchQuery,
+  } = useDemoFilter(episodes, {
+    hasStatusFilter: true,
+    hasSearchableFilter: true,
+  });
 
   const fetchEpisodes = async () => {
     setLoading(true);
@@ -46,27 +53,6 @@ const DemoEpisodeLayout = () => {
     fetchEpisodes();
   }, []);
 
-  const filteredEpisodes = episodes
-    .filter((ep) => {
-      if (selectedLang === 'all') return true;
-      const langs = parseLanguages(ep.language);
-      return langs.includes(selectedLang);
-    })
-    .filter((ep) => {
-      if (statusFilter === 'all') return true;
-      return statusFilter === 'active' ? ep.is_active : !ep.is_active;
-    })
-    .filter((ep) => {
-      if (searchableFilter === 'all') return true;
-      return searchableFilter === 'active'
-        ? ep.is_searchable
-        : !ep.is_searchable;
-    })
-    .filter((ep) => {
-      if (!searchQuery) return true;
-      return ep.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    });
-
   const {
     sortKey,
     setSortKey,
@@ -74,7 +60,7 @@ const DemoEpisodeLayout = () => {
     setSortDirection,
     sortedData: sortedEpisodes,
   } = useListSort({
-    data: filteredEpisodes,
+    data: filteredData,
     sortOptions: SORT_KEY_OPTIONS,
     initialSortKey: 'id',
     initialSortDirection: 'asc',
