@@ -6,20 +6,7 @@ import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import { supabase } from '@/lib/supabase';
 import useDemoEdit from '@/hook/useDemoEdit';
-
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국' },
-  { code: 'en', label: '북미' },
-  { code: 'de', label: '독일' },
-  { code: 'jp', label: '일본' },
-] as const;
-
-const LANGUAGE_TO_COUNTRY: Record<string, string> = {
-  ko: 'KR',
-  en: 'US',
-  de: 'DE',
-  jp: 'JP',
-};
+import { LANG_OPTIONS, LANGUAGE_TO_COUNTRY } from '@/constants/languages';
 
 interface ProgramForm {
   id: number;

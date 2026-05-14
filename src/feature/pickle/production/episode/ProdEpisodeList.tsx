@@ -4,6 +4,7 @@ import type { usingDataProps } from '@/types/pickleProdContents';
 import formatDateString from '@/utils/format/formatDateString';
 import { formatPlayTime } from '@/utils/format/formatPlayTime';
 import { normalizeUsageYn } from '@/utils/format/normalizeUsageYn';
+import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 
 const COLUMNS = [
   { key: 'episodeId', label: '에피소드 ID', width: '110px' },
@@ -29,9 +30,7 @@ const getCellContent = (ep: usingDataProps, key: string): React.ReactNode => {
       return (
         <span
           className={`px-2 py-0.5 rounded text-xs font-bold ${
-            usageYn === 'Y'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+            usageYn === 'Y' ? GREEN_BADGE_STYLE : RED_BADGE_STYLE
           }`}
         >
           {usageYn || '-'}

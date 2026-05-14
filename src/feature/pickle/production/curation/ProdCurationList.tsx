@@ -3,6 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { usingCurationExcelProps } from '@/types/pickleProdContents';
 import formatDateString from '@/utils/format/formatDateString';
 import { normalizeUsageYn } from '@/utils/format/normalizeUsageYn';
+import {
+  BLUE_BADGE_STYLE,
+  GREEN_BADGE_STYLE,
+  ORANGE_BADGE_STYLE,
+  RED_BADGE_STYLE,
+  PURPLE_BADGE_STYLE,
+  YELLOW_BADGE_STYLE,
+  GRAY_BADGE_STYLE,
+} from '@/constants/badgeStyles';
 
 type ProdCurationRow = usingCurationExcelProps & {
   curationId: number;
@@ -11,15 +20,15 @@ type ProdCurationRow = usingCurationExcelProps & {
 const getExhibitionBadgeClass = (value: string): string => {
   switch (value) {
     case '게시 종료':
-      return 'bg-orange-100 text-orange-700';
+      return ORANGE_BADGE_STYLE;
     case '게시 대기':
-      return 'bg-purple-100 text-purple-700';
+      return PURPLE_BADGE_STYLE;
     case '게시 중':
-      return 'bg-blue-100 text-blue-700';
+      return BLUE_BADGE_STYLE;
     case '게시 예약':
-      return 'bg-yellow-100 text-yellow-700';
+      return YELLOW_BADGE_STYLE;
     default:
-      return 'bg-gray-100 text-gray-700';
+      return GRAY_BADGE_STYLE;
   }
 };
 
@@ -73,9 +82,7 @@ const getCellContent = (
       return (
         <span
           className={`px-2 py-0.5 rounded text-xs font-bold ${
-            usage === 'Y'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+            usage === 'Y' ? GREEN_BADGE_STYLE : RED_BADGE_STYLE
           }`}
         >
           {usage || '-'}
@@ -87,9 +94,7 @@ const getCellContent = (
       return (
         <span
           className={`px-2 py-0.5 rounded text-xs font-bold ${
-            usage === 'Y'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+            usage === 'Y' ? GREEN_BADGE_STYLE : RED_BADGE_STYLE
           }`}
         >
           {usage || '-'}

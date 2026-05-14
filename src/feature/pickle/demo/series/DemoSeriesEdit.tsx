@@ -6,13 +6,7 @@ import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import { supabase } from '@/lib/supabase';
 import useDemoEdit from '@/hook/useDemoEdit';
-
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국' },
-  { code: 'en', label: '북미' },
-  { code: 'de', label: '독일' },
-  { code: 'jp', label: '일본' },
-] as const;
+import { LANG_OPTIONS } from '@/constants/languages';
 
 interface SeriesForm {
   id: number;
@@ -425,7 +419,9 @@ const DemoSeriesEdit = () => {
                 </div>
 
                 {mappedEpisodeIds.length === 0 ? (
-                  <p className='px-4 py-3 text-xs text-gray-400'>선택된 에피소드가 없습니다.</p>
+                  <p className='px-4 py-3 text-xs text-gray-400'>
+                    선택된 에피소드가 없습니다.
+                  </p>
                 ) : (
                   <div className='divide-y divide-gray-100'>
                     {mappedEpisodeIds.map((id) => {
@@ -442,7 +438,9 @@ const DemoSeriesEdit = () => {
                           <button
                             type='button'
                             onClick={() => {
-                              const next = mappedEpisodeIds.filter((v) => v !== id);
+                              const next = mappedEpisodeIds.filter(
+                                (v) => v !== id
+                              );
                               setEpisodeIdsInput(next.join(','));
                             }}
                             className='ml-2 text-gray-400 hover:text-red-500 text-xs shrink-0'

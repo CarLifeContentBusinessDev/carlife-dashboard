@@ -7,12 +7,7 @@ import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import useDemoEdit from '@/hook/useDemoEdit';
 import type { Category } from '@/types/pickleDemoContents';
-
-const LANG_SECTIONS = [
-  { lang: 'en', label: '북미', titleKey: 'en_title', imgKey: 'en_img_url' },
-  { lang: 'de', label: '독일', titleKey: 'de_title', imgKey: 'de_img_url' },
-  { lang: 'jp', label: '일본', titleKey: 'jp_title', imgKey: 'jp_img_url' },
-] as const;
+import { LANG_SECTIONS } from '@/constants/languages';
 
 const DemoCategoryEdit = () => {
   const [searchParams] = useSearchParams();

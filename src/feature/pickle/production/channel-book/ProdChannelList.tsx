@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { usingChannelProps } from '@/types/pickleProdContents';
 import formatDateString from '@/utils/format/formatDateString';
 import { normalizeUsageYn } from '@/utils/format/normalizeUsageYn';
+import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 
 const COLUMNS = [
   { key: 'channelId', label: '채널 ID', width: '90px' },
@@ -44,9 +45,7 @@ const getCellContent = (
       return (
         <span
           className={`px-2 py-0.5 rounded text-xs font-bold ${
-            usageYn === 'Y'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+            usageYn === 'Y' ? GREEN_BADGE_STYLE : RED_BADGE_STYLE
           }`}
         >
           {usageYn || '-'}

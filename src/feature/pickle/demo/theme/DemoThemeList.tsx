@@ -35,8 +35,7 @@ const DemoThemeList: React.FC<DemoThemeListProps> = ({
       tableName='themes'
       detailPath='/demo/theme/detail'
       editPath='/demo/theme'
-      columns={columns}
-      gridCols={gridCols}
+      columnDefs={columnDefs}
     />
   );
 };

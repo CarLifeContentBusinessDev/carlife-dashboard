@@ -19,9 +19,6 @@ const columnDefs = [
   { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
 
-const columns = columnDefs.map(({ key, label }) => ({ key, label }));
-const gridCols = columnDefs.map(({ width }) => width).join(' ');
-
 const DemoEpisodeList: React.FC<DemoEpisodeListProps> = ({
   episodes,
   selectedLang,
@@ -35,8 +32,7 @@ const DemoEpisodeList: React.FC<DemoEpisodeListProps> = ({
       tableName='episodes'
       detailPath='/demo/episode/detail'
       editPath='/demo/episode'
-      columns={columns}
-      gridCols={gridCols}
+      columnDefs={columnDefs}
     />
   );
 };

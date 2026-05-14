@@ -6,13 +6,7 @@ import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import { supabase } from '@/lib/supabase';
 import useDemoEdit from '@/hook/useDemoEdit';
-
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국' },
-  { code: 'en', label: '북미' },
-  { code: 'de', label: '독일' },
-  { code: 'jp', label: '일본' },
-] as const;
+import { LANG_OPTIONS } from '@/constants/languages';
 
 interface ThemeForm {
   id: number;

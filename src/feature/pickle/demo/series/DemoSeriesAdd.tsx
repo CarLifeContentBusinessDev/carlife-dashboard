@@ -6,13 +6,7 @@ import FormLayout from '@/components/form/FormLayout';
 import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import { supabase } from '@/lib/supabase';
-
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국' },
-  { code: 'en', label: '북미' },
-  { code: 'de', label: '독일' },
-  { code: 'jp', label: '일본' },
-] as const;
+import { LANG_OPTIONS } from '@/constants/languages';
 
 interface SectionOption {
   id: number;

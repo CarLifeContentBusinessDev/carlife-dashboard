@@ -7,6 +7,7 @@ import { useAccessTokenStore } from '@/store/useAccessTokenStore';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { BLUE_BADGE_STYLE } from '@/constants/badgeStyles';
 
 export type RelatedListQuery =
   | {
@@ -347,9 +348,9 @@ const DemoEntityDetail = ({
   const [relatedData, setRelatedData] = useState<
     Record<number, Record<string, unknown>[]>
   >({});
-  const [relatedLoading, setRelatedLoading] = useState<
-    Record<number, boolean>
-  >({});
+  const [relatedLoading, setRelatedLoading] = useState<Record<number, boolean>>(
+    {}
+  );
   const [relatedLang, setRelatedLang] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -412,7 +413,9 @@ const DemoEntityDetail = ({
             .eq(junctionKey, parsedId)
             .order('order', { ascending: true });
 
-          const foreignIds = (junctionRows as unknown as Record<string, unknown>[])
+          const foreignIds = (
+            junctionRows as unknown as Record<string, unknown>[]
+          )
             .map((r) => r[junctionForeignKey])
             .filter((v): v is string | number => v != null);
 
@@ -571,7 +574,7 @@ const DemoEntityDetail = ({
               목록
             </button>
             <button
-              className='px-3 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition text-sm'
+              className={`px-3 py-2 rounded ${BLUE_BADGE_STYLE} hover:bg-blue-200 transition text-sm`}
               onClick={() => {
                 if (!accessToken) {
                   toast.warn('웹데모 로그인이 필요합니다.');
