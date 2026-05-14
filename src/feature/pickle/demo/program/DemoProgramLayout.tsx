@@ -31,6 +31,7 @@ const DemoProgramLayout = () => {
   } = useDemoFilter(programs, {
     hasStatusFilter: true,
     hasSearchableFilter: true,
+    searchFields: ['title', 'subtitle'],
   });
 
   const fetchPrograms = async () => {

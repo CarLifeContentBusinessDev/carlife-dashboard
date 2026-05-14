@@ -12,8 +12,17 @@ export default function useDemoFilter<
   },
 >(
   data: T[],
-  options: { hasStatusFilter?: boolean; hasSearchableFilter?: boolean } = {}
+  options: {
+    hasStatusFilter?: boolean;
+    hasSearchableFilter?: boolean;
+    searchFields?: (keyof T)[];
+  } = {}
 ) {
+  const {
+    hasStatusFilter = false,
+    hasSearchableFilter = false,
+    searchFields = ['title' as keyof T],
+  } = options;
   const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
@@ -26,21 +35,25 @@ export default function useDemoFilter<
       return langs.includes(selectedLang);
     })
     .filter((item) => {
-      if (!options.hasStatusFilter || statusFilter === 'all') return true;
+      if (!hasStatusFilter || statusFilter === 'all') return true;
       return statusFilter === 'active'
         ? item.is_active === true
         : item.is_active === false;
     })
     .filter((item) => {
-      if (!options.hasSearchableFilter || searchableFilter === 'all')
-        return true;
+      if (!hasSearchableFilter || searchableFilter === 'all') return true;
       return searchableFilter === 'active'
         ? item.is_searchable === true
         : item.is_searchable === false;
     })
     .filter((item) => {
       if (!searchQuery) return true;
-      return item.title?.toLowerCase().includes(searchQuery.toLowerCase());
+      const q = searchQuery.toLowerCase();
+      return searchFields.some((field) =>
+        String(item[field] ?? '')
+          .toLowerCase()
+          .includes(q)
+      );
     });
 
   return {

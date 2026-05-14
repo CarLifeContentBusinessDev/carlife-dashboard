@@ -28,7 +28,7 @@ const DemoBroadcastingLayout = () => {
     setSelectedLang,
     searchQuery,
     setSearchQuery,
-  } = useDemoFilter(broadcasting);
+  } = useDemoFilter(broadcasting, { searchFields: ['title', 'channel', 'frequency'] });
 
   useEffect(() => {
     const fetchProgramCounts = async () => {
@@ -119,7 +119,7 @@ const DemoBroadcastingLayout = () => {
       }
       searchQuery={searchQuery}
       onSearchQueryChange={setSearchQuery}
-      searchPlaceholder='방송사명 또는 채널명을 입력하세요.'
+      searchPlaceholder='방송사명, 채널명, 주파수를 입력하세요.'
       addLabel='방송사 추가'
       onAdd={() => navigate('/demo/broadcasting/new')}
     >

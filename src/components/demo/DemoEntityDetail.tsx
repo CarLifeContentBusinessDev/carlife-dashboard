@@ -382,9 +382,18 @@ const DemoEntityDetail = ({
   }, [id, tableName, select]);
 
   useEffect(() => {
-    if (!id || !row || relatedList.length === 0) return;
+    if (!id || relatedList.length === 0) {
+      setRelatedData({});
+      setRelatedLoading({});
+      return;
+    }
 
+    let active = true;
     const parsedId = parseId(id);
+
+    // ID 변경 시 이전 데이터 초기화
+    setRelatedData({});
+    setRelatedLoading({});
 
     relatedList.forEach(async (config, index) => {
       setRelatedLoading((prev) => ({ ...prev, [index]: true }));
@@ -434,12 +443,19 @@ const DemoEntityDetail = ({
           }
         }
 
+        if (!active) return;
         setRelatedData((prev) => ({ ...prev, [index]: data }));
       } finally {
-        setRelatedLoading((prev) => ({ ...prev, [index]: false }));
+        if (active) {
+          setRelatedLoading((prev) => ({ ...prev, [index]: false }));
+        }
       }
     });
-  }, [id, row]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    return () => {
+      active = false;
+    };
+  }, [id, relatedList]);
 
   const summaryKeySet = useMemo(() => {
     if (!row) return new Set<string>();

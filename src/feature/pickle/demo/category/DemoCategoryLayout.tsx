@@ -35,7 +35,7 @@ const DemoCategoryLayout = () => {
     {}
   );
   const { selectedLang, setSelectedLang, searchQuery, setSearchQuery } =
-    useDemoFilter([] as Category[]);
+    useDemoFilter(categories);
 
   // 언어별로 보여줄 컬럼명 매핑 (공통 상수 사용)
   const langColumnMap = LANG_COLUMN_MAP;

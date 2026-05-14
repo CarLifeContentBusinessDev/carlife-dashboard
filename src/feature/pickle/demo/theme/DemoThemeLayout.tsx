@@ -28,7 +28,7 @@ const DemoThemeLayout = () => {
     setSelectedLang,
     searchQuery,
     setSearchQuery,
-  } = useDemoFilter(themes);
+  } = useDemoFilter(themes, { searchFields: ['title', 'subtitle'] });
 
   const fetchThemes = async () => {
     setLoading(true);

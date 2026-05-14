@@ -29,7 +29,7 @@ const DemoSeriesLayout = () => {
 
     searchQuery,
     setSearchQuery,
-  } = useDemoFilter(series);
+  } = useDemoFilter(series, { searchFields: ['title', 'subtitle'] });
 
   const fetchSeries = async () => {
     setLoading(true);

@@ -92,7 +92,10 @@ function useDemoEdit<T extends { id: number }>({
     setData((prev) => (prev ? ({ ...prev, language: langs } as T) : prev));
   };
 
-  const save = async (payload: Record<string, unknown>): Promise<boolean> => {
+  const save = async (
+    payload: Record<string, unknown>,
+    options: { keepLoading?: boolean } = {}
+  ): Promise<boolean> => {
     if (!data) return false;
     setSaving(true);
     setError('');
@@ -100,11 +103,16 @@ function useDemoEdit<T extends { id: number }>({
       .from(table)
       .update(payload)
       .eq('id', data.id);
-    setSaving(false);
+
     if (saveError) {
       console.error('Supabase update error:', saveError);
       setError(`저장에 실패했습니다: ${saveError.message}`);
+      setSaving(false);
       return false;
+    }
+
+    if (!options.keepLoading) {
+      setSaving(false);
     }
     return true;
   };
