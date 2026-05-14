@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import FormActionsButton from '@/components/form/FormActionButton';
 import FormField from '@/components/form/FormField';
 import FormLayout from '@/components/form/FormLayout';
 import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import { supabase } from '@/lib/supabase';
+import useDemoEdit from '@/hook/useDemoEdit';
 
 const LANG_OPTIONS = [
   { code: 'ko', label: '한국' },
@@ -40,12 +40,7 @@ interface ThemeProgramMapRow {
 }
 
 const DemoThemeEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-
   const [activeTab, setActiveTab] = useState('basic');
-
-  const [theme, setTheme] = useState<ThemeForm | null>(null);
   const [sections, setSections] = useState<SectionOption[]>([]);
   const [programs, setPrograms] = useState<ProgramOption[]>([]);
   const [sectionQuery, setSectionQuery] = useState('');
@@ -53,9 +48,49 @@ const DemoThemeEdit = () => {
   const [programIdsInput, setProgramIdsInput] = useState('');
   const [programQuery, setProgramQuery] = useState('');
   const [isProgramSearchOpen, setIsProgramSearchOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
+
+  const {
+    data: theme,
+    setData: setTheme,
+    loading,
+    saving,
+    setSaving,
+    error,
+    setError,
+    handleChange,
+    handleLangToggle,
+    save,
+    navigate,
+  } = useDemoEdit<ThemeForm>({
+    table: 'themes',
+    numericFields: ['section_id', 'order'],
+  });
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('sections').select('id, title').order('id'),
+      supabase.from('programs').select('id, title').order('id'),
+    ]).then(([sectionRes, programRes]) => {
+      setSections((sectionRes.data ?? []) as SectionOption[]);
+      setPrograms((programRes.data ?? []) as ProgramOption[]);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!theme) return;
+    supabase
+      .from('themes_programs')
+      .select('program_id, order')
+      .eq('theme_id', theme.id)
+      .order('order', { ascending: true })
+      .then(({ data }) => {
+        const mappingRows = (data ?? []) as ThemeProgramMapRow[];
+        const mappedIds = mappingRows
+          .map((row) => Number(row.program_id))
+          .filter((v) => Number.isInteger(v) && v > 0);
+        setProgramIdsInput(Array.from(new Set(mappedIds)).join(','));
+      });
+  }, [theme?.id]);
 
   const filteredSections = sections
     .filter((section) => {
@@ -98,76 +133,6 @@ const DemoThemeEdit = () => {
     })
     .slice(0, 30);
 
-  useEffect(() => {
-    if (!id) return;
-    const fetchData = async () => {
-      setLoading(true);
-
-      const [themeRes, sectionRes, programRes, mappingRes] = await Promise.all([
-        supabase.from('themes').select('*').eq('id', id).single(),
-        supabase.from('sections').select('id, title').order('id'),
-        supabase.from('programs').select('id, title').order('id'),
-        supabase
-          .from('themes_programs')
-          .select('program_id, order')
-          .eq('theme_id', id)
-          .order('order', { ascending: true }),
-      ]);
-
-      if (themeRes.error || !themeRes.data) {
-        setError('테마 정보를 불러올 수 없습니다.');
-      } else {
-        setTheme(themeRes.data as ThemeForm);
-      }
-
-      setSections((sectionRes.data ?? []) as SectionOption[]);
-      setPrograms((programRes.data ?? []) as ProgramOption[]);
-
-      const mappingRows = (mappingRes.data ?? []) as ThemeProgramMapRow[];
-      const mappedIds = mappingRows
-        .map((row) => Number(row.program_id))
-        .filter((value) => Number.isInteger(value) && value > 0);
-      setProgramIdsInput(Array.from(new Set(mappedIds)).join(','));
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [id]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    if (!theme) return;
-    const { name, value } = e.target;
-
-    setTheme({
-      ...theme,
-      [name]:
-        name === 'section_id'
-          ? value === ''
-            ? null
-            : Number(value)
-          : name === 'order'
-            ? value === ''
-              ? null
-              : Number(value)
-            : value,
-    });
-  };
-
-  const handleLangToggle = (lang: string) => {
-    if (!theme) return;
-    const exists = theme.language.includes(lang);
-
-    setTheme({
-      ...theme,
-      language: exists
-        ? theme.language.filter((item) => item !== lang)
-        : [...theme.language, lang],
-    });
-  };
-
   const handleSave = async () => {
     if (!theme) return;
     if (!theme.title.trim()) {
@@ -195,56 +160,47 @@ const DemoThemeEdit = () => {
       return;
     }
 
+    const ok = await save({
+      title: theme.title,
+      subtitle: theme.subtitle || null,
+      img_url: theme.img_url || null,
+      section_id: theme.section_id,
+      order: theme.order,
+      language: theme.language,
+    });
+
+    if (!ok) return;
+
     setSaving(true);
-    setError('');
-    const { error } = await supabase
-      .from('themes')
-      .update({
-        title: theme.title,
-        subtitle: theme.subtitle || null,
-        img_url: theme.img_url || null,
-        section_id: theme.section_id,
-        order: theme.order,
-        language: theme.language,
-      })
-      .eq('id', theme.id);
 
-    if (!error) {
-      const { error: deleteMappingError } = await supabase
-        .from('themes_programs')
-        .delete()
-        .eq('theme_id', theme.id);
+    const { error: deleteMappingError } = await supabase
+      .from('themes_programs')
+      .delete()
+      .eq('theme_id', theme.id);
 
-      if (deleteMappingError) {
-        setSaving(false);
-        setError(`매핑 갱신에 실패했습니다: ${deleteMappingError.message}`);
-        return;
-      }
-
-      const mappingRows = mappedProgramIds.map((programId, index) => ({
-        theme_id: theme.id,
-        program_id: programId,
-        order: index + 1,
-      }));
-
-      const { error: insertMappingError } = await supabase
-        .from('themes_programs')
-        .insert(mappingRows);
-
-      if (insertMappingError) {
-        setSaving(false);
-        setError(`매핑 갱신에 실패했습니다: ${insertMappingError.message}`);
-        return;
-      }
+    if (deleteMappingError) {
+      setSaving(false);
+      setError(`매핑 갱신에 실패했습니다: ${deleteMappingError.message}`);
+      return;
     }
+
+    const mappingRows = mappedProgramIds.map((programId, index) => ({
+      theme_id: theme.id,
+      program_id: programId,
+      order: index + 1,
+    }));
+
+    const { error: insertMappingError } = await supabase
+      .from('themes_programs')
+      .insert(mappingRows);
 
     setSaving(false);
-    if (error) {
-      console.error('Supabase update error:', error);
-      setError(`저장에 실패했습니다: ${error.message}`);
-    } else {
-      navigate(-1);
+    if (insertMappingError) {
+      setError(`매핑 갱신에 실패했습니다: ${insertMappingError.message}`);
+      return;
     }
+
+    navigate(-1);
   };
 
   if (loading)

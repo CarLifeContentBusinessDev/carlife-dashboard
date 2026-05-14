@@ -1,83 +1,46 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import FormActionsButton from '@/components/form/FormActionButton';
 import FormField from '@/components/form/FormField';
 import FormLayout from '@/components/form/FormLayout';
 import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
-import { supabase } from '@/lib/supabase';
+import useDemoEdit from '@/hook/useDemoEdit';
 import type { Broadcasting } from '@/types/pickleDemoContents';
 
 const DemoBroadcastingEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // URL의 lang 파라미터로 초기 탭 결정
   const initLang = searchParams.get('lang') ?? 'ko';
   const [activeTab, setActiveTab] = useState(
     initLang === 'ko' ? 'basic' : 'localize'
   );
 
-  const [broadcasting, setBroadcasting] = useState<Broadcasting | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    supabase
-      .from('broadcastings')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setError('방송사 정보를 불러올 수 없습니다.');
-        } else {
-          setBroadcasting(data);
-        }
-        setLoading(false);
-      });
-  }, [id]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!broadcasting) return;
-    const { name, value } = e.target;
-    setBroadcasting({
-      ...broadcasting,
-      [name]: name === 'order' ? (value === '' ? null : Number(value)) : value,
-    });
-  };
-
-  const handleLangChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!broadcasting) return;
-    const langs = e.target.value.split(',').map((l) => l.trim());
-    setBroadcasting({ ...broadcasting, language: langs });
-  };
+  const {
+    data: broadcasting,
+    loading,
+    saving,
+    error,
+    handleChange,
+    handleLangChange,
+    save,
+    navigate,
+  } = useDemoEdit<Broadcasting>({
+    table: 'broadcastings',
+    numericFields: ['order'],
+  });
 
   const handleSave = async () => {
     if (!broadcasting) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from('broadcastings')
-      .update({
-        title: broadcasting.title,
-        channel: broadcasting.channel,
-        frequency: broadcasting.frequency,
-        img_url: broadcasting.img_url,
-        order: broadcasting.order,
-        language: broadcasting.language,
-      })
-      .eq('id', broadcasting.id);
-    setSaving(false);
-    if (error) {
-      console.error('Supabase update error:', error);
-      setError(`저장에 실패했습니다: ${error.message}`);
-    } else {
-      navigate(-1);
-    }
+    const ok = await save({
+      title: broadcasting.title,
+      channel: broadcasting.channel,
+      frequency: broadcasting.frequency,
+      img_url: broadcasting.img_url,
+      order: broadcasting.order,
+      language: broadcasting.language,
+    });
+    if (ok) navigate(-1);
   };
 
   if (loading)

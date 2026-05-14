@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import FormActionsButton from '@/components/form/FormActionButton';
 import FormField from '@/components/form/FormField';
 import FormLayout from '@/components/form/FormLayout';
 import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
-import { supabase } from '@/lib/supabase';
+import useDemoEdit from '@/hook/useDemoEdit';
 import type { Category } from '@/types/pickleDemoContents';
 
 const LANG_SECTIONS = [
@@ -15,43 +15,29 @@ const LANG_SECTIONS = [
 ] as const;
 
 const DemoCategoryEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // URL의 lang 파라미터로 초기 탭 결정
   const initLang = searchParams.get('lang') ?? 'ko';
   const [activeTab, setActiveTab] = useState(
     initLang === 'ko' ? 'basic' : 'localize'
   );
 
-  const [category, setCategory] = useState<Category | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  // 해당 언어 섹션으로 스크롤하기 위한 ref map
   const langRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    supabase
-      .from('categories')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setError('카테고리 정보를 불러올 수 없습니다.');
-        } else {
-          setCategory(data);
-        }
-        setLoading(false);
-      });
-  }, [id]);
+  const {
+    data: category,
+    loading,
+    saving,
+    error,
+    handleChange,
+    handleLangChange,
+    save,
+    navigate,
+  } = useDemoEdit<Category>({
+    table: 'categories',
+    numericFields: ['order'],
+  });
 
-  // 데이터 로드 후 해당 언어 섹션으로 스크롤
   useEffect(() => {
     if (!category || activeTab !== 'localize') return;
     const el = langRefs.current[initLang];
@@ -63,46 +49,21 @@ const DemoCategoryEdit = () => {
     }
   }, [category, activeTab, initLang]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!category) return;
-    const { name, value } = e.target;
-    setCategory({
-      ...category,
-      [name]: name === 'order' ? (value === '' ? null : Number(value)) : value,
-    });
-  };
-
-  const handleLangChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!category) return;
-    const langs = e.target.value.split(',').map((l) => l.trim());
-    setCategory({ ...category, language: langs });
-  };
-
   const handleSave = async () => {
     if (!category) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from('categories')
-      .update({
-        title: category.title,
-        img_url: category.img_url,
-        order: category.order,
-        en_title: category.en_title,
-        en_img_url: category.en_img_url,
-        de_title: category.de_title,
-        de_img_url: category.de_img_url,
-        jp_title: category.jp_title,
-        jp_img_url: category.jp_img_url,
-        language: category.language,
-      })
-      .eq('id', category.id);
-    setSaving(false);
-    if (error) {
-      console.error('Supabase update error:', error);
-      setError(`저장에 실패했습니다: ${error.message}`);
-    } else {
-      navigate(-1);
-    }
+    const ok = await save({
+      title: category.title,
+      img_url: category.img_url,
+      order: category.order,
+      en_title: category.en_title,
+      en_img_url: category.en_img_url,
+      de_title: category.de_title,
+      de_img_url: category.de_img_url,
+      jp_title: category.jp_title,
+      jp_img_url: category.jp_img_url,
+      language: category.language,
+    });
+    if (ok) navigate(-1);
   };
 
   if (loading)
