@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import FormActionsButton from '../../../../components/form/FormActionButton';
-import FormField from '../../../../components/form/FormField';
-import FormLayout from '../../../../components/form/FormLayout';
-import FormTabs from '../../../../components/form/FormTabs';
-import { ThumbnailPreview } from '../../../../components/table/ThumbnailPreview';
-import { supabase } from '../../../../lib/supabase';
-import type { Category } from '../../../../types/pickleDemoContents';
+import FormActionsButton from '@/components/form/FormActionButton';
+import FormField from '@/components/form/FormField';
+import FormLayout from '@/components/form/FormLayout';
+import FormTabs from '@/components/form/FormTabs';
+import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
+import { supabase } from '@/lib/supabase';
+import type { Category } from '@/types/pickleDemoContents';
 
 const LANG_SECTIONS = [
   { lang: 'en', label: '북미', titleKey: 'en_title', imgKey: 'en_img_url' },

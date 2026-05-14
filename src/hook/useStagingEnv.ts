@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { api, stgApi } from '../utils/api/api';
+import { api, stgApi } from '@/utils/api/api';
 
 export function useStagingEnv() {
   const { pathname } = useLocation();

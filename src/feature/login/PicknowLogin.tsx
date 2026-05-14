@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import JSEncrypt from 'jsencrypt';
-import { picknowApi } from '../../utils/api/api';
-import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import { setServiceToken } from '../../store/useServiceStore';
+import { picknowApi } from '@/utils/api/api';
+import { useAccessTokenStore } from '@/store/useAccessTokenStore';
+import { setServiceToken } from '@/store/useServiceStore';
 
 const PICKNOW_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY_STG}\n-----END PUBLIC KEY-----`;
 const TEST_ID = import.meta.env.VITE_TEST_ID ?? 'dev';

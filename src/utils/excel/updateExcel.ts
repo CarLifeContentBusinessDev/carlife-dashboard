@@ -2,10 +2,10 @@ import { toast } from 'react-toastify';
 import type {
   usingChannelProps,
   usingDataProps,
-} from '../../types/pickleProdContents';
-import { getGoogleToken, getSheetsClient } from '../auth/auth';
-import formatDateString from '../format/formatDateString';
-import { formatPlayTime, parsePlayTime } from '../format/formatPlayTime';
+} from '@/types/pickleProdContents';
+import { getGoogleToken, getSheetsClient } from '@/utils/auth/auth';
+import formatDateString from '@/utils/format/formatDateString';
+import { formatPlayTime, parsePlayTime } from '@/utils/format/formatPlayTime';
 import { buildSheetRange } from './sheetRange';
 
 const STARTROW = 4;

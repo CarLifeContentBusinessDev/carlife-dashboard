@@ -1,9 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { usingDataProps } from '../../../../types/pickleProdContents';
-import formatDateString from '../../../../utils/format/formatDateString';
-import { formatPlayTime } from '../../../../utils/format/formatPlayTime';
-import { normalizeUsageYn } from '../../../../utils/format/normalizeUsageYn';
+import type { usingDataProps } from '@/types/pickleProdContents';
+import formatDateString from '@/utils/format/formatDateString';
+import { formatPlayTime } from '@/utils/format/formatPlayTime';
+import { normalizeUsageYn } from '@/utils/format/normalizeUsageYn';
 
 const COLUMNS = [
   { key: 'episodeId', label: '에피소드 ID', width: '110px' },

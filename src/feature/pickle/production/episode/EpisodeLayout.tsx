@@ -1,29 +1,26 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay';
-import Pagination from '../../../../components/common/Pagination';
-import PickleLoginBanner from '../../../../components/common/PickleLoginBanner';
-import TabHeader from '../../../../components/common/TabHeader';
-import SheetSelector from '../../../../components/filter/SheetSelector';
-import UsageFilterRadio from '../../../../components/filter/UsageFilterRadio';
-import SyncCountHeader from '../../../../components/sync/SyncCountHeader';
-import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState';
-import SyncToolbar from '../../../../components/sync/SyncToolbar';
-import { useProdPagination } from '../../../../hook/useProdPagination';
-import { useSheetSelection } from '../../../../hook/useSheetSelection';
-import { useStagingEnv } from '../../../../hook/useStagingEnv';
-import { SYNC_PAGE_SIZE, useSyncState } from '../../../../hook/useSyncState';
-import { useLoginTokenStore } from '../../../../store/useLoginTokenStore';
-import type { usingDataProps } from '../../../../types/pickleProdContents';
-import { fetchAllData } from '../../../../utils/api/fetchAllData';
-import { appendNewDataToTop } from '../../../../utils/excel/appendNewDataToExcel';
-import { getNewDataWithExcel } from '../../../../utils/excel/getNewData';
-import {
-  clearExcelRange,
-  overwriteExcelData,
-} from '../../../../utils/excel/updateExcel';
-import { findChangedData } from '../../../../utils/excel/updateLogs';
-import { updateSheetSyncTime } from '../../../../utils/excel/updateSheetSyncTime';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import Pagination from '@/components/common/Pagination';
+import PickleLoginBanner from '@/components/common/PickleLoginBanner';
+import TabHeader from '@/components/common/TabHeader';
+import SheetSelector from '@/components/filter/SheetSelector';
+import UsageFilterRadio from '@/components/filter/UsageFilterRadio';
+import SyncCountHeader from '@/components/sync/SyncCountHeader';
+import { SyncEmptyState } from '@/components/sync/SyncEmptyState';
+import SyncToolbar from '@/components/sync/SyncToolbar';
+import { useProdPagination } from '@/hook/useProdPagination';
+import { useSheetSelection } from '@/hook/useSheetSelection';
+import { useStagingEnv } from '@/hook/useStagingEnv';
+import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import type { usingDataProps } from '@/types/pickleProdContents';
+import { fetchAllData } from '@/utils/api/fetchAllData';
+import { appendNewDataToTop } from '@/utils/excel/appendNewDataToExcel';
+import { getNewDataWithExcel } from '@/utils/excel/getNewData';
+import { clearExcelRange, overwriteExcelData } from '@/utils/excel/updateExcel';
+import { findChangedData } from '@/utils/excel/updateLogs';
+import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
 

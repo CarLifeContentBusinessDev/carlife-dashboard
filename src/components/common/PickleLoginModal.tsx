@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { supabase } from '../../lib/supabase';
-import { setTestMode } from '../../utils/api/api';
-import { usePickleServerStore } from '../../store/usePickleServerStore';
-import { useLoginTokenStore } from '../../store/useLoginTokenStore';
-import type { PickleServer } from '../../constants/servers';
+import { supabase } from '@/lib/supabase';
+import { setTestMode } from '@/utils/api/api';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import type { PickleServer } from '@/constants/servers';
 
 interface LoginApiResponse {
   resultCode: string;

@@ -1,9 +1,9 @@
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import { supabase } from '@/lib/supabase';
+import { useAccessTokenStore } from '@/store/useAccessTokenStore';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { supabase } from '../../lib/supabase';
-import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import LoadingOverlay from '../common/LoadingOverlay';
 
 interface DemoEntityDetailProps {
   parentMenu: string;

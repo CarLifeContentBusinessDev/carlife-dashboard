@@ -1,8 +1,8 @@
 import { toast } from 'react-toastify';
-import type { usingCurationExcelProps } from '../../types/pickleProdContents';
-import { getGoogleToken, getSheetsClient } from '../auth/auth';
-import formatDateString from '../format/formatDateString';
-import { formatPlayTime } from '../format/formatPlayTime';
+import type { usingCurationExcelProps } from '@/types/pickleProdContents';
+import { getGoogleToken, getSheetsClient } from '@/utils/auth/auth';
+import formatDateString from '@/utils/format/formatDateString';
+import { formatPlayTime } from '@/utils/format/formatPlayTime';
 
 const STARTROW = 4;
 

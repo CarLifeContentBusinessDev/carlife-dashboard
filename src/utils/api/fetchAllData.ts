@@ -6,8 +6,8 @@ import type {
   usingChannelProps,
   usingCurationExcelProps,
   usingDataProps,
-} from '../../types/pickleProdContents';
-import { mapCurationStatus } from '../format/statusMapper';
+} from '@/types/pickleProdContents';
+import { mapCurationStatus } from '@/utils/format/statusMapper';
 import { api } from './api';
 
 const SIZE = 10000;

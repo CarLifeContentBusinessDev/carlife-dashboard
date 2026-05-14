@@ -2,9 +2,9 @@ import {
   getSheetsClient,
   initializeGoogleAPI,
   getGoogleToken,
-} from '../auth/auth';
-import { useLoginTokenStore } from '../../store/useLoginTokenStore';
-import { buildSheetRange } from '../excel/sheetRange';
+} from '@/utils/auth/auth';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import { buildSheetRange } from '@/utils/excel/sheetRange';
 
 export interface SettingRow {
   고객사: string;
@@ -15,7 +15,9 @@ export interface SettingRow {
   Orientation: string;
 }
 
-export async function fetchSettingData(spreadsheetId: string): Promise<SettingRow[]> {
+export async function fetchSettingData(
+  spreadsheetId: string
+): Promise<SettingRow[]> {
   await initializeGoogleAPI();
 
   // 로그인 토큰이 없으면 GIS를 통해 토큰을 획득 시도

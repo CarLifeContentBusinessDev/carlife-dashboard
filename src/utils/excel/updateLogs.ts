@@ -1,5 +1,5 @@
-import type { usingDataProps } from '../../types/pickleProdContents';
-import { api } from '../api/api';
+import type { usingDataProps } from '@/types/pickleProdContents';
+import { api } from '@/utils/api/api';
 import { getExcelData } from './updateExcel';
 
 export async function findChangedData(allData: usingDataProps[]) {

@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { useLoginTokenStore } from '../../store/useLoginTokenStore';
-import { usePicknowServerStore } from '../../store/usePicknowServerStore';
-import { PICKNOW_SERVERS } from '../../constants/servers';
-import type { PicknowServer } from '../../constants/servers';
-import type { SettingRow } from '../../utils/googleSheets/fetchSettingData';
-import { fetchSettingData } from '../../utils/googleSheets/fetchSettingData';
-import { syncPicknowConfigurationSheet } from '../../utils/googleSheets/syncPicknowConfigurationSheet';
-import { getPicknowServerApi } from '../../utils/api/api';
-import Button from '../../components/common/Button';
-import ServerLoginModal from '../../components/common/ServerLoginModal';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import { usePicknowServerStore } from '@/store/usePicknowServerStore';
+import { PICKNOW_SERVERS } from '@/constants/servers';
+import type { PicknowServer } from '@/constants/servers';
+import type { SettingRow } from '@/utils/googleSheets/fetchSettingData';
+import { fetchSettingData } from '@/utils/googleSheets/fetchSettingData';
+import { syncPicknowConfigurationSheet } from '@/utils/googleSheets/syncPicknowConfigurationSheet';
+import { getPicknowServerApi } from '@/utils/api/api';
+import Button from '@/components/common/Button';
+import ServerLoginModal from '@/components/common/ServerLoginModal';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();

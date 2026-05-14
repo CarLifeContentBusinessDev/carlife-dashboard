@@ -1,13 +1,13 @@
+import Pagination from '@/components/common/Pagination';
+import usePagination from '@/hook/usePagination';
+import LanguageBadge from '@/components/language/LanguageBadge';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
+import ImageCell from '@/components/table/ImageCell';
+import Table from '@/components/table/Table';
+import { deleteRow } from '@/utils/excel/deleteRow';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import usePagination from '../../hook/usePagination';
-import { deleteRow } from '../../utils/excel/deleteRow';
-import { usePickleServerStore } from '../../store/usePickleServerStore';
-import ImageCell from '../table/ImageCell';
-import LanguageBadge from '../language/LanguageBadge';
-import Pagination from '../common/Pagination';
-import Table from '../table/Table';
 
 interface DemoTableListProps {
   data: any[];

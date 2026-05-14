@@ -3,7 +3,7 @@ import {
   PICKNOW_SERVERS,
   picknowTokenKey,
   picknowRefreshKey,
-} from '../constants/servers';
+} from '@/constants/servers';
 
 const SELECTED_SERVERS_KEY = 'picknow_selected_servers';
 
@@ -37,36 +37,41 @@ interface PicknowServerState {
   getServerToken: (id: string) => string | null;
 }
 
-export const usePicknowServerStore = create<PicknowServerState>()((set, get) => ({
-  selectedServerIds: loadSelectedServerIds(),
-  serverTokens: loadServerTokens(),
+export const usePicknowServerStore = create<PicknowServerState>()(
+  (set, get) => ({
+    selectedServerIds: loadSelectedServerIds(),
+    serverTokens: loadServerTokens(),
 
-  toggleSelectedServer: (id) => {
-    set((state) => {
-      const newIds = state.selectedServerIds.includes(id)
-        ? state.selectedServerIds.filter((i) => i !== id)
-        : [...state.selectedServerIds, id];
-      localStorage.setItem(SELECTED_SERVERS_KEY, JSON.stringify(newIds));
-      return { selectedServerIds: newIds };
-    });
-  },
+    toggleSelectedServer: (id) => {
+      set((state) => {
+        const newIds = state.selectedServerIds.includes(id)
+          ? state.selectedServerIds.filter((i) => i !== id)
+          : [...state.selectedServerIds, id];
+        localStorage.setItem(SELECTED_SERVERS_KEY, JSON.stringify(newIds));
+        return { selectedServerIds: newIds };
+      });
+    },
 
-  setServerToken: (id, token, refreshToken) => {
-    localStorage.setItem(picknowTokenKey(id), token);
-    if (refreshToken) localStorage.setItem(picknowRefreshKey(id), refreshToken);
-    set((state) => ({ serverTokens: { ...state.serverTokens, [id]: token } }));
-  },
+    setServerToken: (id, token, refreshToken) => {
+      localStorage.setItem(picknowTokenKey(id), token);
+      if (refreshToken)
+        localStorage.setItem(picknowRefreshKey(id), refreshToken);
+      set((state) => ({
+        serverTokens: { ...state.serverTokens, [id]: token },
+      }));
+    },
 
-  clearServerToken: (id) => {
-    localStorage.removeItem(picknowTokenKey(id));
-    localStorage.removeItem(picknowRefreshKey(id));
-    set((state) => {
-      const next = { ...state.serverTokens };
-      delete next[id];
-      return { serverTokens: next };
-    });
-  },
+    clearServerToken: (id) => {
+      localStorage.removeItem(picknowTokenKey(id));
+      localStorage.removeItem(picknowRefreshKey(id));
+      set((state) => {
+        const next = { ...state.serverTokens };
+        delete next[id];
+        return { serverTokens: next };
+      });
+    },
 
-  isServerLoggedIn: (id) => !!get().serverTokens[id],
-  getServerToken: (id) => get().serverTokens[id] ?? null,
-}));
+    isServerLoggedIn: (id) => !!get().serverTokens[id],
+    getServerToken: (id) => get().serverTokens[id] ?? null,
+  })
+);

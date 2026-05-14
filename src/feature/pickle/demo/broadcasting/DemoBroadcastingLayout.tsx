@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay';
-import { type LanguageCode } from '../../../../constants/languages';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import { type LanguageCode } from '@/constants/languages';
 import DemoListLayout, {
   type StatusFilter,
-} from '../../../../components/demo/DemoListLayout';
-import type { Broadcasting } from '../../../../types/pickleDemoContents';
-import parseLanguages from '../../../../utils/format/parseLanguages';
+} from '@/components/demo/DemoListLayout';
+import type { Broadcasting } from '@/types/pickleDemoContents';
+import parseLanguages from '@/utils/format/parseLanguages';
 import DemoBroadcastingList from './DemoBroadcastingList';
-import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';
-import SortControls from '../../../../components/table/SortControls';
-import useListSort from '../../../../hook/useListSort';
+import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
+import SortControls from '@/components/table/SortControls';
+import useListSort from '@/hook/useListSort';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [
   { value: 'id', label: 'ID 기준' },

@@ -1,4 +1,4 @@
-import { usePickleServerStore } from '../../store/usePickleServerStore';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
 
 interface Props {
   serverId: string;

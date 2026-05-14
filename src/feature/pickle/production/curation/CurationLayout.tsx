@@ -1,29 +1,29 @@
 import { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay';
-import Pagination from '../../../../components/common/Pagination';
-import PickleLoginBanner from '../../../../components/common/PickleLoginBanner';
-import TabHeader from '../../../../components/common/TabHeader';
-import SheetSelector from '../../../../components/filter/SheetSelector';
-import UsageFilterRadio from '../../../../components/filter/UsageFilterRadio';
-import SyncCountHeader from '../../../../components/sync/SyncCountHeader';
-import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState';
-import SyncToolbar from '../../../../components/sync/SyncToolbar';
-import { useProdPagination } from '../../../../hook/useProdPagination';
-import { useSheetSelection } from '../../../../hook/useSheetSelection';
-import { useStagingEnv } from '../../../../hook/useStagingEnv';
-import { SYNC_PAGE_SIZE, useSyncState } from '../../../../hook/useSyncState';
-import { useLoginTokenStore } from '../../../../store/useLoginTokenStore';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import Pagination from '@/components/common/Pagination';
+import PickleLoginBanner from '@/components/common/PickleLoginBanner';
+import TabHeader from '@/components/common/TabHeader';
+import SheetSelector from '@/components/filter/SheetSelector';
+import UsageFilterRadio from '@/components/filter/UsageFilterRadio';
+import SyncCountHeader from '@/components/sync/SyncCountHeader';
+import { SyncEmptyState } from '@/components/sync/SyncEmptyState';
+import SyncToolbar from '@/components/sync/SyncToolbar';
+import { useProdPagination } from '@/hook/useProdPagination';
+import { useSheetSelection } from '@/hook/useSheetSelection';
+import { useStagingEnv } from '@/hook/useStagingEnv';
+import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import type {
   curationListItemProps,
   usingCurationExcelProps,
-} from '../../../../types/pickleProdContents';
-import { fetchAllCurationData } from '../../../../utils/api/fetchAllData';
-import { appendNewCurationToExcel } from '../../../../utils/excel/appendNewCurationToExcel';
-import { getNewCurationData } from '../../../../utils/excel/getNewCuration';
-import { overwriteCurationExcelData } from '../../../../utils/excel/updateCuration';
-import { updateSheetSyncTime } from '../../../../utils/excel/updateSheetSyncTime';
-import { mapCurationStatus } from '../../../../utils/format/statusMapper';
+} from '@/types/pickleProdContents';
+import { fetchAllCurationData } from '@/utils/api/fetchAllData';
+import { appendNewCurationToExcel } from '@/utils/excel/appendNewCurationToExcel';
+import { getNewCurationData } from '@/utils/excel/getNewCuration';
+import { overwriteCurationExcelData } from '@/utils/excel/updateCuration';
+import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime';
+import { mapCurationStatus } from '@/utils/format/statusMapper';
 import ProdCurationList from './ProdCurationList';
 
 const DATA_PAGE_SIZE = 10;

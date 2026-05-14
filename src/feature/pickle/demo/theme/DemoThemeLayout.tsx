@@ -1,17 +1,17 @@
 import DemoListLayout, {
   type StatusFilter,
-} from '../../../../components/demo/DemoListLayout';
-import Dropdown from '../../../../components/common/Dropdown';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay';
-import SortControls from '../../../../components/table/SortControls';
-import type { LanguageCode } from '../../../../constants/languages';
+} from '@/components/demo/DemoListLayout';
+import Dropdown from '@/components/common/Dropdown';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import SortControls from '@/components/table/SortControls';
+import type { LanguageCode } from '@/constants/languages';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoThemeList from './DemoThemeList';
-import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';
-import parseLanguages from '../../../../utils/format/parseLanguages';
-import useListSort from '../../../../hook/useListSort';
-import type { Theme } from '../../../../types/pickleDemoContents';
+import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
+import parseLanguages from '@/utils/format/parseLanguages';
+import useListSort from '@/hook/useListSort';
+import type { Theme } from '@/types/pickleDemoContents';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [
   { value: 'id', label: 'ID 기준' },

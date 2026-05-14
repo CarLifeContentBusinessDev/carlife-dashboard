@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import getSheetList from '../utils/api/getSheetList';
+import getSheetList from '@/utils/api/getSheetList';
 
 interface UseSheetSelectionParams {
   isStaging: boolean;

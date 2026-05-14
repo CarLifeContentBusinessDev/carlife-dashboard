@@ -1,16 +1,16 @@
 import DemoListLayout, {
   type StatusFilter,
-} from '../../../../components/demo/DemoListLayout';
-import Dropdown from '../../../../components/common/Dropdown';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay';
-import SortControls from '../../../../components/table/SortControls';
-import type { LanguageCode } from '../../../../constants/languages';
+} from '@/components/demo/DemoListLayout';
+import Dropdown from '@/components/common/Dropdown';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import SortControls from '@/components/table/SortControls';
+import type { LanguageCode } from '@/constants/languages';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Series } from '../../../../types/pickleDemoContents';
-import useListSort from '../../../../hook/useListSort';
-import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';
-import parseLanguages from '../../../../utils/format/parseLanguages';
+import type { Series } from '@/types/pickleDemoContents';
+import useListSort from '@/hook/useListSort';
+import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
+import parseLanguages from '@/utils/format/parseLanguages';
 import DemoSeriesList from './DemoSeriesList';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [

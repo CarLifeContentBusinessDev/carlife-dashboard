@@ -1,11 +1,11 @@
 import type { AxiosInstance } from 'axios';
-import { executeWithConcurrencyLimit } from '../api/requestPool';
+import { executeWithConcurrencyLimit } from '@/utils/api/requestPool';
 import {
   getGoogleToken,
   getSheetsClient,
   initializeGoogleAPI,
-} from '../auth/auth';
-import { buildSheetRange } from '../excel/sheetRange';
+} from '@/utils/auth/auth';
+import { buildSheetRange } from '@/utils/excel/sheetRange';
 import { preparePicknowConfigurationSheet } from './preparePicknowConfigurationSheet';
 import { fetchSettingData } from './fetchSettingData';
 import type { SettingRow } from './fetchSettingData';

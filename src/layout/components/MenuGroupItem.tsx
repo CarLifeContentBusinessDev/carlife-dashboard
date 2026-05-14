@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import MenuButton from './MenuButton';
-import type { MenuChild } from '../../constants/sidebarMenus';
+import type { MenuChild } from '@/constants/sidebarMenus';
 
 interface MenuGroupItemProps {
   label: string;

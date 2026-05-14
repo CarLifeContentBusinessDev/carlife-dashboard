@@ -2,13 +2,13 @@ import {
   PICKNOW_CONFIGURATION_DATA_RANGE,
   PICKNOW_CONFIGURATION_HEADER_RANGE,
   PICKNOW_CONFIGURATION_HEADERS,
-} from '../../constants/picknowExcel';
+} from '@/constants/picknowExcel';
 import {
   getGoogleToken,
   getSheetsClient,
   initializeGoogleAPI,
-} from '../auth/auth';
-import { buildSheetRange } from '../excel/sheetRange';
+} from '@/utils/auth/auth';
+import { buildSheetRange } from '@/utils/excel/sheetRange';
 
 export async function preparePicknowConfigurationSheet(
   sheetName: string,
