@@ -110,6 +110,11 @@ const Header = () => {
     }
   };
 
+  const handleGoogleLogout = () => {
+    setLoginToken('');
+    toast.success('Google Sheets 로그아웃되었습니다.');
+  };
+
   const handleChangeService = () => {
     clearSelectedService();
     navigate('/');
@@ -143,6 +148,11 @@ const Header = () => {
   const pickleConnectedCount = PICKLE_SERVERS.filter((s) =>
     isPickleLoggedIn(s.id)
   ).length;
+
+  const isAnyServiceLoggedIn =
+    (selectedService === 'picknow' && picknowConnectedCount > 0) ||
+    (selectedService === 'pickle' && pickleConnectedCount > 0) ||
+    loginToken;
 
   const serviceLabel = selectedService
     ? SERVICE_LABELS[selectedService]
@@ -314,10 +324,15 @@ const Header = () => {
           </div>
         )}
 
-        {googleInitialized && !loginToken && (
-          <Button onClick={handleGoogleLogin}>Google Sheets 로그인</Button>
+        {googleInitialized &&
+          (loginToken ? (
+            <Button onClick={handleGoogleLogout}>Google 로그아웃</Button>
+          ) : (
+            <Button onClick={handleGoogleLogin}>Google 로그인</Button>
+          ))}
+        {isAnyServiceLoggedIn && (
+          <Button onClick={handleLogout}>전체 로그아웃</Button>
         )}
-        <Button onClick={handleLogout}>로그아웃</Button>
       </div>
 
       {loginModalPicknowServer && (
