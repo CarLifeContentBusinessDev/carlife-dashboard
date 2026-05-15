@@ -28,7 +28,9 @@ const DemoBroadcastingLayout = () => {
     setSelectedLang,
     searchQuery,
     setSearchQuery,
-  } = useDemoFilter(broadcasting, { searchFields: ['title', 'channel', 'frequency'] });
+  } = useDemoFilter(broadcasting, {
+    searchFields: ['title', 'channel', 'frequency'],
+  });
 
   useEffect(() => {
     const fetchProgramCounts = async () => {

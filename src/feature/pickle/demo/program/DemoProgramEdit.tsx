@@ -130,24 +130,6 @@ const DemoProgramEdit = () => {
       return;
     }
 
-    if (!program.category_id || !program.broadcasting_id) {
-      setError('카테고리와 방송사를 선택하세요.');
-      return;
-    }
-
-    if (!Number.isInteger(program.category_id) || program.category_id <= 0) {
-      setError('카테고리 ID는 숫자로 입력하세요.');
-      return;
-    }
-
-    if (
-      !Number.isInteger(program.broadcasting_id) ||
-      program.broadcasting_id <= 0
-    ) {
-      setError('방송사 ID는 숫자로 입력하세요.');
-      return;
-    }
-
     const ok = await save({
       title: program.title,
       subtitle: program.subtitle || null,
@@ -163,35 +145,31 @@ const DemoProgramEdit = () => {
 
     if (!ok) return;
 
-    setSaving(true);
+    if (program.category_id != null) {
+      setSaving(true);
 
-    const { error: deleteMappingError } = await supabase
-      .from('programs_categories')
-      .delete()
-      .eq('program_id', program.id);
+      const categoryMappingRows = program.language.map((lang) => ({
+        category_id: program.category_id,
+        program_id: program.id,
+        language: lang,
+        country: LANGUAGE_TO_COUNTRY[lang] ?? lang.toUpperCase(),
+        order: null,
+      }));
 
-    if (deleteMappingError) {
+      const { error: mappingError } = await supabase.rpc(
+        'replace_programs_categories',
+        {
+          p_program_id: program.id,
+          p_category_id: program.category_id,
+          p_mappings: categoryMappingRows,
+        }
+      );
+
       setSaving(false);
-      setError(`카테고리 매핑 갱신 실패: ${deleteMappingError.message}`);
-      return;
-    }
-
-    const categoryMappingRows = program.language.map((lang) => ({
-      category_id: program.category_id,
-      program_id: program.id,
-      language: lang,
-      country: LANGUAGE_TO_COUNTRY[lang] ?? lang.toUpperCase(),
-      order: null,
-    }));
-
-    const { error: insertMappingError } = await supabase
-      .from('programs_categories')
-      .insert(categoryMappingRows);
-
-    setSaving(false);
-    if (insertMappingError) {
-      setError(`카테고리 매핑 갱신 실패: ${insertMappingError.message}`);
-      return;
+      if (mappingError) {
+        setError(`카테고리 매핑 갱신 실패: ${mappingError.message}`);
+        return;
+      }
     }
 
     navigate(-1);
@@ -207,7 +185,7 @@ const DemoProgramEdit = () => {
       </div>
     );
 
-  if (error)
+  if (error && !program)
     return (
       <div className='flex items-center justify-center h-screen'>
         <div className='text-center'>

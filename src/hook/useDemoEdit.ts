@@ -38,6 +38,8 @@ function useDemoEdit<T extends { id: number }>({
 
   useEffect(() => {
     if (!id) return;
+
+    let active = true;
     setLoading(true);
     supabase
       .from(table)
@@ -45,6 +47,8 @@ function useDemoEdit<T extends { id: number }>({
       .eq('id', id)
       .single()
       .then(({ data: row, error: fetchError }) => {
+        if (!active) return;
+
         if (fetchError || !row) {
           setError(`${table} 정보를 불러올 수 없습니다.`);
         } else {
@@ -52,6 +56,10 @@ function useDemoEdit<T extends { id: number }>({
         }
         setLoading(false);
       });
+
+    return () => {
+      active = false;
+    };
   }, [id, table]);
 
   const handleChange = (
