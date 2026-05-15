@@ -1,17 +1,14 @@
-import DemoListLayout, {
-  type StatusFilter,
-} from '../../../../components/demo/DemoListLayout';
-import Dropdown from '../../../../components/common/Dropdown';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay';
-import SortControls from '../../../../components/table/SortControls';
-import type { LanguageCode } from '../../../../constants/languages';
+import Dropdown from '@/components/common/Dropdown';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import DemoListLayout from '@/components/demo/DemoListLayout';
+import SortControls from '@/components/table/SortControls';
+import useDemoFilter from '@/hook/useDemoFilter';
+import useListSort from '@/hook/useListSort';
+import type { Theme } from '@/types/pickleDemoContents';
+import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoThemeList from './DemoThemeList';
-import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';
-import parseLanguages from '../../../../utils/format/parseLanguages';
-import useListSort from '../../../../hook/useListSort';
-import type { Theme } from '../../../../types/demoContents';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [
   { value: 'id', label: 'ID 기준' },
@@ -23,12 +20,15 @@ const DemoThemeLayout = () => {
   const [themes, setThemes] = useState<Theme[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedLang, setSelectedLang] = useState<LanguageCode>('all');
   const [sections, setSections] = useState<{ id: number; title: string }[]>([]);
   const [selectedSection, setSelectedSection] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [searchableFilter, setSearchableFilter] = useState<StatusFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    filteredData,
+    selectedLang,
+    setSelectedLang,
+    searchQuery,
+    setSearchQuery,
+  } = useDemoFilter(themes, { searchFields: ['title', 'subtitle'] });
 
   const fetchThemes = async () => {
     setLoading(true);
@@ -60,23 +60,11 @@ const DemoThemeLayout = () => {
     ...sections.map((s) => ({ value: String(s.id), label: s.title })),
   ];
 
-  const filteredTheme = themes
-    .filter((t) => {
-      if (selectedLang === 'all') return true;
-      return parseLanguages(t.language).includes(selectedLang);
-    })
-    .filter((t) => {
-      if (selectedSection === 'all') return true;
-      return String(t.section_id) === selectedSection;
-    })
-    .filter((t) => {
-      if (!searchQuery) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        t.title?.toLowerCase().includes(q) ||
-        t.subtitle?.toLowerCase().includes(q)
-      );
-    });
+  const sectionFilteredData = filteredData.filter((item) =>
+    selectedSection === 'all'
+      ? true
+      : item.section_id === Number(selectedSection)
+  );
 
   const {
     sortKey,
@@ -85,7 +73,7 @@ const DemoThemeLayout = () => {
     setSortDirection,
     sortedData: sortedThemes,
   } = useListSort({
-    data: filteredTheme,
+    data: sectionFilteredData,
     sortOptions: SORT_KEY_OPTIONS,
     initialSortKey: 'id',
     initialSortDirection: 'asc',
@@ -118,10 +106,6 @@ const DemoThemeLayout = () => {
           />
         </div>
       }
-      statusFilter={statusFilter}
-      onStatusFilterChange={setStatusFilter}
-      searchableFilter={searchableFilter}
-      onSearchableFilterChange={setSearchableFilter}
       searchQuery={searchQuery}
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='테마명을 입력하세요.'

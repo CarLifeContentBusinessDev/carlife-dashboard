@@ -4,9 +4,9 @@ import type {
   curationDetailProps,
   curationListItemProps,
   usingCurationExcelProps,
-} from '../../types/type';
-import { api } from '../api/api';
-import { mapCurationStatus } from '../format/statusMapper';
+} from '@/types/pickleProdContents';
+import { api } from '@/utils/api/api';
+import { mapCurationStatus } from '@/utils/format/statusMapper';
 import { getCurationExcelData } from './updateCuration';
 
 export async function getNewCurationData(

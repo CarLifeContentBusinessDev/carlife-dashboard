@@ -1,4 +1,5 @@
-import DemoEntityDetail from '../../../../components/demo/DemoEntityDetail';
+import DemoEntityDetail from '@/components/demo/DemoEntityDetail';
+import type { RelatedListConfig } from '@/components/demo/DemoEntityDetail';
 
 const THEME_FIELD_LABELS = {
   id: 'ID',
@@ -29,6 +30,31 @@ const THEME_SUMMARY_FIELDS = [
   { key: 'id', label: '테마 ID' },
 ];
 
+const THEME_RELATED_LIST: RelatedListConfig[] = [
+  {
+    title: '프로그램 목록',
+    tableName: 'programs',
+    detailPath: '/demo/program/detail',
+    editPath: '/demo/program',
+    columnDefs: [
+      { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
+      { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
+      { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
+      { key: 'type', label: 'type', width: 'minmax(40px,1fr)' },
+      { key: 'categories.title', label: '카테고리', width: 'minmax(40px,1.5fr)' },
+      { key: 'language', label: '국가', width: 'minmax(80px,1fr)' },
+      { key: 'is_active', label: '상태', width: 'minmax(40px,1fr)' },
+    ],
+    query: {
+      type: 'junction',
+      junctionTable: 'themes_programs',
+      junctionKey: 'theme_id',
+      junctionForeignKey: 'program_id',
+      select: '*, categories(title), broadcastings(title, channel)',
+    },
+  },
+];
+
 const DemoThemeDetail = () => {
   return (
     <DemoEntityDetail
@@ -41,6 +67,7 @@ const DemoThemeDetail = () => {
       fieldLabels={THEME_FIELD_LABELS}
       fieldOrder={THEME_FIELD_ORDER}
       summaryFields={THEME_SUMMARY_FIELDS}
+      relatedList={THEME_RELATED_LIST}
     />
   );
 };

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import JSEncrypt from 'jsencrypt';
 import { toast } from 'react-toastify';
-import { usePicknowServerStore } from '../../store/usePicknowServerStore';
-import { getPicknowServerApi } from '../../utils/api/api';
-import type { PicknowServer } from '../../constants/servers';
+import { usePicknowServerStore } from '@/store/usePicknowServerStore';
+import { getPicknowServerApi } from '@/utils/api/api';
+import type { PicknowServer } from '@/constants/servers';
 
 interface Props {
   server: PicknowServer;

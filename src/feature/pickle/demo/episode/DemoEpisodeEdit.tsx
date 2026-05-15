@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import FormActionsButton from '../../../../components/form/FormActionButton';
-import FormField from '../../../../components/form/FormField';
-import FormLayout from '../../../../components/form/FormLayout';
-import FormTabs from '../../../../components/form/FormTabs';
-import { ThumbnailPreview } from '../../../../components/table/ThumbnailPreview';
-import { supabase } from '../../../../lib/supabase';
-
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국' },
-  { code: 'en', label: '북미' },
-  { code: 'de', label: '독일' },
-  { code: 'jp', label: '일본' },
-] as const;
+import FormActionsButton from '@/components/form/FormActionButton';
+import FormField from '@/components/form/FormField';
+import FormLayout from '@/components/form/FormLayout';
+import FormTabs from '@/components/form/FormTabs';
+import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
+import { supabase } from '@/lib/supabase';
+import useDemoEdit from '@/hook/useDemoEdit';
+import { LANG_OPTIONS } from '@/constants/languages';
 
 interface EpisodeForm {
   id: number;
@@ -39,19 +33,39 @@ interface ProgramOption {
 }
 
 const DemoEpisodeEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-
   const [activeTab, setActiveTab] = useState('basic');
-
-  const [episode, setEpisode] = useState<EpisodeForm | null>(null);
   const [programs, setPrograms] = useState<ProgramOption[]>([]);
   const [programQuery, setProgramQuery] = useState('');
   const [isProgramSearchOpen, setIsProgramSearchOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
   const [isDubbingEpisode, setIsDubbingEpisode] = useState(false);
+
+  const {
+    data: episode,
+    setData: setEpisode,
+    loading,
+    saving,
+    error,
+    setError,
+    handleChange,
+    handleLangToggle,
+    save,
+    navigate,
+  } = useDemoEdit<EpisodeForm>({
+    table: 'episodes',
+    numericFields: ['program_id'],
+  });
+
+  useEffect(() => {
+    supabase
+      .from('programs')
+      .select('id, title, img_url')
+      .order('id')
+      .then(({ data }) => setPrograms((data ?? []) as ProgramOption[]));
+  }, []);
+
+  useEffect(() => {
+    if (episode) setIsDubbingEpisode(Boolean(episode.audioFile_dubbing));
+  }, [episode]);
 
   const filteredPrograms = programs
     .filter((program) => {
@@ -72,87 +86,16 @@ const DemoEpisodeEdit = () => {
   const thumbnailPreviewUrl =
     (episode?.img_url ?? '').trim() || selectedProgram?.img_url?.trim() || '';
 
-  useEffect(() => {
-    if (!id) return;
-    const fetchData = async () => {
-      setLoading(true);
-
-      const [episodeRes, programRes] = await Promise.all([
-        supabase.from('episodes').select('*').eq('id', id).single(),
-        supabase.from('programs').select('id, title, img_url').order('id'),
-      ]);
-
-      if (episodeRes.error || !episodeRes.data) {
-        setError('에피소드 정보를 불러올 수 없습니다.');
-      } else {
-        const data = episodeRes.data as Record<string, unknown>;
-        setEpisode({
-          id: Number(data.id),
-          title: String(data.title ?? ''),
-          type: String(data.type ?? ''),
-          img_url: String(data.img_url ?? ''),
-          program_id: data.program_id == null ? null : Number(data.program_id),
-          date: String(data.date ?? ''),
-          created_at: String(data.created_at ?? ''),
-          duration: String(data.duration ?? ''),
-          audio_file: String(data.audio_file ?? ''),
-          audioFile_dubbing: String(data.audioFile_dubbing ?? ''),
-          language: Array.isArray(data.language)
-            ? (data.language as string[])
-            : [],
-          is_active: Boolean(data.is_active),
-          is_searchable: Boolean(data.is_searchable),
-          theme_color: String(data.theme_color ?? ''),
-          sub_title: String(data.sub_title ?? ''),
-        });
-        setIsDubbingEpisode(Boolean(data.audioFile_dubbing));
-      }
-
-      setPrograms((programRes.data ?? []) as ProgramOption[]);
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [id]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    if (!episode) return;
-
-    const { name, value } = e.target;
-    setEpisode({
-      ...episode,
-      [name]: name === 'program_id' ? (value ? Number(value) : null) : value,
-    });
-  };
-
-  const handleLangToggle = (lang: string) => {
-    if (!episode) return;
-
-    const exists = episode.language.includes(lang);
-    setEpisode({
-      ...episode,
-      language: exists
-        ? episode.language.filter((item) => item !== lang)
-        : [...episode.language, lang],
-    });
-  };
-
   const handleToggleActive = () => {
-    if (!episode) return;
-    setEpisode({
-      ...episode,
-      is_active: !episode.is_active,
-    });
+    setEpisode((prev) =>
+      prev ? { ...prev, is_active: !prev.is_active } : prev
+    );
   };
 
   const handleToggleSearchable = () => {
-    if (!episode) return;
-    setEpisode({
-      ...episode,
-      is_searchable: !episode.is_searchable,
-    });
+    setEpisode((prev) =>
+      prev ? { ...prev, is_searchable: !prev.is_searchable } : prev
+    );
   };
 
   const handleSave = async () => {
@@ -172,41 +115,28 @@ const DemoEpisodeEdit = () => {
       return;
     }
 
-    setSaving(true);
-    setError('');
-    const { error } = await supabase
-      .from('episodes')
-      .update({
-        title: episode.title,
-        type: episode.type || null,
-        img_url: episode.img_url.trim() || null,
-        program_id: episode.program_id,
-        date: episode.date || null,
-        duration: episode.duration || null,
-        audio_file: episode.audio_file || null,
-        audioFile_dubbing: isDubbingEpisode
-          ? episode.audioFile_dubbing || null
+    const ok = await save({
+      title: episode.title,
+      type: episode.type || null,
+      img_url: episode.img_url.trim() || null,
+      program_id: episode.program_id,
+      date: episode.date || null,
+      duration: episode.duration || null,
+      audio_file: episode.audio_file || null,
+      audioFile_dubbing: isDubbingEpisode
+        ? episode.audioFile_dubbing || null
+        : null,
+      language: episode.language,
+      is_active: episode.is_active,
+      is_searchable: episode.is_searchable,
+      theme_color:
+        episode.type === 'ai-music'
+          ? episode.theme_color?.trim() || null
           : null,
-        language: episode.language,
-        is_active: episode.is_active,
-        is_searchable: episode.is_searchable,
-        theme_color:
-          episode.type === 'ai-music'
-            ? episode.theme_color?.trim() || null
-            : null,
-        sub_title:
-          episode.type === 'ai-music'
-            ? episode.sub_title?.trim() || null
-            : null,
-      })
-      .eq('id', episode.id);
-    setSaving(false);
-    if (error) {
-      console.error('Supabase update error:', error);
-      setError(`저장에 실패했습니다: ${error.message}`);
-    } else {
-      navigate(-1);
-    }
+      sub_title:
+        episode.type === 'ai-music' ? episode.sub_title?.trim() || null : null,
+    });
+    if (ok) navigate(-1);
   };
 
   if (loading)
@@ -456,12 +386,7 @@ const DemoEpisodeEdit = () => {
 
                       if (!checked) {
                         setEpisode((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                audioFile_dubbing: '',
-                              }
-                            : prev
+                          prev ? { ...prev, audioFile_dubbing: '' } : prev
                         );
                       }
                     }}

@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Pagination from '../../../../components/common/Pagination';
-import type { usingChannelProps, usingDataProps } from '../../../../types/type';
-import formatDateString from '../../../../utils/format/formatDateString';
-import { api, stgApi } from '../../../../utils/api/api';
-import { normalizeUsageYn } from '../../../../utils/format/normalizeUsageYn';
+import Pagination from '@/components/common/Pagination';
+import type {
+  usingChannelProps,
+  usingDataProps,
+} from '@/types/pickleProdContents';
+import { api, stgApi } from '@/utils/api/api';
+import formatDateString from '@/utils/format/formatDateString';
+import { normalizeUsageYn } from '@/utils/format/normalizeUsageYn';
+import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 
 const EPISODE_PAGE_SIZE = 10;
 
@@ -62,9 +66,7 @@ const formatFieldValue = (
     return (
       <span
         className={`px-2 py-0.5 rounded text-xs font-bold ${
-          usageYn === 'Y'
-            ? 'bg-green-100 text-green-700'
-            : 'bg-red-100 text-red-700'
+          usageYn === 'Y' ? GREEN_BADGE_STYLE : RED_BADGE_STYLE
         }`}
       >
         {usageYn || '-'}
@@ -121,9 +123,7 @@ const formatEpisodeValue = (
     return (
       <span
         className={`px-2 py-0.5 rounded text-xs font-bold ${
-          usageYn === 'Y'
-            ? 'bg-green-100 text-green-700'
-            : 'bg-red-100 text-red-700'
+          usageYn === 'Y' ? GREEN_BADGE_STYLE : RED_BADGE_STYLE
         }`}
       >
         {usageYn || '-'}

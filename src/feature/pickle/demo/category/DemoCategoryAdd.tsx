@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import FormActionsButton from '../../../../components/form/FormActionButton';
-import FormField from '../../../../components/form/FormField';
-import FormLayout from '../../../../components/form/FormLayout';
-import FormTabs from '../../../../components/form/FormTabs';
-import { ThumbnailPreview } from '../../../../components/table/ThumbnailPreview';
-import { supabase } from '../../../../lib/supabase';
+import FormActionsButton from '@/components/form/FormActionButton';
+import FormField from '@/components/form/FormField';
+import FormLayout from '@/components/form/FormLayout';
+import FormTabs from '@/components/form/FormTabs';
+import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
+import { supabase } from '@/lib/supabase';
+import { LANG_COLUMN_MAP, LANG_OPTIONS } from '@/constants/languages';
 
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국', titleKey: 'title', imgKey: 'img_url' },
-  { code: 'en', label: '북미', titleKey: 'en_title', imgKey: 'en_img_url' },
-  { code: 'de', label: '독일', titleKey: 'de_title', imgKey: 'de_img_url' },
-  { code: 'jp', label: '일본', titleKey: 'jp_title', imgKey: 'jp_img_url' },
-] as const;
+const LANGE_OPTIONS_WITH_KEYS = LANG_OPTIONS.map((lang) => ({
+  ...lang,
+  titleKey: LANG_COLUMN_MAP[lang.code].title,
+  imgKey: LANG_COLUMN_MAP[lang.code].img_url,
+}));
 
 const initialState = {
   order: '',
@@ -110,7 +110,7 @@ const DemoCategoryAdd = () => {
       <div className='flex flex-col gap-10 mb-10'>
         <FormField label='국가 선택'>
           <div className='flex gap-3 flex-wrap'>
-            {LANG_OPTIONS.map((lang) => {
+            {LANGE_OPTIONS_WITH_KEYS.map((lang) => {
               const selected = form.language.includes(lang.code);
 
               return (
@@ -147,45 +147,45 @@ const DemoCategoryAdd = () => {
       </div>
 
       {/* 🌎 국가별 입력 영역 */}
-      {LANG_OPTIONS.filter((lang) => form.language.includes(lang.code)).map(
-        (lang) => (
-          <div key={lang.code} className='mb-14 border-t pt-10'>
-            <div className='flex items-center gap-2 mb-6'>
-              <span className='font-semibold text-gray-800'>{lang.label}</span>
-              <span className='text-xs px-2 py-0.5 bg-gray-100 rounded font-mono text-gray-500'>
-                {lang.code}
-              </span>
-            </div>
+      {LANGE_OPTIONS_WITH_KEYS.filter((lang) =>
+        form.language.includes(lang.code)
+      ).map((lang) => (
+        <div key={lang.code} className='mb-14 border-t pt-10'>
+          <div className='flex items-center gap-2 mb-6'>
+            <span className='font-semibold text-gray-800'>{lang.label}</span>
+            <span className='text-xs px-2 py-0.5 bg-gray-100 rounded font-mono text-gray-500'>
+              {lang.code}
+            </span>
+          </div>
 
-            <div className='flex gap-8 items-start'>
-              <ThumbnailPreview
-                url={form[lang.imgKey]}
-                title={form[lang.titleKey]}
-              />
+          <div className='flex gap-8 items-start'>
+            <ThumbnailPreview
+              url={form[lang.imgKey]}
+              title={form[lang.titleKey]}
+            />
 
-              <div className='flex flex-col gap-5 flex-1'>
-                <FormField label='Title *'>
-                  <input
-                    name={lang.titleKey}
-                    value={form[lang.titleKey]}
-                    onChange={handleChange}
-                    className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
-                  />
-                </FormField>
+            <div className='flex flex-col gap-5 flex-1'>
+              <FormField label='Title *'>
+                <input
+                  name={lang.titleKey}
+                  value={form[lang.titleKey]}
+                  onChange={handleChange}
+                  className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900'
+                />
+              </FormField>
 
-                <FormField label='Thumbnail URL'>
-                  <input
-                    name={lang.imgKey}
-                    value={form[lang.imgKey]}
-                    onChange={handleChange}
-                    className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-900'
-                  />
-                </FormField>
-              </div>
+              <FormField label='Thumbnail URL'>
+                <input
+                  name={lang.imgKey}
+                  value={form[lang.imgKey]}
+                  onChange={handleChange}
+                  className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-900'
+                />
+              </FormField>
             </div>
           </div>
-        )
-      )}
+        </div>
+      ))}
     </FormLayout>
   );
 };

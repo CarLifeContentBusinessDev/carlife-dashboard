@@ -1,5 +1,3 @@
-export type ExcelRow = (string | number | null)[];
-
 export interface usingDataProps {
   episodeId: number;
   usageYn: string;
@@ -24,6 +22,7 @@ export interface usingChannelProps {
   interfaceType: string;
   categoryId: number;
   categoryName: string;
+  episodeCount?: number;
   vendorName: string;
   likeCnt: number;
   listenCnt: number;
@@ -47,6 +46,14 @@ export interface usingCurationProps {
   episodes?: curationEpisodesProps[];
 }
 
+export interface curationListItemProps extends usingCurationProps {
+  usageYn?: string;
+  status?: string;
+  creatorName?: string;
+  thumbnailUrlSquare?: string;
+  thumbnailUrlRect?: string;
+}
+
 export interface curationDetailEpisodeProps {
   channelId?: number;
   episodeId?: number;
@@ -61,6 +68,8 @@ export interface curationDetailEpisodeProps {
 }
 
 export interface curationDetailProps {
+  thumbnailUrlSquare?: string;
+  thumbnailUrlRect?: string;
   thumbnailTitle?: string;
   curationType: string;
   curationName: string;
@@ -78,6 +87,8 @@ export interface curationDetailProps {
 
 export interface usingCurationExcelProps {
   thumbnailTitle?: string;
+  thumbnailUrlSquare?: string;
+  thumbnailUrlRect?: string;
   field?: string;
   section?: number;
   activeState?: string;
@@ -112,13 +123,4 @@ export interface curationEpisodesProps {
   playTime: number;
   likeCnt: number;
   listenCnt: number;
-}
-
-export interface LoginResponseData {
-  adminSeq: number;
-  email: string;
-  adminName: string;
-  roleId: string;
-  accessToken: string;
-  refreshToken: string;
 }

@@ -1,5 +1,9 @@
 import { create } from 'zustand';
-import { PICKLE_SERVERS, pickleTokenKey, pickleRefreshKey } from '../constants/servers';
+import {
+  PICKLE_SERVERS,
+  pickleTokenKey,
+  pickleRefreshKey,
+} from '@/constants/servers';
 
 function loadServerTokens(): Record<string, string> {
   const tokens: Record<string, string> = {};

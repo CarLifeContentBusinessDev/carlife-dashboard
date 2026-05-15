@@ -1,9 +1,12 @@
 import type { AxiosInstance } from 'axios';
-import type { usingChannelProps, usingDataProps } from '../../types/type';
-import { api } from '../api/api';
-import { getGoogleToken, getSheetsClient } from '../auth/auth';
-import { getExcelData } from './updateExcel';
+import type {
+  usingChannelProps,
+  usingDataProps,
+} from '@/types/pickleProdContents';
+import { api } from '@/utils/api/api';
+import { getGoogleToken, getSheetsClient } from '@/utils/auth/auth';
 import { buildSheetRange } from './sheetRange';
+import { getExcelData } from './updateExcel';
 
 export async function getNewData(
   token: string,

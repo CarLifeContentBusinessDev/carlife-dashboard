@@ -1,7 +1,7 @@
-import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { usingDataProps } from '../../../../types/type';
-import formatDateString from '../../../../utils/format/formatDateString';
+import { useRef } from 'react';
+import type { usingDataProps } from '@/types/pickleProdContents';
+import formatDateString from '@/utils/format/formatDateString';
 
 interface HeaderColumnProps {
   label: string;

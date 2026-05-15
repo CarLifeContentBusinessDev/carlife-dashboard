@@ -1,27 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay.tsx';
-import Pagination from '../../../../components/common/Pagination.tsx';
-import SheetSelector from '../../../../components/filter/SheetSelector.tsx';
-import SyncCountHeader from '../../../../components/sync/SyncCountHeader.tsx';
-import SyncToolbar from '../../../../components/sync/SyncToolbar.tsx';
-import TabHeader from '../../../../components/common/TabHeader.tsx';
-import UsageFilterRadio from '../../../../components/filter/UsageFilterRadio.tsx';
-import { useProdPagination } from '../../../../hook/useProdPagination.ts';
-import { useSheetSelection } from '../../../../hook/useSheetSelection.ts';
-import { useStagingEnv } from '../../../../hook/useStagingEnv.ts';
-import { useSyncState, SYNC_PAGE_SIZE } from '../../../../hook/useSyncState.ts';
-import { usePickleServerStore } from '../../../../store/usePickleServerStore.ts';
-import { useLoginTokenStore } from '../../../../store/useLoginTokenStore.ts';
-import type { usingChannelProps } from '../../../../types/type.ts';
-import { appendNewDataToTop } from '../../../../utils/excel/appendNewDataToExcel.ts';
-import { fetchAllData } from '../../../../utils/api/fetchAllData.ts';
-import { getNewData } from '../../../../utils/excel/getNewData.ts';
-import { updateSheetSyncTime } from '../../../../utils/excel/updateSheetSyncTime.ts';
-import { overwriteExcelData } from '../../../../utils/excel/updateExcel.ts';
+import LoadingOverlay from '@/components/common/LoadingOverlay.tsx';
+import Pagination from '@/components/common/Pagination.tsx';
+import PickleLoginBanner from '@/components/common/PickleLoginBanner.tsx';
+import TabHeader from '@/components/common/TabHeader.tsx';
+import SheetSelector from '@/components/filter/SheetSelector.tsx';
+import UsageFilterRadio from '@/components/filter/UsageFilterRadio.tsx';
+import SyncCountHeader from '@/components/sync/SyncCountHeader.tsx';
+import { SyncEmptyState } from '@/components/sync/SyncEmptyState.tsx';
+import SyncToolbar from '@/components/sync/SyncToolbar.tsx';
+import { useProdPagination } from '@/hook/useProdPagination.ts';
+import { useSheetSelection } from '@/hook/useSheetSelection.ts';
+import { useStagingEnv } from '@/hook/useStagingEnv.ts';
+import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState.ts';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore.ts';
+import { usePickleServerStore } from '@/store/usePickleServerStore.ts';
+import type { usingChannelProps } from '@/types/pickleProdContents.ts';
+import { fetchAllData } from '@/utils/api/fetchAllData.ts';
+import { appendNewDataToTop } from '@/utils/excel/appendNewDataToExcel.ts';
+import { getNewData } from '@/utils/excel/getNewData.ts';
+import { overwriteExcelData } from '@/utils/excel/updateExcel.ts';
+import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime.ts';
 import ProdChannelList from './ProdChannelList.tsx';
-import { SyncEmptyState } from '../../../../components/sync/SyncEmptyState.tsx';
-import PickleLoginBanner from '../../../../components/common/PickleLoginBanner.tsx';
 
 const CATEGORY = 'channel';
 const PAGE_SIZE = 10;
@@ -315,129 +315,134 @@ const ChannelLayout = () => {
         serverLabel={isStaging ? 'STG' : '상용'}
       />
       <div className='p-10 flex flex-col h-full'>
-      <h1 className='text-3xl font-bold mb-4 indent-1'>
-        채널·도서 관리{isStaging ? ' (스테이징)' : ''}
-      </h1>
-      <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
-        <TabHeader activeTab={activeTab} onChange={setActiveTab} />
+        <h1 className='text-3xl font-bold mb-4 indent-1'>
+          채널·도서 관리{isStaging ? ' (스테이징)' : ''}
+        </h1>
+        <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
+          <TabHeader activeTab={activeTab} onChange={setActiveTab} />
 
-        {activeTab === 'data' && (
-          <div className='flex-1 p-8 flex flex-col'>
-            <div className='flex justify-between items-center flex-shrink-0 mb-4'>
-              <h3 className='text-point-color font-semibold'>
-                채널·도서 총{' '}
-                <span className='font-extrabold'>{prodTotalCount}</span>개
-              </h3>
-              <div className='flex items-center gap-6'>
-                <UsageFilterRadio
-                  name='channelUsageFilter'
-                  value={usageFilter}
-                  onChange={handleUsageFilterChange}
-                />
-                <input
-                  type='text'
-                  value={prodSearchQuery}
-                  onChange={(e) => setProdSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder='채널명 검색'
-                  className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
-                />
-                <button
-                  onClick={handleSearch}
-                  className='cursor-pointer'
-                  disabled={prodLoading}
-                >
-                  <img src='/redo.svg' alt='새로고침' width={22} height={22} />
-                </button>
+          {activeTab === 'data' && (
+            <div className='flex-1 p-8 flex flex-col'>
+              <div className='flex justify-between items-center flex-shrink-0 mb-4'>
+                <h3 className='text-point-color font-semibold'>
+                  채널·도서 총{' '}
+                  <span className='font-extrabold'>{prodTotalCount}</span>개
+                </h3>
+                <div className='flex items-center gap-6'>
+                  <UsageFilterRadio
+                    name='channelUsageFilter'
+                    value={usageFilter}
+                    onChange={handleUsageFilterChange}
+                  />
+                  <input
+                    type='text'
+                    value={prodSearchQuery}
+                    onChange={(e) => setProdSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder='채널명 검색'
+                    className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
+                  />
+                  <button
+                    onClick={handleSearch}
+                    className='cursor-pointer'
+                    disabled={prodLoading}
+                  >
+                    <img
+                      src='/redo.svg'
+                      alt='새로고침'
+                      width={22}
+                      height={22}
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
-            <LoadingOverlay loading={prodLoading}>
-              채널 목록을 불러오는 중입니다.
-              <br />
-              잠시만 기다려주세요!
-            </LoadingOverlay>
-            {!prodLoading && (
-              <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                <ProdChannelList
-                  data={prodData}
-                  episodeCountByChannelId={episodeCountByChannelId}
-                  latestEpisodeUploadByChannelId={
-                    latestEpisodeUploadByChannelId
-                  }
-                  isStaging={isStaging}
-                />
-              </div>
-            )}
-            <Pagination
-              page={prodPage}
-              totalPages={prodTotalPages}
-              onChange={handleProdPageChange}
-            />
-          </div>
-        )}
-
-        {activeTab === 'sync' && (
-          <div className='flex-1 p-8 flex flex-col min-h-0'>
-            <SyncToolbar
-              onSearchNew={handleSearchNew}
-              onLoadAll={handleLoadAllChannels}
-              excelHref={excelHref}
-              onSync={handleSyncExcel}
-              loading={loading}
-              excelLoading={excelLoading}
-              progress={progress}
-              syncPreviewMode={syncPreviewMode}
-            />
-            <div className='flex justify-between items-center flex-shrink-0'>
-              <SyncCountHeader
-                syncPreviewMode={syncPreviewMode}
-                newCount={newChannels?.length ?? 0}
-                allCount={addData.length}
-              />
-              <div className='flex gap-8 items-center'>
-                <SheetSelector
-                  sheetList={sheetList}
-                  selectedSheet={selectedSheet}
-                  isStaging={isStaging}
-                  onChange={handleSelectSheet}
-                />
-              </div>
-            </div>
-            <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
-              <LoadingOverlay progress={progress} loading={loading}>
-                새로운 채널·도서 목록을 불러오는 중입니다.
+              <LoadingOverlay loading={prodLoading}>
+                채널 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!loading && syncPreviewMode && (
-                <>
-                  <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
-                    <ProdChannelList
-                      data={syncDisplayData.slice(
-                        (syncPage - 1) * SYNC_PAGE_SIZE,
-                        syncPage * SYNC_PAGE_SIZE
-                      )}
-                      episodeCountByChannelId={{}}
-                      latestEpisodeUploadByChannelId={{}}
-                      isStaging={isStaging}
-                    />
-                  </div>
-                  <Pagination
-                    page={syncPage}
-                    totalPages={syncTotalPages}
-                    onChange={handleSyncPageChange}
+              {!prodLoading && (
+                <div className='overflow-x-scroll episode-table-scroll pb-1'>
+                  <ProdChannelList
+                    data={prodData}
+                    episodeCountByChannelId={episodeCountByChannelId}
+                    latestEpisodeUploadByChannelId={
+                      latestEpisodeUploadByChannelId
+                    }
+                    isStaging={isStaging}
                   />
-                </>
+                </div>
               )}
-              <SyncEmptyState
-                loading={loading}
-                syncPreviewMode={!!syncPreviewMode}
+              <Pagination
+                page={prodPage}
+                totalPages={prodTotalPages}
+                onChange={handleProdPageChange}
               />
             </div>
-          </div>
-        )}
+          )}
+
+          {activeTab === 'sync' && (
+            <div className='flex-1 p-8 flex flex-col min-h-0'>
+              <SyncToolbar
+                onSearchNew={handleSearchNew}
+                onLoadAll={handleLoadAllChannels}
+                excelHref={excelHref}
+                onSync={handleSyncExcel}
+                loading={loading}
+                excelLoading={excelLoading}
+                progress={progress}
+                syncPreviewMode={syncPreviewMode}
+              />
+              <div className='flex justify-between items-center flex-shrink-0'>
+                <SyncCountHeader
+                  syncPreviewMode={syncPreviewMode}
+                  newCount={newChannels?.length ?? 0}
+                  allCount={addData.length}
+                />
+                <div className='flex gap-8 items-center'>
+                  <SheetSelector
+                    sheetList={sheetList}
+                    selectedSheet={selectedSheet}
+                    isStaging={isStaging}
+                    onChange={handleSelectSheet}
+                  />
+                </div>
+              </div>
+              <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
+                <LoadingOverlay progress={progress} loading={loading}>
+                  새로운 채널·도서 목록을 불러오는 중입니다.
+                  <br />
+                  잠시만 기다려주세요!
+                </LoadingOverlay>
+                {!loading && syncPreviewMode && (
+                  <>
+                    <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                      <ProdChannelList
+                        data={syncDisplayData.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
+                        episodeCountByChannelId={{}}
+                        latestEpisodeUploadByChannelId={{}}
+                        isStaging={isStaging}
+                      />
+                    </div>
+                    <Pagination
+                      page={syncPage}
+                      totalPages={syncTotalPages}
+                      onChange={handleSyncPageChange}
+                    />
+                  </>
+                )}
+                <SyncEmptyState
+                  loading={loading}
+                  syncPreviewMode={!!syncPreviewMode}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 };

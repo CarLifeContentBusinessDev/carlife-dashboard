@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 interface FetchAllSupabaseRowsOptions {
   table: string;
@@ -8,7 +8,7 @@ interface FetchAllSupabaseRowsOptions {
   pageSize?: number;
 }
 
-export default async function fetchAllSupabaseRows<T = any>({
+export default async function fetchAllSupabaseRows<T>({
   table,
   select = '*',
   orderColumn = 'id',

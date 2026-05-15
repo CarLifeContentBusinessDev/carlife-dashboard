@@ -1,10 +1,10 @@
-import { getUsedRange } from './updateExcel';
-import type { usingCurationExcelProps } from '../../types/type';
 import { toast } from 'react-toastify';
-import formatDateString from '../format/formatDateString';
-import { formatPlayTime } from '../format/formatPlayTime';
+import type { usingCurationExcelProps } from '@/types/pickleProdContents';
+import { getSheetsClient } from '@/utils/auth/auth';
+import formatDateString from '@/utils/format/formatDateString';
+import { formatPlayTime } from '@/utils/format/formatPlayTime';
 import { getCurationExcelData } from './updateCuration';
-import { getSheetsClient } from '../auth/auth';
+import { getUsedRange } from './updateExcel';
 
 const spreadsheetId = import.meta.env.VITE_SPREADSHEET_ID;
 const sheetName = localStorage.getItem('sheetName');

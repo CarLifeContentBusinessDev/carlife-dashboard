@@ -1,16 +1,13 @@
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import DemoListLayout from '@/components/demo/DemoListLayout';
+import SortControls from '@/components/table/SortControls';
+import { LANGUAGES, LANG_COLUMN_MAP } from '@/constants/languages';
+import useDemoFilter from '@/hook/useDemoFilter';
+import useListSort from '@/hook/useListSort';
+import fetchAllSupabaseRows from '@/utils/api/fetchAllSupabaseRows';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingOverlay from '../../../../components/common/LoadingOverlay';
-import {
-  LANGUAGES,
-  LANG_COLUMN_MAP,
-  type LanguageCode,
-} from '../../../../constants/languages';
-import DemoListLayout from '../../../../components/demo/DemoListLayout';
-import SortControls from '../../../../components/table/SortControls';
 import DemoCategoryList from './DemoCategoryList';
-import fetchAllSupabaseRows from '../../../../utils/api/fetchAllSupabaseRows';
-import useListSort from '../../../../hook/useListSort';
 
 const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [
   { value: 'id', label: 'ID 기준' },
@@ -24,6 +21,7 @@ const CATEGORY_LANGUAGE_OPTIONS = LANGUAGES.filter(
 interface Category {
   id: number;
   title: string;
+  language: string[];
   [key: string]: any;
 }
 
@@ -33,11 +31,11 @@ const DemoCategoryLayout = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedLang, setSelectedLang] = useState<LanguageCode>('ko');
   const [programCounts, setProgramCounts] = useState<Record<number, number>>(
     {}
   );
-  const [searchQuery, setSearchQuery] = useState('');
+  const { selectedLang, setSelectedLang, searchQuery, setSearchQuery } =
+    useDemoFilter(categories);
 
   // 언어별로 보여줄 컬럼명 매핑 (공통 상수 사용)
   const langColumnMap = LANG_COLUMN_MAP;

@@ -1,25 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import FormActionsButton from '../../../../components/form/FormActionButton';
-import FormField from '../../../../components/form/FormField';
-import FormLayout from '../../../../components/form/FormLayout';
-import FormTabs from '../../../../components/form/FormTabs';
-import { ThumbnailPreview } from '../../../../components/table/ThumbnailPreview';
-import { supabase } from '../../../../lib/supabase';
-
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국' },
-  { code: 'en', label: '북미' },
-  { code: 'de', label: '독일' },
-  { code: 'jp', label: '일본' },
-] as const;
-
-const LANGUAGE_TO_COUNTRY: Record<string, string> = {
-  ko: 'KR',
-  en: 'US',
-  de: 'DE',
-  jp: 'JP',
-};
+import FormActionsButton from '@/components/form/FormActionButton';
+import FormField from '@/components/form/FormField';
+import FormLayout from '@/components/form/FormLayout';
+import FormTabs from '@/components/form/FormTabs';
+import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
+import { supabase } from '@/lib/supabase';
+import { LANG_OPTIONS, LANGUAGE_TO_COUNTRY } from '@/constants/languages';
 
 interface SelectOption {
   id: number;

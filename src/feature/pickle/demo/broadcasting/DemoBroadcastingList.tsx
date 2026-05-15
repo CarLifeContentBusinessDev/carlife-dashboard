@@ -1,5 +1,5 @@
 import React from 'react';
-import DemoTableList from '../../../../components/demo/DemoTableList';
+import DemoTableList from '@/components/demo/DemoTableList';
 
 interface DemoBroadcastingListProps {
   broadcasting: any[];
@@ -21,9 +21,6 @@ const columnDefs = [
   { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
 
-const columns = columnDefs.map(({ key, label }) => ({ key, label }));
-const gridCols = columnDefs.map(({ width }) => width).join(' ');
-
 const DemoBroadcastingList: React.FC<DemoBroadcastingListProps> = ({
   broadcasting,
   selectedLang,
@@ -37,8 +34,7 @@ const DemoBroadcastingList: React.FC<DemoBroadcastingListProps> = ({
       tableName='broadcastings'
       detailPath='/demo/broadcasting/detail'
       editPath='/demo/broadcasting'
-      columns={columns}
-      gridCols={gridCols}
+      columnDefs={columnDefs}
     />
   );
 };

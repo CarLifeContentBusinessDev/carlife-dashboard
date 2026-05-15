@@ -1,5 +1,5 @@
 import React from 'react';
-import DemoTableList from '../../../../components/demo/DemoTableList';
+import DemoTableList from '@/components/demo/DemoTableList';
 
 interface DemoSeriesListProps {
   series: any[];
@@ -20,9 +20,6 @@ const columnDefs = [
   { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
 
-const columns = columnDefs.map(({ key, label }) => ({ key, label }));
-const gridCols = columnDefs.map(({ width }) => width).join(' ');
-
 const DemoSeriesList: React.FC<DemoSeriesListProps> = ({
   series,
   selectedLang,
@@ -36,8 +33,7 @@ const DemoSeriesList: React.FC<DemoSeriesListProps> = ({
       tableName='series'
       detailPath='/demo/series/detail'
       editPath='/demo/series'
-      columns={columns}
-      gridCols={gridCols}
+      columnDefs={columnDefs}
     />
   );
 };

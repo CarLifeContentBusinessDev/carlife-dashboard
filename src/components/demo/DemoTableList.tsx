@@ -1,18 +1,18 @@
+import Pagination from '@/components/common/Pagination';
+import usePagination from '@/hook/usePagination';
+import LanguageBadge from '@/components/language/LanguageBadge';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
+import ImageCell from '@/components/table/ImageCell';
+import Table from '@/components/table/Table';
+import { deleteRow } from '@/utils/excel/deleteRow';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import usePagination from '../../hook/usePagination';
-import { deleteRow } from '../../utils/excel/deleteRow';
-import { usePickleServerStore } from '../../store/usePickleServerStore';
-import ImageCell from '../table/ImageCell';
-import LanguageBadge from '../language/LanguageBadge';
-import Pagination from '../common/Pagination';
-import Table from '../table/Table';
+import { BLUE_BADGE_STYLE } from '@/constants/badgeStyles';
 
 interface DemoTableListProps {
   data: any[];
-  columns: { key: string; label: string }[];
-  gridCols: string;
+  columnDefs: { key: string; label: string; width: string }[];
   selectedLang: string;
   detailPath?: string;
   editPath: string;
@@ -22,8 +22,7 @@ interface DemoTableListProps {
 
 const DemoTableList: React.FC<DemoTableListProps> = ({
   data,
-  columns,
-  gridCols,
+  columnDefs,
   selectedLang,
   detailPath,
   editPath,
@@ -100,7 +99,7 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
       return (
         <div className='flex gap-2'>
           <button
-            className='px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition text-sm'
+            className={`px-3 py-1 rounded ${BLUE_BADGE_STYLE} hover:bg-blue-200 transition text-sm`}
             onClick={(e) => {
               e.stopPropagation();
               if (!accessToken) {
@@ -146,6 +145,9 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
 
     return Array.isArray(value) ? value.join(', ') : value;
   };
+
+  const columns = columnDefs.map(({ key, label }) => ({ key, label }));
+  const gridCols = columnDefs.map(({ width }) => width).join(' ');
 
   return (
     <>

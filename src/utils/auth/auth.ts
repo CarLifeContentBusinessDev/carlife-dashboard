@@ -1,5 +1,5 @@
-import { useLoginTokenStore } from '../../store/useLoginTokenStore';
-import { setGoogleLoginInProgress } from '../api/api';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import { setGoogleLoginInProgress } from '@/utils/api/api';
 
 // Google OAuth 설정
 
@@ -260,4 +260,3 @@ export function getSheetsClient() {
 
   return gapi.client.sheets;
 }
-

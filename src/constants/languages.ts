@@ -16,3 +16,23 @@ export const LANG_COLUMN_MAP = {
   de: { title: 'de_title', img_url: 'de_img_url' },
   jp: { title: 'jp_title', img_url: 'jp_img_url' },
 } as const;
+
+export const LANG_OPTIONS = [
+  { code: 'ko', label: '한국' },
+  { code: 'en', label: '북미' },
+  { code: 'de', label: '독일' },
+  { code: 'jp', label: '일본' },
+] as const;
+
+export const LANGUAGE_TO_COUNTRY: Record<string, string> = {
+  ko: 'KR',
+  en: 'US',
+  de: 'DE',
+  jp: 'JP',
+};
+
+export const LANG_SECTIONS = [
+  { lang: 'en', label: '북미', titleKey: 'en_title', imgKey: 'en_img_url' },
+  { lang: 'de', label: '독일', titleKey: 'de_title', imgKey: 'de_img_url' },
+  { lang: 'jp', label: '일본', titleKey: 'jp_title', imgKey: 'jp_img_url' },
+] as const;

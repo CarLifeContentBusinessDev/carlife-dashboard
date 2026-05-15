@@ -1,5 +1,5 @@
 import React from 'react';
-import DemoTableList from '../../../../components/demo/DemoTableList';
+import DemoTableList from '@/components/demo/DemoTableList';
 
 interface DemoProgramListProps {
   programs: any[];
@@ -20,9 +20,6 @@ const columnDefs = [
   { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
 
-const columns = columnDefs.map(({ key, label }) => ({ key, label }));
-const gridCols = columnDefs.map(({ width }) => width).join(' ');
-
 const DemoProgramList: React.FC<DemoProgramListProps> = ({
   programs,
   selectedLang,
@@ -36,8 +33,7 @@ const DemoProgramList: React.FC<DemoProgramListProps> = ({
       tableName='programs'
       detailPath='/demo/program/detail'
       editPath='/demo/program'
-      columns={columns}
-      gridCols={gridCols}
+      columnDefs={columnDefs}
     />
   );
 };

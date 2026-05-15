@@ -1,6 +1,6 @@
-import Button from '../common/Button';
-import LoadingOverlay from '../common/LoadingOverlay';
-import type { SyncPreviewMode } from '../../hook/useSyncState';
+import Button from '@/components/common/Button';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import type { SyncPreviewMode } from '@/hook/useSyncState';
 
 interface SyncToolbarProps {
   onSearchNew: () => void;

@@ -5,20 +5,20 @@ import {
   getGoogleToken,
   initializeGoogleAPI,
   initializeGIS,
-} from '../utils/auth/auth';
-import Button from '../components/common/Button';
-import ServerLoginModal from '../components/common/ServerLoginModal';
-import PickleLoginModal from '../components/common/PickleLoginModal';
-import { useLoginTokenStore } from '../store/useLoginTokenStore';
-import { useServiceStore, clearServiceToken } from '../store/useServiceStore';
-import { usePicknowServerStore } from '../store/usePicknowServerStore';
-import { usePickleServerStore } from '../store/usePickleServerStore';
-import { PICKNOW_SERVERS } from '../constants/servers';
-import { PICKLE_SERVERS } from '../constants/servers';
-import type { PicknowServer, PickleServer } from '../constants/servers';
-import { setTestMode } from '../utils/api/api';
-import { supabase } from '../lib/supabase';
-import { useAccessTokenStore } from '../store/useAccessTokenStore';
+} from '@/utils/auth/auth';
+import Button from '@/components/common/Button';
+import ServerLoginModal from '@/components/common/ServerLoginModal';
+import PickleLoginModal from '@/components/common/PickleLoginModal';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import { useServiceStore, clearServiceToken } from '@/store/useServiceStore';
+import { usePicknowServerStore } from '@/store/usePicknowServerStore';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
+import { PICKNOW_SERVERS } from '@/constants/servers';
+import { PICKLE_SERVERS } from '@/constants/servers';
+import type { PicknowServer, PickleServer } from '@/constants/servers';
+import { setTestMode } from '@/utils/api/api';
+import { supabase } from '@/lib/supabase';
+import { useAccessTokenStore } from '@/store/useAccessTokenStore';
 
 const SERVICE_LABELS: Record<string, string> = {
   pickle: 'Pickle Admin',
@@ -30,10 +30,16 @@ const Header = () => {
   const { loginToken, setLoginToken } = useLoginTokenStore();
   const { clearAccessToken } = useAccessTokenStore();
   const { selectedService, clearSelectedService } = useServiceStore();
-  const { serverTokens: picknowTokens, isServerLoggedIn: isPicknowLoggedIn, clearServerToken: clearPicknowToken } =
-    usePicknowServerStore();
-  const { serverTokens: pickleTokens, isServerLoggedIn: isPickleLoggedIn, clearServerToken: clearPickleToken } =
-    usePickleServerStore();
+  const {
+    serverTokens: picknowTokens,
+    isServerLoggedIn: isPicknowLoggedIn,
+    clearServerToken: clearPicknowToken,
+  } = usePicknowServerStore();
+  const {
+    serverTokens: pickleTokens,
+    isServerLoggedIn: isPickleLoggedIn,
+    clearServerToken: clearPickleToken,
+  } = usePickleServerStore();
   const [googleInitialized, setGoogleInitialized] = useState(false);
   const [picknowDropdownOpen, setPicknowDropdownOpen] = useState(false);
   const [pickleDropdownOpen, setPickleDropdownOpen] = useState(false);

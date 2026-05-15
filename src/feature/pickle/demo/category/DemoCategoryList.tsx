@@ -1,5 +1,5 @@
 import React from 'react';
-import DemoTableList from '../../../../components/demo/DemoTableList';
+import DemoTableList from '@/components/demo/DemoTableList';
 
 interface DemoCategoryListProps {
   categories: any[];
@@ -17,9 +17,6 @@ const columnDefs = [
   { key: 'actions', label: '', width: 'minmax(140px,0.5fr)' },
 ];
 
-const columns = columnDefs.map(({ key, label }) => ({ key, label }));
-const gridCols = columnDefs.map(({ width }) => width).join(' ');
-
 const DemoCategoryList: React.FC<DemoCategoryListProps> = ({
   categories,
   selectedLang,
@@ -33,8 +30,7 @@ const DemoCategoryList: React.FC<DemoCategoryListProps> = ({
       tableName='categories'
       detailPath='/demo/category/detail'
       editPath='/demo/category'
-      columns={columns}
-      gridCols={gridCols}
+      columnDefs={columnDefs}
     />
   );
 };

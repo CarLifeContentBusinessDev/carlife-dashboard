@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import type { usingDataProps } from '../../../../types/type';
-import formatDateString from '../../../../utils/format/formatDateString';
-import { formatPlayTime } from '../../../../utils/format/formatPlayTime';
-import { api, stgApi } from '../../../../utils/api/api';
+import type { usingDataProps } from '@/types/pickleProdContents';
+import { api, stgApi } from '@/utils/api/api';
+import formatDateString from '@/utils/format/formatDateString';
+import { formatPlayTime } from '@/utils/format/formatPlayTime';
+import {
+  GREEN_BADGE_STYLE,
+  RED_BADGE_STYLE,
+} from '@/constants/badgeStyles';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },
@@ -34,8 +38,8 @@ const renderValue = (key: keyof usingDataProps, value: string | number) => {
       <span
         className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold border ${
           value === 'Y'
-            ? 'bg-green-100 text-green-700 border-green-200'
-            : 'bg-red-100 text-red-700 border-red-200'
+            ? `${GREEN_BADGE_STYLE} border-green-200`
+            : `${RED_BADGE_STYLE} border-red-200`
         }`}
       >
         {value === 'Y' ? 'Active' : 'Inactive'}

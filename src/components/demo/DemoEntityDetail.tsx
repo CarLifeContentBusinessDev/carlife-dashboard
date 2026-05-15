@@ -1,9 +1,37 @@
+import LoadingOverlay from '@/components/common/LoadingOverlay';
+import Dropdown from '@/components/common/Dropdown';
+import DemoTableList from '@/components/demo/DemoTableList';
+import { LANGUAGES } from '@/constants/languages';
+import { supabase } from '@/lib/supabase';
+import { useAccessTokenStore } from '@/store/useAccessTokenStore';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { supabase } from '../../lib/supabase';
-import { useAccessTokenStore } from '../../store/useAccessTokenStore';
-import LoadingOverlay from '../common/LoadingOverlay';
+import { BLUE_BADGE_STYLE } from '@/constants/badgeStyles';
+
+export type RelatedListQuery =
+  | {
+      type: 'direct';
+      filterColumn: string;
+      select?: string;
+    }
+  | {
+      type: 'junction';
+      junctionTable: string;
+      junctionKey: string;
+      junctionForeignKey: string;
+      select?: string;
+    };
+
+export interface RelatedListConfig {
+  title: string;
+  tableName: string;
+  detailPath: string;
+  editPath: string;
+  columnDefs: { key: string; label: string; width: string }[];
+  query: RelatedListQuery;
+  enableLangFilter?: boolean;
+}
 
 interface DemoEntityDetailProps {
   parentMenu: string;
@@ -16,6 +44,7 @@ interface DemoEntityDetailProps {
   fieldOrder?: string[];
   hiddenFields?: string[];
   summaryFields?: SummaryField[];
+  relatedList?: RelatedListConfig[];
 }
 
 interface SummaryField {
@@ -303,6 +332,7 @@ const DemoEntityDetail = ({
   fieldOrder = [],
   hiddenFields = [],
   summaryFields = [],
+  relatedList = [],
 }: DemoEntityDetailProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -313,6 +343,32 @@ const DemoEntityDetail = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [row, setRow] = useState<Record<string, unknown> | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    const { error: deleteError } = await supabase
+      .from(tableName)
+      .delete()
+      .eq('id', parseId(id));
+    setDeleting(false);
+    if (deleteError) {
+      toast.error(`삭제 실패: ${deleteError.message}`);
+      return;
+    }
+    toast.success('삭제되었습니다.');
+    navigate(listPath);
+  };
+
+  const [relatedData, setRelatedData] = useState<
+    Record<number, Record<string, unknown>[]>
+  >({});
+  const [relatedLoading, setRelatedLoading] = useState<Record<number, boolean>>(
+    {}
+  );
+  const [relatedLang, setRelatedLang] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -342,6 +398,84 @@ const DemoEntityDetail = ({
 
     fetchDetail();
   }, [id, tableName, select]);
+
+  useEffect(() => {
+    if (!id || relatedList.length === 0) {
+      setRelatedData({});
+      setRelatedLoading({});
+      return;
+    }
+
+    let active = true;
+    const parsedId = parseId(id);
+
+    // ID 변경 시 이전 데이터 초기화
+    setRelatedData({});
+    setRelatedLoading({});
+
+    relatedList.forEach(async (config, index) => {
+      setRelatedLoading((prev) => ({ ...prev, [index]: true }));
+      try {
+        let data: Record<string, unknown>[] = [];
+
+        if (config.query.type === 'direct') {
+          const { filterColumn, select: relSelect } = config.query;
+          const { data: result } = await supabase
+            .from(config.tableName)
+            .select(relSelect ?? '*')
+            .eq(filterColumn, parsedId);
+          data = (result ?? []) as unknown as Record<string, unknown>[];
+        } else {
+          const {
+            junctionTable,
+            junctionKey,
+            junctionForeignKey,
+            select: relSelect,
+          } = config.query;
+
+          const { data: junctionRows, error: junctionError } = await supabase
+            .from(junctionTable)
+            .select(`${junctionForeignKey}, order`)
+            .eq(junctionKey, parsedId)
+            .order('order', { ascending: true });
+
+          if (junctionError || !junctionRows) return;
+
+          const foreignIds = (
+            junctionRows as unknown as Record<string, unknown>[]
+          )
+            .map((r) => r[junctionForeignKey])
+            .filter((v): v is string | number => v != null);
+
+          if (foreignIds.length > 0) {
+            const { data: result } = await supabase
+              .from(config.tableName)
+              .select(relSelect ?? '*')
+              .in('id', foreignIds);
+
+            const rows = (result ?? []) as unknown as Record<string, unknown>[];
+            const resultMap = new Map(
+              rows.map((r) => [r.id as string | number, r])
+            );
+            data = foreignIds
+              .map((fid) => resultMap.get(fid))
+              .filter((r): r is Record<string, unknown> => r != null);
+          }
+        }
+
+        if (!active) return;
+        setRelatedData((prev) => ({ ...prev, [index]: data }));
+      } finally {
+        if (active) {
+          setRelatedLoading((prev) => ({ ...prev, [index]: false }));
+        }
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [id, relatedList]);
 
   const summaryKeySet = useMemo(() => {
     if (!row) return new Set<string>();
@@ -456,6 +590,35 @@ const DemoEntityDetail = ({
 
   return (
     <div className='p-10 flex flex-col'>
+      {showDeleteModal && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'>
+          <div className='bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6 w-80'>
+            <div>
+              <h3 className='text-base font-semibold text-gray-900'>정말 삭제하시겠습니까?</h3>
+              <p className='text-sm text-gray-500 mt-1'>이 작업은 되돌릴 수 없습니다.</p>
+            </div>
+            <div className='flex justify-end gap-2'>
+              <button
+                className='px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50'
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+              >
+                취소
+              </button>
+              <button
+                className='px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-2'
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting && (
+                  <div className='w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin' />
+                )}
+                {deleting ? '삭제 중...' : '삭제'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <h1 className='mb-4 indent-1' style={{ fontSize: '16px' }}>
         <span className='text-gray-500'>{parentMenu} / </span>
         <span className='font-bold'>{childMenu}</span>
@@ -475,7 +638,7 @@ const DemoEntityDetail = ({
               목록
             </button>
             <button
-              className='px-3 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition text-sm'
+              className={`px-3 py-2 rounded ${BLUE_BADGE_STYLE} hover:bg-blue-200 transition text-sm`}
               onClick={() => {
                 if (!accessToken) {
                   toast.warn('웹데모 로그인이 필요합니다.');
@@ -485,6 +648,18 @@ const DemoEntityDetail = ({
               }}
             >
               편집
+            </button>
+            <button
+              className='px-3 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 transition text-sm'
+              onClick={() => {
+                if (!accessToken) {
+                  toast.warn('웹데모 로그인이 필요합니다.');
+                  return;
+                }
+                setShowDeleteModal(true);
+              }}
+            >
+              삭제
             </button>
           </div>
         </div>
@@ -599,6 +774,67 @@ const DemoEntityDetail = ({
           </>
         )}
       </div>
+
+      {relatedList.map((config, index) => {
+        const selectedRelatedLang = relatedLang[index] ?? 'all';
+        const allData = relatedData[index] ?? [];
+        const filteredData =
+          config.enableLangFilter && selectedRelatedLang !== 'all'
+            ? allData.filter((r) => {
+                const language = r.language;
+                if (Array.isArray(language))
+                  return language.includes(selectedRelatedLang);
+                return language === selectedRelatedLang;
+              })
+            : allData;
+
+        return (
+          <div
+            key={config.title}
+            className='w-full rounded-2xl bg-white mt-4 p-8 flex flex-col gap-6 shadow-sm border border-gray-100'
+          >
+            <div className='flex items-center justify-between border-b border-gray-100 pb-4'>
+              <div>
+                <h2 className='text-lg font-semibold'>{config.title}</h2>
+                {!relatedLoading[index] && (
+                  <p className='text-sm text-gray-400 mt-1'>
+                    총 {filteredData.length}개
+                  </p>
+                )}
+              </div>
+              {config.enableLangFilter && (
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm text-gray-600 font-medium'>
+                    국가:
+                  </span>
+                  <Dropdown
+                    value={selectedRelatedLang}
+                    options={[...LANGUAGES]}
+                    onChange={(v) =>
+                      setRelatedLang((prev) => ({ ...prev, [index]: v }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
+
+            <LoadingOverlay loading={relatedLoading[index] ?? false}>
+              불러오는 중입니다.
+            </LoadingOverlay>
+
+            {!(relatedLoading[index] ?? false) && (
+              <DemoTableList
+                data={filteredData}
+                selectedLang={selectedRelatedLang}
+                tableName={config.tableName}
+                detailPath={config.detailPath}
+                editPath={config.editPath}
+                columnDefs={config.columnDefs}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

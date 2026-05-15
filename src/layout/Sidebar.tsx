@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import Button from '../components/common/Button';
-import { PICKLE_MENU_GROUPS, PICKNOW_MENU_GROUPS } from '../constants/sidebarMenus';
+import Button from '@/components/common/Button';
+import {
+  PICKLE_MENU_GROUPS,
+  PICKNOW_MENU_GROUPS,
+} from '@/constants/sidebarMenus';
 import MenuGroupItem from './components/MenuGroupItem';
 import MenuButton from './components/MenuButton';
-import { useServiceStore } from '../store/useServiceStore';
+import { useServiceStore } from '@/store/useServiceStore';
 
 const Sidebar = () => {
   const { pathname } = useLocation();

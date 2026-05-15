@@ -1,25 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import FormActionsButton from '../../../../components/form/FormActionButton';
-import FormField from '../../../../components/form/FormField';
-import FormLayout from '../../../../components/form/FormLayout';
-import FormTabs from '../../../../components/form/FormTabs';
-import { ThumbnailPreview } from '../../../../components/table/ThumbnailPreview';
-import { supabase } from '../../../../lib/supabase';
-
-const LANG_OPTIONS = [
-  { code: 'ko', label: '한국' },
-  { code: 'en', label: '북미' },
-  { code: 'de', label: '독일' },
-  { code: 'jp', label: '일본' },
-] as const;
-
-const LANGUAGE_TO_COUNTRY: Record<string, string> = {
-  ko: 'KR',
-  en: 'US',
-  de: 'DE',
-  jp: 'JP',
-};
+import FormActionsButton from '@/components/form/FormActionButton';
+import FormField from '@/components/form/FormField';
+import FormLayout from '@/components/form/FormLayout';
+import FormTabs from '@/components/form/FormTabs';
+import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
+import { supabase } from '@/lib/supabase';
+import useDemoEdit from '@/hook/useDemoEdit';
+import { LANG_OPTIONS, LANGUAGE_TO_COUNTRY } from '@/constants/languages';
 
 interface ProgramForm {
   id: number;
@@ -41,12 +28,7 @@ interface SelectOption {
 }
 
 const DemoProgramEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-
   const [activeTab, setActiveTab] = useState('basic');
-
-  const [program, setProgram] = useState<ProgramForm | null>(null);
   const [categories, setCategories] = useState<SelectOption[]>([]);
   const [broadcastings, setBroadcastings] = useState<SelectOption[]>([]);
   const [categoryQuery, setCategoryQuery] = useState('');
@@ -54,9 +36,33 @@ const DemoProgramEdit = () => {
   const [broadcastingQuery, setBroadcastingQuery] = useState('');
   const [isBroadcastingSearchOpen, setIsBroadcastingSearchOpen] =
     useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
+
+  const {
+    data: program,
+    setData: setProgram,
+    loading,
+    saving,
+    setSaving,
+    error,
+    setError,
+    handleChange,
+    handleLangToggle,
+    save,
+    navigate,
+  } = useDemoEdit<ProgramForm>({
+    table: 'programs',
+    numericFields: ['category_id', 'broadcasting_id'],
+  });
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('categories').select('id, title').order('id'),
+      supabase.from('broadcastings').select('id, title').order('id'),
+    ]).then(([categoryRes, broadcastingRes]) => {
+      setCategories((categoryRes.data ?? []) as SelectOption[]);
+      setBroadcastings((broadcastingRes.data ?? []) as SelectOption[]);
+    });
+  }, []);
 
   const filteredCategories = categories
     .filter((category) => {
@@ -94,82 +100,22 @@ const DemoProgramEdit = () => {
           (broadcasting) => broadcasting.id === program.broadcasting_id
         );
 
-  useEffect(() => {
-    if (!id) return;
-    const fetchData = async () => {
-      setLoading(true);
-      const [programRes, categoryRes, broadcastingRes] = await Promise.all([
-        supabase.from('programs').select('*').eq('id', id).single(),
-        supabase.from('categories').select('id, title').order('id'),
-        supabase.from('broadcastings').select('id, title').order('id'),
-      ]);
-
-      if (programRes.error || !programRes.data) {
-        setError('프로그램 정보를 불러올 수 없습니다.');
-      } else {
-        setProgram(programRes.data as ProgramForm);
-      }
-
-      setCategories((categoryRes.data ?? []) as SelectOption[]);
-      setBroadcastings((broadcastingRes.data ?? []) as SelectOption[]);
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [id]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    if (!program) return;
-
-    const { name, value } = e.target;
-    const numericFields = ['category_id', 'broadcasting_id'];
-
-    setProgram({
-      ...program,
-      [name]: numericFields.includes(name)
-        ? value === ''
-          ? null
-          : Number(value)
-        : value,
-    });
-  };
-
-  const handleLangToggle = (lang: string) => {
-    if (!program) return;
-
-    const exists = program.language.includes(lang);
-    setProgram({
-      ...program,
-      language: exists
-        ? program.language.filter((item) => item !== lang)
-        : [...program.language, lang],
-    });
-  };
-
   const handleToggleSequential = () => {
-    if (!program) return;
-    setProgram({
-      ...program,
-      is_sequential: !program.is_sequential,
-    });
+    setProgram((prev) =>
+      prev ? { ...prev, is_sequential: !prev.is_sequential } : prev
+    );
   };
 
   const handleToggleActive = () => {
-    if (!program) return;
-    setProgram({
-      ...program,
-      is_active: !program.is_active,
-    });
+    setProgram((prev) =>
+      prev ? { ...prev, is_active: !prev.is_active } : prev
+    );
   };
 
   const handleToggleSearchable = () => {
-    if (!program) return;
-    setProgram({
-      ...program,
-      is_searchable: !program.is_searchable,
-    });
+    setProgram((prev) =>
+      prev ? { ...prev, is_searchable: !prev.is_searchable } : prev
+    );
   };
 
   const handleSave = async () => {
@@ -184,53 +130,23 @@ const DemoProgramEdit = () => {
       return;
     }
 
-    if (!program.category_id || !program.broadcasting_id) {
-      setError('카테고리와 방송사를 선택하세요.');
-      return;
-    }
+    const ok = await save({
+      title: program.title,
+      subtitle: program.subtitle || null,
+      type: program.type || null,
+      img_url: program.img_url || null,
+      category_id: program.category_id,
+      broadcasting_id: program.broadcasting_id,
+      language: program.language,
+      is_sequential: program.is_sequential,
+      is_active: program.is_active,
+      is_searchable: program.is_searchable,
+    });
 
-    if (!Number.isInteger(program.category_id) || program.category_id <= 0) {
-      setError('카테고리 ID는 숫자로 입력하세요.');
-      return;
-    }
+    if (!ok) return;
 
-    if (
-      !Number.isInteger(program.broadcasting_id) ||
-      program.broadcasting_id <= 0
-    ) {
-      setError('방송사 ID는 숫자로 입력하세요.');
-      return;
-    }
-
-    setSaving(true);
-    setError('');
-    const { error } = await supabase
-      .from('programs')
-      .update({
-        title: program.title,
-        subtitle: program.subtitle || null,
-        type: program.type || null,
-        img_url: program.img_url || null,
-        category_id: program.category_id,
-        broadcasting_id: program.broadcasting_id,
-        language: program.language,
-        is_sequential: program.is_sequential,
-        is_active: program.is_active,
-        is_searchable: program.is_searchable,
-      })
-      .eq('id', program.id);
-
-    if (!error) {
-      const { error: deleteMappingError } = await supabase
-        .from('programs_categories')
-        .delete()
-        .eq('program_id', program.id);
-
-      if (deleteMappingError) {
-        setSaving(false);
-        setError(`카테고리 매핑 갱신 실패: ${deleteMappingError.message}`);
-        return;
-      }
+    if (program.category_id != null) {
+      setSaving(true);
 
       const categoryMappingRows = program.language.map((lang) => ({
         category_id: program.category_id,
@@ -240,24 +156,23 @@ const DemoProgramEdit = () => {
         order: null,
       }));
 
-      const { error: insertMappingError } = await supabase
-        .from('programs_categories')
-        .insert(categoryMappingRows);
+      const { error: mappingError } = await supabase.rpc(
+        'replace_programs_categories',
+        {
+          p_program_id: program.id,
+          p_category_id: program.category_id,
+          p_mappings: categoryMappingRows,
+        }
+      );
 
-      if (insertMappingError) {
-        setSaving(false);
-        setError(`카테고리 매핑 갱신 실패: ${insertMappingError.message}`);
+      setSaving(false);
+      if (mappingError) {
+        setError(`카테고리 매핑 갱신 실패: ${mappingError.message}`);
         return;
       }
     }
 
-    setSaving(false);
-    if (error) {
-      console.error('Supabase update error:', error);
-      setError(`저장에 실패했습니다: ${error.message}`);
-    } else {
-      navigate(-1);
-    }
+    navigate(-1);
   };
 
   if (loading)
@@ -270,7 +185,7 @@ const DemoProgramEdit = () => {
       </div>
     );
 
-  if (error)
+  if (error && !program)
     return (
       <div className='flex items-center justify-center h-screen'>
         <div className='text-center'>

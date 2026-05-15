@@ -1,5 +1,5 @@
 import React from 'react';
-import DemoTableList from '../../../../components/demo/DemoTableList';
+import DemoTableList from '@/components/demo/DemoTableList';
 
 interface DemoThemeListProps {
   themes: any[];
@@ -19,9 +19,6 @@ const columnDefs = [
   { key: 'actions', label: '', width: 'minmax(140px,1fr)' },
 ];
 
-const columns = columnDefs.map(({ key, label }) => ({ key, label }));
-const gridCols = columnDefs.map(({ width }) => width).join(' ');
-
 const DemoThemeList: React.FC<DemoThemeListProps> = ({
   themes,
   selectedLang,
@@ -35,8 +32,7 @@ const DemoThemeList: React.FC<DemoThemeListProps> = ({
       tableName='themes'
       detailPath='/demo/theme/detail'
       editPath='/demo/theme'
-      columns={columns}
-      gridCols={gridCols}
+      columnDefs={columnDefs}
     />
   );
 };

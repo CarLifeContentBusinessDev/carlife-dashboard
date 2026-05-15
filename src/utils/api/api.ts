@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import type { PicknowServer, PickleServer } from '../../constants/servers';
+import type { PicknowServer, PickleServer } from '@/constants/servers';
 import {
   picknowTokenKey,
   picknowRefreshKey,
@@ -8,7 +8,7 @@ import {
   pickleRefreshKey,
   PICKLE_SERVERS,
   PICKNOW_SERVERS,
-} from '../../constants/servers';
+} from '@/constants/servers';
 
 let isTestMode = false;
 
@@ -85,7 +85,7 @@ function createPickleServerInstance(server: PickleServer) {
         const newAccess = res.data?.data?.accessToken;
         const newRefresh = res.data?.data?.refreshToken;
         if (newAccess) {
-          import('../../store/usePickleServerStore').then(
+          import('@/store/usePickleServerStore').then(
             ({ usePickleServerStore }) => {
               usePickleServerStore
                 .getState()
@@ -118,11 +118,9 @@ function createPickleServerInstance(server: PickleServer) {
 }
 
 function doPickleServerLogout(server: PickleServer) {
-  import('../../store/usePickleServerStore').then(
-    ({ usePickleServerStore }) => {
-      usePickleServerStore.getState().clearServerToken(server.id);
-    }
-  );
+  import('@/store/usePickleServerStore').then(({ usePickleServerStore }) => {
+    usePickleServerStore.getState().clearServerToken(server.id);
+  });
   toast.error(
     `Pickle ${server.label} 로그인이 만료되었습니다. 다시 로그인해주세요.`
   );
@@ -199,7 +197,7 @@ function createPicknowServerInstance(server: PicknowServer) {
         const newAccess = res.data?.data?.accessToken;
         const newRefresh = res.data?.data?.refreshToken;
         if (newAccess) {
-          import('../../store/usePicknowServerStore').then(
+          import('@/store/usePicknowServerStore').then(
             ({ usePicknowServerStore }) => {
               usePicknowServerStore
                 .getState()
@@ -233,11 +231,9 @@ function createPicknowServerInstance(server: PicknowServer) {
 
 function doPicknowServerLogout(server: PicknowServer) {
   // store import를 지연해서 순환 참조 방지
-  import('../../store/usePicknowServerStore').then(
-    ({ usePicknowServerStore }) => {
-      usePicknowServerStore.getState().clearServerToken(server.id);
-    }
-  );
+  import('@/store/usePicknowServerStore').then(({ usePicknowServerStore }) => {
+    usePicknowServerStore.getState().clearServerToken(server.id);
+  });
   toast.error(`${server.label} 로그인이 만료되었습니다. 다시 로그인해주세요.`);
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import Dropdown from '../common/Dropdown';
+import Dropdown from '@/components/common/Dropdown';
 
 interface SheetSelectProps {
   value: string;
