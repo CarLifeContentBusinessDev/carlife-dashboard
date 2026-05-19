@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/common/LoadingOverlay.tsx';
 import Pagination from '@/components/common/Pagination.tsx';
@@ -9,11 +9,13 @@ import UsageFilterRadio from '@/components/filter/UsageFilterRadio.tsx';
 import SyncCountHeader from '@/components/sync/SyncCountHeader.tsx';
 import { SyncEmptyState } from '@/components/sync/SyncEmptyState.tsx';
 import SyncToolbar from '@/components/sync/SyncToolbar.tsx';
-import { useProdPagination } from '@/hook/useProdPagination.ts';
+import SortControls from '@/components/table/SortControls';
+import useListSort from '@/hook/useListSort';
 import { useSheetSelection } from '@/hook/useSheetSelection.ts';
 import { useStagingEnv } from '@/hook/useStagingEnv.ts';
 import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState.ts';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore.ts';
+import { useChannelStore } from '@/store/useChannelStore.ts';
 import { usePickleServerStore } from '@/store/usePickleServerStore.ts';
 import type { usingChannelProps } from '@/types/pickleProdContents.ts';
 import { fetchAllData } from '@/utils/api/fetchAllData.ts';
@@ -24,7 +26,22 @@ import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime.ts';
 import ProdChannelList from './ProdChannelList.tsx';
 
 const CATEGORY = 'channel';
-const PAGE_SIZE = 10;
+const DATA_PAGE_SIZE = 10;
+
+type ChannelSortKey =
+  | 'createdAt'
+  | 'channelName'
+  | 'dispDtime'
+  | 'likeCnt'
+  | 'listenCnt';
+
+const CHANNEL_SORT_OPTIONS: Array<{ value: ChannelSortKey; label: string }> = [
+  { value: 'createdAt', label: '등록일' },
+  { value: 'channelName', label: '채널명' },
+  { value: 'dispDtime', label: '최근 에피소드 업로드일' },
+  { value: 'likeCnt', label: '좋아요수' },
+  { value: 'listenCnt', label: '재생 요청 수' },
+];
 
 const sortChannels = (channels: usingChannelProps[]) =>
   [...channels].sort((a, b) => {
@@ -43,17 +60,90 @@ const sortChannels = (channels: usingChannelProps[]) =>
 const ChannelLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
-  const { getServerToken } = usePickleServerStore();
+  const { getServerToken, isServerLoggedIn } = usePickleServerStore();
   const accessToken = getServerToken(isStaging ? 'stg' : 'prod') ?? '';
+  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
-  const [episodeCountByChannelId, setEpisodeCountByChannelId] = useState<
-    Record<number, number>
-  >({});
-  const [latestEpisodeUploadByChannelId, setLatestEpisodeUploadByChannelId] =
-    useState<Record<number, string>>({});
+  // ── 데이터 탭 ──────────────────────────────────────────────────────────────
+  const [allChannelData, setAllChannelData] = useState<usingChannelProps[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataProgress, setDataProgress] = useState('');
+  const [dataKeyword, setDataKeyword] = useState('');
+  const [dataUsageFilter, setDataUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
+  const [dataPage, setDataPage] = useState(1);
+  const dataAbortRef = useRef<AbortController | null>(null);
 
-  // 동기화 탭
+  useEffect(() => {
+    if (!isPickleLoggedIn) {
+      setAllChannelData([]);
+      return;
+    }
+    const env = isStaging ? 'stg' : 'prod';
+    const { cache, isStale, setCache } = useChannelStore.getState();
+    if (!isStale(env)) {
+      setAllChannelData(cache[env]!.data);
+      return;
+    }
+    dataAbortRef.current?.abort();
+    const controller = new AbortController();
+    dataAbortRef.current = controller;
+    setDataLoading(true);
+    setAllChannelData([]);
+    setDataPage(1);
+    fetchAllData('channel', setDataProgress, controller.signal, apiInstance)
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setAllChannelData(data);
+          if (data.length > 0) setCache(env, data);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setDataLoading(false);
+          setDataProgress('');
+        }
+      });
+    return () => controller.abort();
+  }, [isStaging, isPickleLoggedIn]);
+
+  const filteredChannelData = useMemo(() => {
+    return allChannelData.filter((item) => {
+      if (dataUsageFilter !== 'All' && item.usageYn !== dataUsageFilter)
+        return false;
+      if (
+        dataKeyword.trim() &&
+        !item.channelName.toLowerCase().includes(dataKeyword.toLowerCase())
+      )
+        return false;
+      return true;
+    });
+  }, [allChannelData, dataUsageFilter, dataKeyword]);
+
+  const {
+    sortKey: dataSortKey,
+    setSortKey: setDataSortKey,
+    sortDirection: dataSortDir,
+    setSortDirection: setDataSortDir,
+    sortedData: sortedChannelData,
+  } = useListSort<usingChannelProps, ChannelSortKey>({
+    data: filteredChannelData,
+    sortOptions: CHANNEL_SORT_OPTIONS,
+    initialSortKey: 'createdAt',
+    initialSortDirection: 'desc',
+  });
+
+  useEffect(() => {
+    setDataPage(1);
+  }, [dataUsageFilter, dataKeyword, dataSortKey, dataSortDir]);
+
+  const dataTotalPages = Math.ceil(sortedChannelData.length / DATA_PAGE_SIZE);
+  const displayChannelData = sortedChannelData.slice(
+    (dataPage - 1) * DATA_PAGE_SIZE,
+    dataPage * DATA_PAGE_SIZE
+  );
+
+  // ── 동기화 탭 ─────────────────────────────────────────────────────────────
   const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
     null
   );
@@ -84,101 +174,11 @@ const ChannelLayout = () => {
     storageKey,
   });
 
-  const episodeCountLoadingRef = useRef<Set<number>>(new Set());
-
-  const fetchEpisodeCounts = async (channels: usingChannelProps[]) => {
-    if (!loginToken || channels.length === 0) return;
-
-    const targetIds = channels
-      .map((channel) => channel.channelId)
-      .filter(
-        (channelId) =>
-          (episodeCountByChannelId[channelId] === undefined ||
-            latestEpisodeUploadByChannelId[channelId] === undefined) &&
-          !episodeCountLoadingRef.current.has(channelId)
-      );
-
-    if (targetIds.length === 0) return;
-
-    targetIds.forEach((channelId) =>
-      episodeCountLoadingRef.current.add(channelId)
-    );
-
-    await Promise.all(
-      targetIds.map(async (channelId) => {
-        try {
-          const res = await apiInstance.get(
-            `/admin/episode?page=1&size=1&channelId=${channelId}&withPlaylists=Y`
-          );
-          const totalCount = Number(res.data?.data?.pageInfo?.totalCount ?? 0);
-          const latestDispDtime = String(
-            res.data?.data?.dataList?.[0]?.dispDtime ?? ''
-          );
-          setEpisodeCountByChannelId((prev) => ({
-            ...prev,
-            [channelId]: totalCount,
-          }));
-          setLatestEpisodeUploadByChannelId((prev) => ({
-            ...prev,
-            [channelId]: latestDispDtime,
-          }));
-        } catch (error) {
-          console.error(`채널 ${channelId}의 에피소드 수 조회 실패:`, error);
-          setEpisodeCountByChannelId((prev) => ({ ...prev, [channelId]: 0 }));
-          setLatestEpisodeUploadByChannelId((prev) => ({
-            ...prev,
-            [channelId]: '',
-          }));
-        } finally {
-          episodeCountLoadingRef.current.delete(channelId);
-        }
-      })
-    );
-  };
-
-  const {
-    prodData,
-    prodLoading,
-    prodPage,
-    prodTotalPages,
-    prodTotalCount,
-    prodSearchQuery,
-    setProdSearchQuery,
-    usageFilter,
-    handleProdPageChange,
-    handleSearch,
-    handleUsageFilterChange,
-    cancelOngoingWork,
-  } = useProdPagination<usingChannelProps>({
-    fetcher: async ({ page, filter, keyword, signal }) => {
-      const params = new URLSearchParams({
-        page: String(page),
-        size: String(PAGE_SIZE),
-      });
-      if (filter !== 'All') params.set('usageYn', filter);
-      if (keyword.trim()) params.set('keyword', keyword.trim());
-      const res = await apiInstance.get(`/admin/channel?${params.toString()}`, {
-        signal,
-      });
-      const { dataList, pageInfo } = res.data.data;
-      return { dataList, totalCount: pageInfo.totalCount };
-    },
-    deps: [isStaging, loginToken],
-    pageSize: PAGE_SIZE,
-    enabled: !!loginToken,
-  });
-
-  useEffect(() => {
-    if (prodData.length > 0) fetchEpisodeCounts(prodData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prodData]);
-
   const handleLoadAllChannels = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
-    cancelOngoingWork();
     setNewChannels(null);
     setAddData([]);
     setSyncPreviewMode(null);
@@ -218,7 +218,6 @@ const ChannelLayout = () => {
       setAddData([]);
       setSyncPreviewMode(null);
       setSyncPage(1);
-      cancelOngoingWork();
 
       const newList = await getNewData(
         loginToken,
@@ -326,57 +325,50 @@ const ChannelLayout = () => {
               <div className='flex justify-between items-center flex-shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   채널·도서 총{' '}
-                  <span className='font-extrabold'>{prodTotalCount}</span>개
+                  <span className='font-extrabold'>
+                    {sortedChannelData.length}
+                  </span>
+                  개
                 </h3>
                 <div className='flex items-center gap-6'>
+                  <SortControls
+                    sortKey={dataSortKey}
+                    sortOptions={CHANNEL_SORT_OPTIONS}
+                    onSortKeyChange={setDataSortKey}
+                    sortDirection={dataSortDir}
+                    onSortDirectionChange={setDataSortDir}
+                  />
                   <UsageFilterRadio
                     name='channelUsageFilter'
-                    value={usageFilter}
-                    onChange={handleUsageFilterChange}
+                    value={dataUsageFilter}
+                    onChange={(v) => setDataUsageFilter(v)}
                   />
                   <input
                     type='text'
-                    value={prodSearchQuery}
-                    onChange={(e) => setProdSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    value={dataKeyword}
+                    onChange={(e) => setDataKeyword(e.target.value)}
                     placeholder='채널명 검색'
                     className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
                   />
-                  <button
-                    onClick={handleSearch}
-                    className='cursor-pointer'
-                    disabled={prodLoading}
-                  >
-                    <img
-                      src='/redo.svg'
-                      alt='새로고침'
-                      width={22}
-                      height={22}
-                    />
-                  </button>
                 </div>
               </div>
-              <LoadingOverlay loading={prodLoading}>
+              <LoadingOverlay loading={dataLoading} progress={dataProgress}>
                 채널 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!prodLoading && (
+              {!dataLoading && (
                 <div className='overflow-x-scroll episode-table-scroll pb-1'>
                   <ProdChannelList
-                    data={prodData}
-                    episodeCountByChannelId={episodeCountByChannelId}
-                    latestEpisodeUploadByChannelId={
-                      latestEpisodeUploadByChannelId
-                    }
+                    data={displayChannelData}
                     isStaging={isStaging}
                   />
                 </div>
               )}
               <Pagination
-                page={prodPage}
-                totalPages={prodTotalPages}
-                onChange={handleProdPageChange}
+                page={dataPage}
+                totalPages={dataTotalPages}
+                onChange={setDataPage}
               />
             </div>
           )}

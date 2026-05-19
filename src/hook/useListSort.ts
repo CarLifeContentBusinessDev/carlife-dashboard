@@ -53,22 +53,27 @@ export default function useListSort<
     useState<SortDirection>(initialSortDirection);
 
   const sortedData = useMemo(() => {
-    const copied = [...data];
+    if (data.length === 0) return data;
 
-    copied.sort((a, b) => {
-      const leftRaw = (a as any)[sortKey] as unknown;
-      const rightRaw = (b as any)[sortKey] as unknown;
+    const collator = new Intl.Collator('ko');
+    const emptyLast =
+      sortDirection === 'asc' && emptyLastOnAscKeys.includes(sortKey);
 
-      if (sortDirection === 'asc' && emptyLastOnAscKeys.includes(sortKey)) {
-        const leftEmpty = isEmptyValue(leftRaw);
-        const rightEmpty = isEmptyValue(rightRaw);
+    // Schwartzian transform: key를 O(n)번만 추출해 O(n log n) 중복 계산 방지
+    const keyed = data.map((item) => ({
+      item,
+      key: toComparableValue((item as any)[sortKey]),
+      empty: emptyLast && isEmptyValue((item as any)[sortKey]),
+    }));
 
-        if (leftEmpty && !rightEmpty) return 1;
-        if (!leftEmpty && rightEmpty) return -1;
+    keyed.sort((a, b) => {
+      if (emptyLast) {
+        if (a.empty && !b.empty) return 1;
+        if (!a.empty && b.empty) return -1;
       }
 
-      const left = toComparableValue(leftRaw);
-      const right = toComparableValue(rightRaw);
+      const left = a.key;
+      const right = b.key;
 
       if (typeof left === 'number' && typeof right === 'number') {
         return sortDirection === 'asc' ? left - right : right - left;
@@ -76,12 +81,12 @@ export default function useListSort<
 
       const leftText = String(left ?? '');
       const rightText = String(right ?? '');
-      const compared = leftText.localeCompare(rightText, 'ko');
+      const compared = collator.compare(leftText, rightText);
 
       return sortDirection === 'asc' ? compared : -compared;
     });
 
-    return copied;
+    return keyed.map((x) => x.item);
   }, [data, sortKey, sortDirection, emptyLastOnAscKeys]);
 
   return {

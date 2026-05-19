@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import type { AxiosInstance } from 'axios';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
 import Pagination from '@/components/common/Pagination';
@@ -9,13 +10,17 @@ import UsageFilterRadio from '@/components/filter/UsageFilterRadio';
 import SyncCountHeader from '@/components/sync/SyncCountHeader';
 import { SyncEmptyState } from '@/components/sync/SyncEmptyState';
 import SyncToolbar from '@/components/sync/SyncToolbar';
-import { useProdPagination } from '@/hook/useProdPagination';
+import SortControls from '@/components/table/SortControls';
+import useListSort from '@/hook/useListSort';
 import { useSheetSelection } from '@/hook/useSheetSelection';
 import { useStagingEnv } from '@/hook/useStagingEnv';
 import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import { useCurationStore } from '@/store/useCurationStore';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
 import type {
   curationListItemProps,
+  ProdCurationRow,
   usingCurationExcelProps,
 } from '@/types/pickleProdContents';
 import { fetchAllCurationData } from '@/utils/api/fetchAllData';
@@ -27,8 +32,6 @@ import { mapCurationStatus } from '@/utils/format/statusMapper';
 import ProdCurationList from './ProdCurationList';
 
 const DATA_PAGE_SIZE = 10;
-
-type ProdCurationRow = usingCurationExcelProps & { curationId: number };
 
 type ExhibitionFilter =
   | 'All'
@@ -45,12 +48,20 @@ const EXHIBITION_OPTIONS = [
   '게시 예약',
 ] as const;
 
-const EXHIBITION_STATUS_MAP: Record<string, string> = {
-  '게시 중': 'ACTIVE',
-  '게시 대기': 'ACTIVE_NONE_DISPLAY',
-  '게시 종료': 'INACTIVE',
-  '게시 예약': 'WAITING',
-};
+
+type CurationSortKey =
+  | 'curationCreatedAt'
+  | 'curationName'
+  | 'dispStartDtime'
+  | 'dispEndDtime';
+
+const CURATION_SORT_OPTIONS: Array<{ value: CurationSortKey; label: string }> =
+  [
+    { value: 'curationCreatedAt', label: '등록일시' },
+    { value: 'curationName', label: '큐레이션명' },
+    { value: 'dispStartDtime', label: '게시 시작일' },
+    { value: 'dispEndDtime', label: '게시 종료일' },
+  ];
 
 const mapCurationListToRow = (
   listItem: curationListItemProps
@@ -82,17 +93,136 @@ const mapCurationListToRow = (
   uploader: listItem.creatorName ?? '',
 });
 
+async function loadAllCurationList(
+  apiInstance: AxiosInstance,
+  signal?: AbortSignal
+): Promise<ProdCurationRow[]> {
+  const firstRes = await apiInstance.get(
+    '/admin/curation?page=1&size=100&periodType=ALL',
+    { signal }
+  );
+  const { dataList, pageInfo } = firstRes.data.data as {
+    dataList: curationListItemProps[];
+    pageInfo: { totalCount: number };
+  };
+  const totalPages = Math.ceil(pageInfo.totalCount / 100);
+  let all: curationListItemProps[] = [...dataList];
+  for (let page = 2; page <= totalPages; page++) {
+    if (signal?.aborted) return [];
+    const res = await apiInstance.get(
+      `/admin/curation?page=${page}&size=100&periodType=ALL`,
+      { signal }
+    );
+    all = all.concat(
+      (
+        res.data.data as {
+          dataList: curationListItemProps[];
+        }
+      ).dataList
+    );
+  }
+  return all.map(mapCurationListToRow);
+}
+
 const CurationLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
+  const { isServerLoggedIn } = usePickleServerStore();
+  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
-  const [exhibitionFilter, setExhibitionFilter] =
+  // ── 데이터 탭 ──────────────────────────────────────────────────────────────
+  const [allCurationData, setAllCurationData] = useState<ProdCurationRow[]>(
+    []
+  );
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataKeyword, setDataKeyword] = useState('');
+  const [dataUsageFilter, setDataUsageFilter] = useState<'All' | 'Y' | 'N'>(
+    'All'
+  );
+  const [dataExhibitionFilter, setDataExhibitionFilter] =
     useState<ExhibitionFilter>('All');
-  const exhibitionFilterRef = useRef<ExhibitionFilter>(exhibitionFilter);
-  exhibitionFilterRef.current = exhibitionFilter;
+  const [dataPage, setDataPage] = useState(1);
+  const dataAbortRef = useRef<AbortController | null>(null);
 
-  // 동기화 탭
+  useEffect(() => {
+    if (!isPickleLoggedIn) {
+      setAllCurationData([]);
+      return;
+    }
+    const env = isStaging ? 'stg' : 'prod';
+    const { cache, isStale, setCache } = useCurationStore.getState();
+    if (!isStale(env)) {
+      setAllCurationData(cache[env]!.data);
+      return;
+    }
+    dataAbortRef.current?.abort();
+    const controller = new AbortController();
+    dataAbortRef.current = controller;
+    setDataLoading(true);
+    setAllCurationData([]);
+    setDataPage(1);
+    loadAllCurationList(apiInstance, controller.signal)
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setAllCurationData(data);
+          if (data.length > 0) setCache(env, data);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDataLoading(false);
+      });
+    return () => controller.abort();
+  }, [isStaging, isPickleLoggedIn]);
+
+  const filteredCurationData = useMemo(() => {
+    return allCurationData.filter((item) => {
+      if (dataUsageFilter !== 'All' && item.activeState !== dataUsageFilter)
+        return false;
+      if (
+        dataExhibitionFilter !== 'All' &&
+        item.exhibitionState !== dataExhibitionFilter
+      )
+        return false;
+      if (
+        dataKeyword.trim() &&
+        !item.curationName.toLowerCase().includes(dataKeyword.toLowerCase())
+      )
+        return false;
+      return true;
+    });
+  }, [allCurationData, dataUsageFilter, dataExhibitionFilter, dataKeyword]);
+
+  const {
+    sortKey: dataSortKey,
+    setSortKey: setDataSortKey,
+    sortDirection: dataSortDir,
+    setSortDirection: setDataSortDir,
+    sortedData: sortedCurationData,
+  } = useListSort<ProdCurationRow, CurationSortKey>({
+    data: filteredCurationData,
+    sortOptions: CURATION_SORT_OPTIONS,
+    initialSortKey: 'curationCreatedAt',
+    initialSortDirection: 'desc',
+  });
+
+  useEffect(() => {
+    setDataPage(1);
+  }, [
+    dataUsageFilter,
+    dataExhibitionFilter,
+    dataKeyword,
+    dataSortKey,
+    dataSortDir,
+  ]);
+
+  const dataTotalPages = Math.ceil(sortedCurationData.length / DATA_PAGE_SIZE);
+  const displayCurationData = sortedCurationData.slice(
+    (dataPage - 1) * DATA_PAGE_SIZE,
+    dataPage * DATA_PAGE_SIZE
+  );
+
+  // ── 동기화 탭 ─────────────────────────────────────────────────────────────
   const [newCurations, setNewCurations] = useState<ProdCurationRow[]>([]);
   const [allCurations, setAllCurations] = useState<ProdCurationRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -120,58 +250,6 @@ const CurationLayout = () => {
     defaultSheetName,
     storageKey,
   });
-
-  const {
-    prodData,
-    prodLoading,
-    prodPage,
-    prodTotalPages,
-    prodTotalCount,
-    prodSearchQuery,
-    setProdSearchQuery,
-    usageFilter,
-    fetchPage,
-    handleProdPageChange,
-    handleSearch,
-    handleUsageFilterChange,
-    cancelOngoingWork,
-  } = useProdPagination<ProdCurationRow>({
-    fetcher: async ({ page, filter, keyword, signal }) => {
-      const exhibition = exhibitionFilterRef.current;
-      const params = new URLSearchParams({
-        page: String(page),
-        size: String(DATA_PAGE_SIZE),
-        periodType: 'ALL',
-      });
-      if (filter !== 'All') params.set('usageYn', filter);
-      if (exhibition !== 'All')
-        params.set('status', EXHIBITION_STATUS_MAP[exhibition]);
-      if (keyword.trim()) params.set('keyword', keyword.trim());
-
-      const listRes = await apiInstance.get(
-        `/admin/curation?${params.toString()}`,
-        { signal }
-      );
-      const { dataList, pageInfo } = listRes.data.data as {
-        dataList: curationListItemProps[];
-        pageInfo: { totalCount: number };
-      };
-
-      return {
-        dataList: (dataList ?? []).map(mapCurationListToRow),
-        totalCount: pageInfo.totalCount ?? 0,
-      };
-    },
-    deps: [isStaging, loginToken],
-    pageSize: DATA_PAGE_SIZE,
-    enabled: !!loginToken,
-  });
-
-  const handleExhibitionFilterChange = (value: ExhibitionFilter) => {
-    exhibitionFilterRef.current = value;
-    setExhibitionFilter(value);
-    fetchPage(1, usageFilter, prodSearchQuery);
-  };
 
   const handleLoadAllCurations = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
@@ -211,7 +289,6 @@ const CurationLayout = () => {
       setAllCurations([]);
       setSyncPreviewMode(null);
       setSyncPage(1);
-      cancelOngoingWork();
 
       const newList = await getNewCurationData(
         loginToken,
@@ -313,57 +390,59 @@ const CurationLayout = () => {
               <div className='flex justify-between items-center flex-shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   큐레이션 총{' '}
-                  <span className='font-extrabold'>{prodTotalCount}</span>개
+                  <span className='font-extrabold'>
+                    {sortedCurationData.length}
+                  </span>
+                  개
                 </h3>
                 <div className='flex gap-6 items-center'>
+                  <SortControls
+                    sortKey={dataSortKey}
+                    sortOptions={CURATION_SORT_OPTIONS}
+                    onSortKeyChange={setDataSortKey}
+                    sortDirection={dataSortDir}
+                    onSortDirectionChange={setDataSortDir}
+                  />
                   <UsageFilterRadio
                     name='usageFilter'
-                    value={usageFilter}
-                    onChange={handleUsageFilterChange}
+                    value={dataUsageFilter}
+                    onChange={(v) => setDataUsageFilter(v)}
                   />
                   <UsageFilterRadio
                     name='exhibitionFilter'
                     label='전시 상태'
                     options={EXHIBITION_OPTIONS}
-                    value={exhibitionFilter}
-                    onChange={handleExhibitionFilterChange}
+                    value={dataExhibitionFilter}
+                    onChange={(v) =>
+                      setDataExhibitionFilter(v as ExhibitionFilter)
+                    }
                   />
                   <input
                     type='text'
-                    value={prodSearchQuery}
-                    onChange={(e) => setProdSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    value={dataKeyword}
+                    onChange={(e) => setDataKeyword(e.target.value)}
                     placeholder='큐레이션명 검색'
                     className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
                   />
-                  <button
-                    onClick={handleSearch}
-                    className='cursor-pointer'
-                    disabled={prodLoading}
-                  >
-                    <img
-                      src='/redo.svg'
-                      alt='새로고침'
-                      width={22}
-                      height={22}
-                    />
-                  </button>
                 </div>
               </div>
-              <LoadingOverlay loading={prodLoading}>
+              <LoadingOverlay loading={dataLoading}>
                 큐레이션 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!prodLoading && (
+              {!dataLoading && (
                 <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                  <ProdCurationList data={prodData} isStaging={isStaging} />
+                  <ProdCurationList
+                    data={displayCurationData}
+                    isStaging={isStaging}
+                  />
                 </div>
               )}
               <Pagination
-                page={prodPage}
-                totalPages={prodTotalPages}
-                onChange={handleProdPageChange}
+                page={dataPage}
+                totalPages={dataTotalPages}
+                onChange={setDataPage}
               />
             </div>
           )}

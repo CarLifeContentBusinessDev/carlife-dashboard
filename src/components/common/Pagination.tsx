@@ -33,7 +33,7 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         disabled={page === 1}
         onClick={() => onChange(1)}
-        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40'
+        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40 cursor-pointer'
         title='맨 처음'
       >
         <FiChevronsLeft size={18} />
@@ -43,7 +43,7 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         disabled={page === 1}
         onClick={() => onChange(page - 1)}
-        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40'
+        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40 cursor-pointer'
         title='이전'
       >
         <FiChevronLeft size={18} />
@@ -54,7 +54,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           key={p}
           onClick={() => onChange(p)}
-          className={`w-8 h-8 rounded-md text-sm font-medium transition
+          className={`w-8 h-8 rounded-md text-sm font-medium transition cursor-pointer 
           ${page === p ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}`}
         >
           {p}
@@ -65,7 +65,7 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         disabled={page === totalPages}
         onClick={() => onChange(page + 1)}
-        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40'
+        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40 cursor-pointer'
         title='다음'
       >
         <FiChevronRight size={18} />
@@ -75,7 +75,7 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         disabled={page === totalPages}
         onClick={() => onChange(totalPages)}
-        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40'
+        className='flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 disabled:opacity-40 cursor-pointer'
         title='맨 끝'
       >
         <FiChevronsRight size={18} />
