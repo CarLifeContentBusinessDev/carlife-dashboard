@@ -86,7 +86,12 @@ const MenuGroupItem = ({
         >
           <div>
             {items.map((item) => (
-              <MenuButton key={item.id} to={item.to} isOpen={true}>
+              <MenuButton
+                key={item.id}
+                to={item.to}
+                isOpen={true}
+                openInNewTab={item.openInNewTab}
+              >
                 {item.icon && item.icon}
                 <span className='pl-10'>{item.label}</span>
               </MenuButton>
@@ -109,7 +114,12 @@ const MenuGroupItem = ({
             onMouseLeave={() => setIsHovered(false)}
           >
             {items.map((item) => (
-              <MenuButton key={item.id} to={item.to} isOpen={true}>
+              <MenuButton
+                key={item.id}
+                to={item.to}
+                isOpen={true}
+                openInNewTab={item.openInNewTab}
+              >
                 {item.icon && item.icon}
                 <span>{item.label}</span>
               </MenuButton>
