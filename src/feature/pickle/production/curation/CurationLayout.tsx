@@ -1,6 +1,3 @@
-import type { AxiosInstance } from 'axios';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
 import Pagination from '@/components/common/Pagination';
 import PickleLoginBanner from '@/components/common/PickleLoginBanner';
@@ -15,13 +12,12 @@ import useListSort from '@/hook/useListSort';
 import { useSheetSelection } from '@/hook/useSheetSelection';
 import { useStagingEnv } from '@/hook/useStagingEnv';
 import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState';
-import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { useCurationStore } from '@/store/useCurationStore';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { usePickleServerStore } from '@/store/usePickleServerStore';
 import type {
   curationListItemProps,
   ProdCurationRow,
-  usingCurationExcelProps,
 } from '@/types/pickleProdContents';
 import { fetchAllCurationData } from '@/utils/api/fetchAllData';
 import { appendNewCurationToExcel } from '@/utils/excel/appendNewCurationToExcel';
@@ -29,8 +25,10 @@ import { getNewCurationData } from '@/utils/excel/getNewCuration';
 import { overwriteCurationExcelData } from '@/utils/excel/updateCuration';
 import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime';
 import { mapCurationStatus } from '@/utils/format/statusMapper';
+import type { AxiosInstance } from 'axios';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'react-toastify';
 import ProdCurationList from './ProdCurationList';
-
 
 type ExhibitionFilter =
   | 'All'
@@ -525,7 +523,10 @@ const CurationLayout = () => {
                 </LoadingOverlay>
                 {!loading && syncPreviewMode && (
                   <>
-                    <div ref={syncScrollRef} className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    <div
+                      ref={syncScrollRef}
+                      className='overflow-x-scroll episode-table-scroll pb-1 flex-1'
+                    >
                       <ProdCurationList
                         data={syncDisplayData.slice(
                           (syncPage - 1) * SYNC_PAGE_SIZE,

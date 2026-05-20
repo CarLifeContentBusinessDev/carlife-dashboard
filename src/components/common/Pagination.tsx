@@ -12,7 +12,7 @@ const PAGE_SIZE_OPTIONS = [
   { value: 20, label: '20 / page' },
   { value: 50, label: '50 / page' },
   { value: 100, label: '100 / page' },
-  { value: 0, label: '전체' },
+  // { value: 0, label: '전체' },
 ];
 
 interface PaginationProps {
