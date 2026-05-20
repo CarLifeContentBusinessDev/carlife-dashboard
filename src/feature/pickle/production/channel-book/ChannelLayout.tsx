@@ -110,7 +110,7 @@ const ChannelLayout = () => {
         }
       });
     return () => controller.abort();
-  }, [isStaging, isPickleLoggedIn]);
+  }, [isStaging, isPickleLoggedIn, apiInstance]);
 
   const filteredChannelData = useMemo(() => {
     return allChannelData.filter((item) => {
@@ -453,7 +453,10 @@ const ChannelLayout = () => {
                 </LoadingOverlay>
                 {!loading && syncPreviewMode && (
                   <>
-                    <div ref={syncScrollRef} className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    <div
+                      ref={syncScrollRef}
+                      className='overflow-x-scroll episode-table-scroll pb-1 flex-1'
+                    >
                       <ProdChannelList
                         data={syncDisplayData.slice(
                           (syncPage - 1) * SYNC_PAGE_SIZE,

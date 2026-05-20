@@ -103,19 +103,22 @@ async function loadAllCurationList(
   };
   const totalPages = Math.ceil(pageInfo.totalCount / 100);
   let all: curationListItemProps[] = [...dataList];
-  for (let page = 2; page <= totalPages; page++) {
-    if (signal?.aborted) return [];
-    const res = await apiInstance.get(
-      `/admin/curation?page=${page}&size=100&periodType=ALL`,
-      { signal }
+  if (totalPages > 1) {
+    const pagePromises = Array.from({ length: totalPages - 1 }, (_, i) =>
+      apiInstance.get(`/admin/curation?page=${i + 2}&size=100&periodType=ALL`, {
+        signal,
+      })
     );
-    all = all.concat(
-      (
-        res.data.data as {
-          dataList: curationListItemProps[];
-        }
-      ).dataList
-    );
+    const results = await Promise.all(pagePromises);
+    results.forEach((res) => {
+      all = all.concat(
+        (
+          res.data.data as {
+            dataList: curationListItemProps[];
+          }
+        ).dataList
+      );
+    });
   }
   return all.map(mapCurationListToRow);
 }

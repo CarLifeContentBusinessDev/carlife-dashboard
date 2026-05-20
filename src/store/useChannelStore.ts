@@ -28,7 +28,7 @@ export const useChannelStore = create<ChannelStore>()(
         })),
       isStale: (env) => {
         const entry = get().cache[env];
-        if (!entry || entry.data.length === 0) return true;
+        if (!entry) return true;
         return Date.now() - entry.fetchedAt > STALE_MS;
       },
       clearCache: (env) =>
