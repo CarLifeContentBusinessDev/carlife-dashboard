@@ -547,27 +547,62 @@ export async function syncPicknowConfigurationSheet(
   };
 
   const sheets = getSheetsClient();
-  const oemDeviceResponse = await apiInstance.get<PicknowOemDeviceResponse>(
-    '/admin/v2/oem-device'
-  );
-  const oemDevices = oemDeviceResponse.data.data ?? [];
 
-  const { matchedSeqs, skippedSelections, seqToClients } = resolveSelectedSeqs(
-    selections,
-    oemDevices,
-    settingRows
-  );
-
-  if (matchedSeqs.length === 0) {
-    throw new Error('선택한 OEM/DEVICE에 해당하는 데이터를 찾을 수 없습니다.');
+  let supportsOemDevice = true;
+  let oemDevices: PicknowOemDevice[] = [];
+  try {
+    const oemDeviceResponse = await apiInstance.get<PicknowOemDeviceResponse>(
+      '/admin/v2/oem-device'
+    );
+    oemDevices = oemDeviceResponse.data.data ?? [];
+  } catch {
+    supportsOemDevice = false;
   }
+
+  let matchedSeqs: number[] = [];
+  let skippedSelections: PicknowSelection[] = [];
+  let seqToClients: Record<number, string[]> = {};
+
+  if (supportsOemDevice) {
+    const resolved = resolveSelectedSeqs(selections, oemDevices, settingRows);
+    matchedSeqs = resolved.matchedSeqs;
+    skippedSelections = resolved.skippedSelections;
+    seqToClients = resolved.seqToClients;
+
+    if (matchedSeqs.length === 0) {
+      throw new Error('선택한 OEM/DEVICE에 해당하는 데이터를 찾을 수 없습니다.');
+    }
+  }
+
+  const bookmarkParams = supportsOemDevice
+    ? { version: 2, oemDeviceSeqs: matchedSeqs.join(',') }
+    : (() => {
+        const countryCodes = [
+          ...new Set(
+            selections.flatMap((sel) => {
+              const matched = settingRows.filter(
+                (row) =>
+                  normalizeText(row.OEM) === normalizeText(sel.oem) &&
+                  normalizeText(row.DEVICE) === normalizeText(sel.device)
+              );
+              return matched
+                .map((row) => row.국가코드.trim().toUpperCase())
+                .filter(Boolean);
+            })
+          ),
+        ];
+        return {
+          version: 2,
+          recommendedYn: 'Y',
+          activeYn: 'Y',
+          countryCd: countryCodes[0] ?? '',
+          payYnValue: 'Y',
+        };
+      })();
 
   const bookmarkListResponse =
     await apiInstance.get<PicknowBookmarkListResponse>('/admin/v2/bookmark', {
-      params: {
-        version: 2,
-        oemDeviceSeqs: matchedSeqs.join(','),
-      },
+      params: bookmarkParams,
     });
 
   const bookmarkList = bookmarkListResponse.data.data ?? [];
@@ -618,9 +653,17 @@ export async function syncPicknowConfigurationSheet(
         ? detail.oemDeviceMappings
         : listBookmark.oemDevices) ?? [];
 
-    const selectedMappings = sourceMappings.filter((mapping) =>
-      matchedSeqs.includes(mapping.oemDeviceSeq)
-    );
+    const selectedMappings: PicknowOemDevice[] = supportsOemDevice
+      ? sourceMappings.filter((mapping) =>
+          matchedSeqs.includes(mapping.oemDeviceSeq)
+        )
+      : sourceMappings.length > 0
+        ? sourceMappings
+        : selections.map((sel) => ({
+            oemDeviceSeq: 0,
+            oem: sel.oem,
+            device: sel.device,
+          }));
 
     if (selectedMappings.length === 0) {
       return;

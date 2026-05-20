@@ -42,7 +42,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     label: 'STG',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_STG as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_STG as string,
-    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY_STG as string}\n-----END PUBLIC KEY-----`,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
     id: 'kr-demo',
@@ -50,6 +50,29 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_DEMO as string,
     spreadsheetId: import.meta.env
       .VITE_PICKNOW_SPREADSHEET_ID_KR_DEMO as string,
-    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY_KR_DEMO as string}\n-----END PUBLIC KEY-----`,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  {
+    id: 'kr-prod-kia',
+    label: '상용 한국 - KIA',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD_KIA as string,
+    spreadsheetId: import.meta.env
+      .VITE_PICKNOW_SPREADSHEET_ID_KR_PROD_KIA as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  {
+    id: 'kr-prod',
+    label: '상용 한국 - MOTREX, KGM',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD as string,
+    spreadsheetId: import.meta.env
+      .VITE_PICKNOW_SPREADSHEET_ID_KR_PROD as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  {
+    id: 'us-prod',
+    label: '상용 북미 - MOTREX',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_US as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_US_PROD as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
 ];

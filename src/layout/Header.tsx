@@ -315,7 +315,7 @@ const Header = () => {
         )}
 
         {googleInitialized && !loginToken && (
-          <Button onClick={handleGoogleLogin}>Google Sheets 로그인</Button>
+          <Button onClick={handleGoogleLogin}>Google 로그인</Button>
         )}
         <Button onClick={handleLogout}>로그아웃</Button>
       </div>
