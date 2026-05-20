@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { usePicknowServerStore } from '@/store/usePicknowServerStore';
@@ -24,6 +24,21 @@ export default function Configuration() {
   );
   const [loginModalServer, setLoginModalServer] =
     useState<PicknowServer | null>(null);
+  const [sheetDropdownOpen, setSheetDropdownOpen] = useState(false);
+  const sheetDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        sheetDropdownRef.current &&
+        !sheetDropdownRef.current.contains(e.target as Node)
+      ) {
+        setSheetDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [rows, setRows] = useState<SettingRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -197,6 +212,12 @@ export default function Configuration() {
     return keys;
   }, [grouped]);
 
+  const allDevicesSelected = useMemo(() => {
+    if (allDeviceKeys.length === 0) return false;
+    if (selectedDevices.size !== allDeviceKeys.length) return false;
+    return allDeviceKeys.every((k) => selectedDevices.has(k));
+  }, [selectedDevices, allDeviceKeys]);
+
   const getOemState = (
     client: string,
     oem: string
@@ -316,12 +337,15 @@ export default function Configuration() {
             OEM과 디바이스를 선택해 데이터를 추출하세요
           </span>
         </div>
-        <div className='flex gap-2'>
-          {selectedServers
-            .filter((s) => isServerLoggedIn(s.id))
-            .map((s) => (
+        {(() => {
+          const loggedInServers = selectedServers.filter((s) =>
+            isServerLoggedIn(s.id)
+          );
+          if (loggedInServers.length === 0) return null;
+          if (loggedInServers.length === 1) {
+            const s = loggedInServers[0];
+            return (
               <Button
-                key={s.id}
                 onClick={() =>
                   window.open(
                     `https://docs.google.com/spreadsheets/d/${s.spreadsheetId}/edit`,
@@ -329,10 +353,52 @@ export default function Configuration() {
                   )
                 }
               >
-                {s.label} 시트
+                스프레드 시트 바로가기
               </Button>
-            ))}
-        </div>
+            );
+          }
+          return (
+            <div className='relative' ref={sheetDropdownRef}>
+              <Button onClick={() => setSheetDropdownOpen((v) => !v)}>
+                <span className='flex items-center gap-1.5'>
+                  스프레드 시트 바로가기
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${sheetDropdownOpen ? 'rotate-180' : ''}`}
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                    strokeWidth={2.5}
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      d='M19 9l-7 7-7-7'
+                    />
+                  </svg>
+                </span>
+              </Button>
+              {sheetDropdownOpen && (
+                <div className='absolute right-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden'>
+                  {loggedInServers.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => {
+                        window.open(
+                          `https://docs.google.com/spreadsheets/d/${s.spreadsheetId}/edit`,
+                          '_blank'
+                        );
+                        setSheetDropdownOpen(false);
+                      }}
+                      className='w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer'
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* 서버 선택 */}
@@ -421,8 +487,19 @@ export default function Configuration() {
             <div className='w-px self-stretch bg-gray-200' />
 
             <button
-              onClick={() => setSelectedDevices(new Set(allDeviceKeys))}
-              className='flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-700 border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer'
+              onClick={() =>
+                setSelectedDevices((prev) => {
+                  const allSelected =
+                    prev.size === allDeviceKeys.length &&
+                    allDeviceKeys.every((k) => prev.has(k));
+                  return allSelected ? new Set() : new Set(allDeviceKeys);
+                })
+              }
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border transition-colors cursor-pointer ${
+                allDevicesSelected
+                  ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700'
+                  : 'text-slate-700 border-gray-200 bg-white hover:bg-gray-50'
+              }`}
             >
               <svg
                 className='w-4 h-4'
@@ -438,7 +515,7 @@ export default function Configuration() {
                   d='M7 12l3 3 7-7'
                 />
               </svg>
-              모두 선택
+              {allDevicesSelected ? '전체 해제' : '전체 선택'}
             </button>
 
             <button
@@ -460,13 +537,6 @@ export default function Configuration() {
               </svg>
               초기화
             </button>
-
-            {selectedDevices.size > 0 && (
-              <div className='flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full font-bold text-sm'>
-                <div className='w-1.5 h-1.5 rounded-full bg-indigo-600' />
-                {selectedOEMCount} OEM · {selectedDevices.size} Device
-              </div>
-            )}
           </div>
 
           {/* 고객사 섹션 */}
