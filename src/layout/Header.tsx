@@ -27,7 +27,7 @@ const SERVICE_LABELS: Record<string, string> = {
 
 const Header = () => {
   const navigate = useNavigate();
-  const { loginToken, setLoginToken } = useLoginTokenStore();
+  const { loginToken, setLoginToken, clearLoginToken } = useLoginTokenStore();
   const { clearAccessToken } = useAccessTokenStore();
   const { selectedService, clearSelectedService } = useServiceStore();
   const {
@@ -110,20 +110,25 @@ const Header = () => {
     }
   };
 
-  const handleGoogleLogout = () => {
-    setLoginToken('');
-    toast.success('Google Sheets 로그아웃되었습니다.');
-  };
-
   const handleChangeService = () => {
     clearSelectedService();
     navigate('/');
   };
 
+  const handleGoogleLogout = () => {
+    clearLoginToken();
+    toast.success('Google 로그아웃에 성공하였습니다.');
+  };
+
   const handleLogout = () => {
     setTestMode(false);
+    clearLoginToken();
     if (selectedService === 'picknow') {
       PICKNOW_SERVERS.forEach((server) => clearPicknowToken(server.id));
+      clearServiceToken('picknow');
+      clearAccessToken();
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('accessToken');
     } else if (selectedService === 'pickle') {
       PICKLE_SERVERS.forEach((server) => clearPickleToken(server.id));
       clearAccessToken();
@@ -148,11 +153,6 @@ const Header = () => {
   const pickleConnectedCount = PICKLE_SERVERS.filter((s) =>
     isPickleLoggedIn(s.id)
   ).length;
-
-  const isAnyServiceLoggedIn =
-    (selectedService === 'picknow' && picknowConnectedCount > 0) ||
-    (selectedService === 'pickle' && pickleConnectedCount > 0) ||
-    loginToken;
 
   const serviceLabel = selectedService
     ? SERVICE_LABELS[selectedService]
@@ -324,9 +324,14 @@ const Header = () => {
           </div>
         )}
 
-        {googleInitialized && !loginToken && (
-          <Button onClick={handleGoogleLogin}>Google 로그인</Button>
+        {googleInitialized && loginToken ? (
+          <Button onClick={handleGoogleLogout}>Google 로그아웃</Button>
+        ) : (
+          googleInitialized && (
+            <Button onClick={handleGoogleLogin}>Google 로그인</Button>
+          )
         )}
+        <Button onClick={handleLogout}>전체 로그아웃</Button>
       </div>
 
       {loginModalPicknowServer && (

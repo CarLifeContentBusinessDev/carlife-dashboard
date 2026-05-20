@@ -38,7 +38,7 @@ type ChannelSortKey =
 const CHANNEL_SORT_OPTIONS: Array<{ value: ChannelSortKey; label: string }> = [
   { value: 'createdAt', label: '등록일' },
   { value: 'channelName', label: '채널명' },
-  { value: 'dispDtime', label: '최근 에피소드 업로드일' },
+  { value: 'dispDtime', label: '최근 업로드일' },
   { value: 'likeCnt', label: '좋아요수' },
   { value: 'listenCnt', label: '재생 요청 수' },
 ];
@@ -70,7 +70,9 @@ const ChannelLayout = () => {
   const [dataLoading, setDataLoading] = useState(false);
   const [dataProgress, setDataProgress] = useState('');
   const [dataKeyword, setDataKeyword] = useState('');
-  const [dataUsageFilter, setDataUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
+  const [dataUsageFilter, setDataUsageFilter] = useState<'All' | 'Y' | 'N'>(
+    'All'
+  );
   const [dataPage, setDataPage] = useState(1);
   const dataAbortRef = useRef<AbortController | null>(null);
 
@@ -330,26 +332,44 @@ const ChannelLayout = () => {
                   </span>
                   개
                 </h3>
-                <div className='flex items-center gap-6'>
-                  <SortControls
-                    sortKey={dataSortKey}
-                    sortOptions={CHANNEL_SORT_OPTIONS}
-                    onSortKeyChange={setDataSortKey}
-                    sortDirection={dataSortDir}
-                    onSortDirectionChange={setDataSortDir}
-                  />
+                <SortControls
+                  sortKey={dataSortKey}
+                  sortOptions={CHANNEL_SORT_OPTIONS}
+                  onSortKeyChange={setDataSortKey}
+                  sortDirection={dataSortDir}
+                  onSortDirectionChange={setDataSortDir}
+                />
+              </div>
+              <div className='flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-xl gap-4'>
+                <div className='flex items-center gap-6 flex-wrap'>
                   <UsageFilterRadio
                     name='channelUsageFilter'
                     value={dataUsageFilter}
                     onChange={(v) => setDataUsageFilter(v)}
                   />
+                </div>
+                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-[220px]'>
                   <input
                     type='text'
                     value={dataKeyword}
                     onChange={(e) => setDataKeyword(e.target.value)}
                     placeholder='채널명 검색'
-                    className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
+                    className='outline-none text-sm flex-1 text-gray-700 placeholder-gray-400'
                   />
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='w-4 h-4 text-gray-400 shrink-0'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      d='M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z'
+                    />
+                  </svg>
                 </div>
               </div>
               <LoadingOverlay loading={dataLoading} progress={dataProgress}>

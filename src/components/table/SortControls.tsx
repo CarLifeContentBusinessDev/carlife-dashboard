@@ -22,7 +22,7 @@ function SortControls<K extends string>({
   onSortDirectionChange,
 }: SortControlsProps<K>) {
   return (
-    <>
+    <div className='flex items-center gap-2'>
       {sortOptions.length > 1 && (
         <Dropdown
           value={sortKey}
@@ -36,7 +36,7 @@ function SortControls<K extends string>({
         options={SORT_DIRECTION_OPTIONS}
         onChange={(v) => onSortDirectionChange(v as SortDirection)}
       />
-    </>
+    </div>
   );
 }
 
