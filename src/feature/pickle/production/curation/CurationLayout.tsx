@@ -1,5 +1,5 @@
 import type { AxiosInstance } from 'axios';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
 import Pagination from '@/components/common/Pagination';
@@ -31,7 +31,6 @@ import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime';
 import { mapCurationStatus } from '@/utils/format/statusMapper';
 import ProdCurationList from './ProdCurationList';
 
-const DATA_PAGE_SIZE = 10;
 
 type ExhibitionFilter =
   | 'All'
@@ -140,7 +139,11 @@ const CurationLayout = () => {
   const [dataExhibitionFilter, setDataExhibitionFilter] =
     useState<ExhibitionFilter>('All');
   const [dataPage, setDataPage] = useState(1);
+  const [dataPageSize, setDataPageSize] = useState(10);
+  const [isPageSizeChanging, startPageSizeTransition] = useTransition();
   const dataAbortRef = useRef<AbortController | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const syncScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isPickleLoggedIn) {
@@ -211,13 +214,20 @@ const CurationLayout = () => {
     dataKeyword,
     dataSortKey,
     dataSortDir,
+    dataPageSize,
   ]);
 
-  const dataTotalPages = Math.ceil(sortedCurationData.length / DATA_PAGE_SIZE);
-  const displayCurationData = sortedCurationData.slice(
-    (dataPage - 1) * DATA_PAGE_SIZE,
-    dataPage * DATA_PAGE_SIZE
-  );
+  const dataTotalPages =
+    dataPageSize === 0
+      ? 1
+      : Math.ceil(sortedCurationData.length / dataPageSize);
+  const displayCurationData =
+    dataPageSize === 0
+      ? sortedCurationData
+      : sortedCurationData.slice(
+          (dataPage - 1) * dataPageSize,
+          dataPage * dataPageSize
+        );
 
   // ── 동기화 탭 ─────────────────────────────────────────────────────────────
   const [newCurations, setNewCurations] = useState<ProdCurationRow[]>([]);
@@ -383,7 +393,7 @@ const CurationLayout = () => {
           <TabHeader activeTab={activeTab} onChange={setActiveTab} />
 
           {activeTab === 'data' && (
-            <div className='flex-1 p-8 flex flex-col'>
+            <div className='flex-1 p-8 flex flex-col min-h-0'>
               <div className='flex justify-between items-center flex-shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   큐레이션 총{' '}
@@ -447,17 +457,35 @@ const CurationLayout = () => {
                 잠시만 기다려주세요!
               </LoadingOverlay>
               {!dataLoading && (
-                <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                  <ProdCurationList
-                    data={displayCurationData}
-                    isStaging={isStaging}
-                  />
+                <div className='relative flex-1 min-h-0'>
+                  {isPageSizeChanging && (
+                    <div className='absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70'>
+                      <div className='flex items-center gap-2 text-sm text-gray-500'>
+                        <div className='h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent' />
+                        렌더링 중...
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    ref={tableScrollRef}
+                    className='overflow-auto episode-table-scroll h-full pb-1'
+                  >
+                    <ProdCurationList
+                      data={displayCurationData}
+                      scrollRef={tableScrollRef}
+                      isStaging={isStaging}
+                    />
+                  </div>
                 </div>
               )}
               <Pagination
                 page={dataPage}
                 totalPages={dataTotalPages}
                 onChange={setDataPage}
+                pageSize={dataPageSize}
+                onPageSizeChange={(size) =>
+                  startPageSizeTransition(() => setDataPageSize(size))
+                }
               />
             </div>
           )}
@@ -497,12 +525,13 @@ const CurationLayout = () => {
                 </LoadingOverlay>
                 {!loading && syncPreviewMode && (
                   <>
-                    <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    <div ref={syncScrollRef} className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
                       <ProdCurationList
                         data={syncDisplayData.slice(
                           (syncPage - 1) * SYNC_PAGE_SIZE,
                           syncPage * SYNC_PAGE_SIZE
                         )}
+                        scrollRef={syncScrollRef}
                         isStaging={isStaging}
                       />
                     </div>

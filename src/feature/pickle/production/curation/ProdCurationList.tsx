@@ -1,6 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { usingCurationExcelProps } from '@/types/pickleProdContents';
+import type {
+  ProdCurationRow,
+  usingCurationExcelProps,
+} from '@/types/pickleProdContents';
 import formatDateString from '@/utils/format/formatDateString';
 import { normalizeUsageYn } from '@/utils/format/normalizeUsageYn';
 import {
@@ -12,10 +15,6 @@ import {
   YELLOW_BADGE_STYLE,
   GRAY_BADGE_STYLE,
 } from '@/constants/badgeStyles';
-
-type ProdCurationRow = usingCurationExcelProps & {
-  curationId: number;
-};
 
 const getExhibitionBadgeClass = (value: string): string => {
   switch (value) {
@@ -126,6 +125,7 @@ const getCellContent = (
 
 interface ProdCurationListProps {
   data: ProdCurationRow[];
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
   isStaging?: boolean;
 }
 

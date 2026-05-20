@@ -56,6 +56,7 @@ const getCellContent = (ep: usingDataProps, key: string): React.ReactNode => {
 
 interface ProdEpisodeListProps {
   data: usingDataProps[];
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
   isStaging?: boolean;
 }
 

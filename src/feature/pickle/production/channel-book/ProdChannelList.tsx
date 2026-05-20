@@ -75,6 +75,7 @@ const getCellContent = (
 
 interface ProdChannelListProps {
   data: usingChannelProps[];
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
   episodeCountByChannelId?: Record<number, number>;
   latestEpisodeUploadByChannelId?: Record<number, string>;
   isStaging?: boolean;

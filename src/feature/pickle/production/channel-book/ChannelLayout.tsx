@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/common/LoadingOverlay.tsx';
 import Pagination from '@/components/common/Pagination.tsx';
@@ -26,7 +26,6 @@ import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime.ts';
 import ProdChannelList from './ProdChannelList.tsx';
 
 const CATEGORY = 'channel';
-const DATA_PAGE_SIZE = 10;
 
 type ChannelSortKey =
   | 'createdAt'
@@ -74,7 +73,11 @@ const ChannelLayout = () => {
     'All'
   );
   const [dataPage, setDataPage] = useState(1);
+  const [dataPageSize, setDataPageSize] = useState(10);
+  const [isPageSizeChanging, startPageSizeTransition] = useTransition();
   const dataAbortRef = useRef<AbortController | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const syncScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isPickleLoggedIn) {
@@ -137,13 +140,17 @@ const ChannelLayout = () => {
 
   useEffect(() => {
     setDataPage(1);
-  }, [dataUsageFilter, dataKeyword, dataSortKey, dataSortDir]);
+  }, [dataUsageFilter, dataKeyword, dataSortKey, dataSortDir, dataPageSize]);
 
-  const dataTotalPages = Math.ceil(sortedChannelData.length / DATA_PAGE_SIZE);
-  const displayChannelData = sortedChannelData.slice(
-    (dataPage - 1) * DATA_PAGE_SIZE,
-    dataPage * DATA_PAGE_SIZE
-  );
+  const dataTotalPages =
+    dataPageSize === 0 ? 1 : Math.ceil(sortedChannelData.length / dataPageSize);
+  const displayChannelData =
+    dataPageSize === 0
+      ? sortedChannelData
+      : sortedChannelData.slice(
+          (dataPage - 1) * dataPageSize,
+          dataPage * dataPageSize
+        );
 
   // ── 동기화 탭 ─────────────────────────────────────────────────────────────
   const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
@@ -323,7 +330,7 @@ const ChannelLayout = () => {
           <TabHeader activeTab={activeTab} onChange={setActiveTab} />
 
           {activeTab === 'data' && (
-            <div className='flex-1 p-8 flex flex-col'>
+            <div className='flex-1 p-8 flex flex-col min-h-0'>
               <div className='flex justify-between items-center flex-shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   채널·도서 총{' '}
@@ -378,17 +385,35 @@ const ChannelLayout = () => {
                 잠시만 기다려주세요!
               </LoadingOverlay>
               {!dataLoading && (
-                <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                  <ProdChannelList
-                    data={displayChannelData}
-                    isStaging={isStaging}
-                  />
+                <div className='relative flex-1 min-h-0'>
+                  {isPageSizeChanging && (
+                    <div className='absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70'>
+                      <div className='flex items-center gap-2 text-sm text-gray-500'>
+                        <div className='h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent' />
+                        렌더링 중...
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    ref={tableScrollRef}
+                    className='overflow-auto episode-table-scroll h-full pb-1'
+                  >
+                    <ProdChannelList
+                      data={displayChannelData}
+                      scrollRef={tableScrollRef}
+                      isStaging={isStaging}
+                    />
+                  </div>
                 </div>
               )}
               <Pagination
                 page={dataPage}
                 totalPages={dataTotalPages}
                 onChange={setDataPage}
+                pageSize={dataPageSize}
+                onPageSizeChange={(size) =>
+                  startPageSizeTransition(() => setDataPageSize(size))
+                }
               />
             </div>
           )}
@@ -428,12 +453,13 @@ const ChannelLayout = () => {
                 </LoadingOverlay>
                 {!loading && syncPreviewMode && (
                   <>
-                    <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    <div ref={syncScrollRef} className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
                       <ProdChannelList
                         data={syncDisplayData.slice(
                           (syncPage - 1) * SYNC_PAGE_SIZE,
                           syncPage * SYNC_PAGE_SIZE
                         )}
+                        scrollRef={syncScrollRef}
                         episodeCountByChannelId={{}}
                         latestEpisodeUploadByChannelId={{}}
                         isStaging={isStaging}
