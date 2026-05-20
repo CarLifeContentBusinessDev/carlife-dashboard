@@ -112,13 +112,16 @@ export default function Configuration() {
             data: await fetchSettingData(s.spreadsheetId),
           }))
         );
-        setRowsByServer((prev) => {
-          const next = { ...prev };
-          results.forEach(({ id, data }) => {
-            next[id] = data;
-          });
-          return next;
-        });
+        setRowsByServer((prev) => ({
+          ...prev,
+          ...results.reduce(
+            (acc, { id, data }) => {
+              acc[id] = data;
+              return acc;
+            },
+            {} as Record<string, SettingRow[]>
+          ),
+        }));
         setSelectedDevicesByServer((prev) => {
           const next: Record<string, Set<string>> = {};
           loggedIn.forEach((s) => {
@@ -379,6 +382,28 @@ export default function Configuration() {
     [selectedDevicesByServer]
   );
 
+  const allKeysByServer = useMemo(() => {
+    return Object.entries(rowsByServer).reduce(
+      (acc, [serverId, rows]) => {
+        const allKeysByClient = rows.reduce(
+          (clientAcc, row) => {
+            const client = row.고객사;
+            if (!clientAcc[client]) clientAcc[client] = [];
+            const key = `${client}::${row.OEM}::${row.DEVICE}`;
+            if (!clientAcc[client].includes(key)) {
+              clientAcc[client].push(key);
+            }
+            return clientAcc;
+          },
+          {} as Record<string, string[]>
+        );
+        acc[serverId] = allKeysByClient;
+        return acc;
+      },
+      {} as Record<string, Record<string, string[]>>
+    );
+  }, [rowsByServer]);
+
   const serverSummaryItems = useMemo(() => {
     const loggedIn = PICKNOW_SERVERS.filter(
       (s) => selectedServerIds.includes(s.id) && isServerLoggedIn(s.id)
@@ -387,15 +412,7 @@ export default function Configuration() {
       .map((server) => {
         const set = selectedDevicesByServer[server.id] ?? new Set<string>();
 
-        const rows = rowsByServer[server.id] ?? [];
-        const allKeysByClient: Record<string, string[]> = {};
-        rows.forEach((row) => {
-          if (!allKeysByClient[row.고객사]) allKeysByClient[row.고객사] = [];
-          const key = `${row.고객사}::${row.OEM}::${row.DEVICE}`;
-          if (!allKeysByClient[row.고객사].includes(key)) {
-            allKeysByClient[row.고객사].push(key);
-          }
-        });
+        const allKeysByClient = allKeysByServer[server.id] ?? {};
 
         const selectedByClient: Record<string, string[]> = {};
         [...set].forEach((key) => {
