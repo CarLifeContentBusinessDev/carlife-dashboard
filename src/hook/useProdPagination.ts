@@ -4,6 +4,8 @@ export interface ProdPaginationFetcherArgs {
   page: number;
   filter: 'All' | 'Y' | 'N';
   keyword: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
   signal: AbortSignal;
 }
 
@@ -14,6 +16,9 @@ interface UseProdPaginationOptions<T> {
   deps: React.DependencyList;
   pageSize?: number;
   enabled?: boolean;
+  autoFetch?: boolean;
+  initialSortBy?: string;
+  initialSortOrder?: 'asc' | 'desc';
 }
 
 export function useProdPagination<T>({
@@ -21,6 +26,9 @@ export function useProdPagination<T>({
   deps,
   pageSize = 10,
   enabled = true,
+  autoFetch = true,
+  initialSortBy = 'createdAt',
+  initialSortOrder = 'desc',
 }: UseProdPaginationOptions<T>) {
   const [prodData, setProdData] = useState<T[]>([]);
   const [prodLoading, setProdLoading] = useState(false);
@@ -29,6 +37,8 @@ export function useProdPagination<T>({
   const [prodTotalCount, setProdTotalCount] = useState(0);
   const [prodSearchQuery, setProdSearchQuery] = useState('');
   const [usageFilter, setUsageFilter] = useState<'All' | 'Y' | 'N'>('All');
+  const [sortBy, setSortBy] = useState(initialSortBy);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(initialSortOrder);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const fetcherRef = useRef(fetcher);
@@ -37,6 +47,10 @@ export function useProdPagination<T>({
   usageFilterRef.current = usageFilter;
   const prodSearchQueryRef = useRef(prodSearchQuery);
   prodSearchQueryRef.current = prodSearchQuery;
+  const sortByRef = useRef(sortBy);
+  sortByRef.current = sortBy;
+  const sortOrderRef = useRef(sortOrder);
+  sortOrderRef.current = sortOrder;
 
   const cancelOngoingWork = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -45,7 +59,13 @@ export function useProdPagination<T>({
   useEffect(() => () => cancelOngoingWork(), [cancelOngoingWork]);
 
   const fetchPage = useCallback(
-    async (page: number, filter: 'All' | 'Y' | 'N', keyword: string) => {
+    async (
+      page: number,
+      filter: 'All' | 'Y' | 'N',
+      keyword: string,
+      sortBy: string,
+      sortOrder: 'asc' | 'desc'
+    ) => {
       cancelOngoingWork();
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -55,6 +75,8 @@ export function useProdPagination<T>({
           page,
           filter,
           keyword,
+          sortBy,
+          sortOrder,
           signal: controller.signal,
         });
         if (!controller.signal.aborted) {
@@ -65,6 +87,7 @@ export function useProdPagination<T>({
       } catch (e) {
         if (!controller.signal.aborted) {
           console.error(e);
+          setProdData([]);
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -78,10 +101,19 @@ export function useProdPagination<T>({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!enabled) return;
+    if (!autoFetch) return;
     setProdPage(1);
-    fetchPage(1, usageFilterRef.current, prodSearchQueryRef.current);
+    setProdData([]);
+    fetchPage(
+      1,
+      usageFilterRef.current,
+      prodSearchQueryRef.current,
+      sortByRef.current,
+      sortOrderRef.current
+    );
     return cancelOngoingWork;
-  }, deps);
+    // deps + enabled + autoFetch
+  }, [...deps, enabled, autoFetch]);
 
   const isSearchFirstRender = useRef(true);
   useEffect(() => {
@@ -93,7 +125,13 @@ export function useProdPagination<T>({
     }
     const timer = setTimeout(() => {
       setProdPage(1);
-      fetchPage(1, usageFilterRef.current, prodSearchQuery);
+      fetchPage(
+        1,
+        usageFilterRef.current,
+        prodSearchQuery,
+        sortByRef.current,
+        sortOrderRef.current
+      );
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,21 +140,69 @@ export function useProdPagination<T>({
   const handleProdPageChange = useCallback(
     (page: number) => {
       setProdPage(page);
-      fetchPage(page, usageFilterRef.current, prodSearchQueryRef.current);
+      fetchPage(
+        page,
+        usageFilterRef.current,
+        prodSearchQueryRef.current,
+        sortByRef.current,
+        sortOrderRef.current
+      );
     },
     [fetchPage]
   );
 
   const handleSearch = useCallback(() => {
     setProdPage(1);
-    fetchPage(1, usageFilterRef.current, prodSearchQueryRef.current);
+    fetchPage(
+      1,
+      usageFilterRef.current,
+      prodSearchQueryRef.current,
+      sortByRef.current,
+      sortOrderRef.current
+    );
   }, [fetchPage]);
 
   const handleUsageFilterChange = useCallback(
     (value: 'All' | 'Y' | 'N') => {
       setUsageFilter(value);
       setProdPage(1);
-      fetchPage(1, value, prodSearchQueryRef.current);
+      fetchPage(
+        1,
+        value,
+        prodSearchQueryRef.current,
+        sortByRef.current,
+        sortOrderRef.current
+      );
+    },
+    [fetchPage]
+  );
+
+  const handleSortKeyChange = useCallback(
+    (newSortBy: string) => {
+      setSortBy(newSortBy);
+      setProdPage(1);
+      fetchPage(
+        1,
+        usageFilterRef.current,
+        prodSearchQueryRef.current,
+        newSortBy,
+        sortOrderRef.current
+      );
+    },
+    [fetchPage]
+  );
+
+  const handleSortOrderChange = useCallback(
+    (newSortOrder: 'asc' | 'desc') => {
+      setSortOrder(newSortOrder);
+      setProdPage(1);
+      fetchPage(
+        1,
+        usageFilterRef.current,
+        prodSearchQueryRef.current,
+        sortByRef.current,
+        newSortOrder
+      );
     },
     [fetchPage]
   );
@@ -130,10 +216,14 @@ export function useProdPagination<T>({
     prodSearchQuery,
     setProdSearchQuery,
     usageFilter,
+    sortBy,
+    sortOrder,
     fetchPage,
     handleProdPageChange,
     handleSearch,
     handleUsageFilterChange,
+    handleSortKeyChange,
+    handleSortOrderChange,
     cancelOngoingWork,
   };
 }

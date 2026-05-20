@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'react-toastify';
+import { useEpisodeStore } from '@/store/useEpisodeStore';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
 import Pagination from '@/components/common/Pagination';
 import PickleLoginBanner from '@/components/common/PickleLoginBanner';
@@ -9,11 +10,13 @@ import UsageFilterRadio from '@/components/filter/UsageFilterRadio';
 import SyncCountHeader from '@/components/sync/SyncCountHeader';
 import { SyncEmptyState } from '@/components/sync/SyncEmptyState';
 import SyncToolbar from '@/components/sync/SyncToolbar';
-import { useProdPagination } from '@/hook/useProdPagination';
+import SortControls from '@/components/table/SortControls';
+import useListSort from '@/hook/useListSort';
 import { useSheetSelection } from '@/hook/useSheetSelection';
 import { useStagingEnv } from '@/hook/useStagingEnv';
 import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import { fetchAllData } from '@/utils/api/fetchAllData';
 import { appendNewDataToTop } from '@/utils/excel/appendNewDataToExcel';
@@ -25,14 +28,119 @@ import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
 
 const CATEGORY = 'episode';
-const PROD_PAGE_SIZE = 10;
+
+type EpisodeSortKey =
+  | 'createdAt'
+  | 'channelName'
+  | 'episodeName'
+  | 'dispDtime'
+  | 'likeCnt'
+  | 'listenCnt';
+
+const EPISODE_SORT_OPTIONS: Array<{ value: EpisodeSortKey; label: string }> = [
+  { value: 'createdAt', label: '등록일' },
+  { value: 'channelName', label: '채널명' },
+  { value: 'episodeName', label: '에피소드명' },
+  { value: 'dispDtime', label: '게시일자' },
+  { value: 'likeCnt', label: '좋아요수' },
+  { value: 'listenCnt', label: '청취수' },
+];
 
 const EpisodeLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
+  const { isServerLoggedIn } = usePickleServerStore();
+  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
-  // 동기화 탭
+  // ── 데이터 탭 ──────────────────────────────────────────────────────────────
+  const [allEpiData, setAllEpiData] = useState<usingDataProps[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataProgress, setDataProgress] = useState('');
+  const [dataKeyword, setDataKeyword] = useState('');
+  const [dataUsageFilter, setDataUsageFilter] = useState<'All' | 'Y' | 'N'>(
+    'All'
+  );
+  const [dataPage, setDataPage] = useState(1);
+  const [dataPageSize, setDataPageSize] = useState(10);
+  const [isPageSizeChanging, startPageSizeTransition] = useTransition();
+  const dataAbortRef = useRef<AbortController | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isPickleLoggedIn) {
+      setAllEpiData([]);
+      return;
+    }
+    const env = isStaging ? 'stg' : 'prod';
+    const { cache, isStale, setCache } = useEpisodeStore.getState();
+    if (!isStale(env)) {
+      setAllEpiData(cache[env]!.data);
+      return;
+    }
+    dataAbortRef.current?.abort();
+    const controller = new AbortController();
+    dataAbortRef.current = controller;
+    setDataLoading(true);
+    setAllEpiData([]);
+    setDataPage(1);
+    fetchAllData('episode', setDataProgress, controller.signal, apiInstance)
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setAllEpiData(data);
+          if (data.length > 0) setCache(env, data);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setDataProgress('');
+          setDataLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, [isStaging, isPickleLoggedIn]);
+
+  const filteredEpiData = useMemo(() => {
+    return allEpiData.filter((item) => {
+      if (dataUsageFilter !== 'All' && item.usageYn !== dataUsageFilter)
+        return false;
+      if (
+        dataKeyword.trim() &&
+        !item.episodeName.toLowerCase().includes(dataKeyword.toLowerCase())
+      )
+        return false;
+      return true;
+    });
+  }, [allEpiData, dataUsageFilter, dataKeyword]);
+
+  const {
+    sortKey: dataSortKey,
+    setSortKey: setDataSortKey,
+    sortDirection: dataSortDir,
+    setSortDirection: setDataSortDir,
+    sortedData: sortedEpiData,
+  } = useListSort<usingDataProps, EpisodeSortKey>({
+    data: filteredEpiData,
+    sortOptions: EPISODE_SORT_OPTIONS,
+    initialSortKey: 'createdAt',
+    initialSortDirection: 'desc',
+  });
+
+  useEffect(() => {
+    setDataPage(1);
+  }, [dataUsageFilter, dataKeyword, dataSortKey, dataSortDir, dataPageSize]);
+
+  const dataTotalPages =
+    dataPageSize === 0 ? 1 : Math.ceil(sortedEpiData.length / dataPageSize);
+  const displayEpiData =
+    dataPageSize === 0
+      ? sortedEpiData
+      : sortedEpiData.slice(
+          (dataPage - 1) * dataPageSize,
+          dataPage * dataPageSize
+        );
+
+  // ── 동기화 탭 ─────────────────────────────────────────────────────────────
   const [newEpi, setNewEpi] = useState<usingDataProps[]>([]);
   const [duplicateNewEpi, setDuplicateNewEpi] = useState<usingDataProps[]>([]);
   const [allEpisodes, setAllEpisodes] = useState<usingDataProps[]>([]);
@@ -65,37 +173,6 @@ const EpisodeLayout = () => {
   });
 
   const getSheetName = (name: string) => (isStaging ? `stg_${name}` : name);
-
-  const {
-    prodData,
-    prodLoading,
-    prodPage,
-    prodTotalPages,
-    prodTotalCount,
-    prodSearchQuery,
-    setProdSearchQuery,
-    usageFilter,
-    handleProdPageChange,
-    handleSearch,
-    handleUsageFilterChange,
-  } = useProdPagination<usingDataProps>({
-    fetcher: async ({ page, filter, keyword, signal }) => {
-      const params = new URLSearchParams({
-        page: String(page),
-        size: String(PROD_PAGE_SIZE),
-      });
-      if (filter !== 'All') params.set('usageYn', filter);
-      if (keyword.trim()) params.set('keyword', keyword.trim());
-      const res = await apiInstance.get(`/admin/episode?${params.toString()}`, {
-        signal,
-      });
-      const { dataList, pageInfo } = res.data.data;
-      return { dataList, totalCount: pageInfo.totalCount };
-    },
-    deps: [isStaging, loginToken],
-    pageSize: PROD_PAGE_SIZE,
-    enabled: !!loginToken,
-  });
 
   const handleSearchNew = async () => {
     setLoading(true);
@@ -229,54 +306,88 @@ const EpisodeLayout = () => {
           <TabHeader activeTab={activeTab} onChange={setActiveTab} />
 
           {activeTab === 'data' && (
-            <div className='flex-1 p-8 flex flex-col'>
+            <div className='flex-1 p-8 flex flex-col min-h-0'>
               <div className='flex justify-between items-center flex-shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   에피소드 총{' '}
-                  <span className='font-extrabold'>{prodTotalCount}</span>개
+                  <span className='font-extrabold'>{sortedEpiData.length}</span>
+                  개
                 </h3>
-                <div className='flex gap-6 items-center'>
+                <SortControls
+                  sortKey={dataSortKey}
+                  sortOptions={EPISODE_SORT_OPTIONS}
+                  onSortKeyChange={setDataSortKey}
+                  sortDirection={dataSortDir}
+                  onSortDirectionChange={setDataSortDir}
+                />
+              </div>
+              <div className='flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-xl gap-4'>
+                <div className='flex items-center gap-6 flex-wrap'>
                   <UsageFilterRadio
                     name='usageFilter'
-                    value={usageFilter}
-                    onChange={handleUsageFilterChange}
+                    value={dataUsageFilter}
+                    onChange={(v) => setDataUsageFilter(v)}
                   />
+                </div>
+                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-[220px]'>
                   <input
                     type='text'
-                    value={prodSearchQuery}
-                    onChange={(e) => setProdSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    value={dataKeyword}
+                    onChange={(e) => setDataKeyword(e.target.value)}
                     placeholder='에피소드명 검색'
-                    className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
+                    className='outline-none text-sm flex-1 text-gray-700 placeholder-gray-400'
                   />
-                  <button
-                    onClick={handleSearch}
-                    className='cursor-pointer'
-                    disabled={prodLoading}
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='w-4 h-4 text-gray-400 shrink-0'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                    strokeWidth={2}
                   >
-                    <img
-                      src='/redo.svg'
-                      alt='새로고침'
-                      width={22}
-                      height={22}
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      d='M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z'
                     />
-                  </button>
+                  </svg>
                 </div>
               </div>
-              <LoadingOverlay loading={prodLoading}>
+              <LoadingOverlay loading={dataLoading} progress={dataProgress}>
                 에피소드 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!prodLoading && (
-                <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                  <ProdEpisodeList data={prodData} isStaging={isStaging} />
+              {!dataLoading && (
+                <div className='relative flex-1 min-h-0'>
+                  {isPageSizeChanging && (
+                    <div className='absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70'>
+                      <div className='flex items-center gap-2 text-sm text-gray-500'>
+                        <div className='h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent' />
+                        렌더링 중...
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    ref={tableScrollRef}
+                    className='overflow-auto episode-table-scroll h-full pb-1'
+                  >
+                    <ProdEpisodeList
+                      data={displayEpiData}
+                      scrollRef={tableScrollRef}
+                      isStaging={isStaging}
+                    />
+                  </div>
                 </div>
               )}
               <Pagination
-                page={prodPage}
-                totalPages={prodTotalPages}
-                onChange={handleProdPageChange}
+                page={dataPage}
+                totalPages={dataTotalPages}
+                onChange={setDataPage}
+                pageSize={dataPageSize}
+                onPageSizeChange={(size) =>
+                  startPageSizeTransition(() => setDataPageSize(size))
+                }
               />
             </div>
           )}

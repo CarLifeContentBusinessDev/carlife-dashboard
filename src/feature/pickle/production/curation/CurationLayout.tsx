@@ -1,5 +1,3 @@
-import { useRef, useState } from 'react';
-import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
 import Pagination from '@/components/common/Pagination';
 import PickleLoginBanner from '@/components/common/PickleLoginBanner';
@@ -9,14 +7,17 @@ import UsageFilterRadio from '@/components/filter/UsageFilterRadio';
 import SyncCountHeader from '@/components/sync/SyncCountHeader';
 import { SyncEmptyState } from '@/components/sync/SyncEmptyState';
 import SyncToolbar from '@/components/sync/SyncToolbar';
-import { useProdPagination } from '@/hook/useProdPagination';
+import SortControls from '@/components/table/SortControls';
+import useListSort from '@/hook/useListSort';
 import { useSheetSelection } from '@/hook/useSheetSelection';
 import { useStagingEnv } from '@/hook/useStagingEnv';
 import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState';
+import { useCurationStore } from '@/store/useCurationStore';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
+import { usePickleServerStore } from '@/store/usePickleServerStore';
 import type {
   curationListItemProps,
-  usingCurationExcelProps,
+  ProdCurationRow,
 } from '@/types/pickleProdContents';
 import { fetchAllCurationData } from '@/utils/api/fetchAllData';
 import { appendNewCurationToExcel } from '@/utils/excel/appendNewCurationToExcel';
@@ -24,11 +25,10 @@ import { getNewCurationData } from '@/utils/excel/getNewCuration';
 import { overwriteCurationExcelData } from '@/utils/excel/updateCuration';
 import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime';
 import { mapCurationStatus } from '@/utils/format/statusMapper';
+import type { AxiosInstance } from 'axios';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'react-toastify';
 import ProdCurationList from './ProdCurationList';
-
-const DATA_PAGE_SIZE = 10;
-
-type ProdCurationRow = usingCurationExcelProps & { curationId: number };
 
 type ExhibitionFilter =
   | 'All'
@@ -45,12 +45,19 @@ const EXHIBITION_OPTIONS = [
   '게시 예약',
 ] as const;
 
-const EXHIBITION_STATUS_MAP: Record<string, string> = {
-  '게시 중': 'ACTIVE',
-  '게시 대기': 'ACTIVE_NONE_DISPLAY',
-  '게시 종료': 'INACTIVE',
-  '게시 예약': 'WAITING',
-};
+type CurationSortKey =
+  | 'curationCreatedAt'
+  | 'curationName'
+  | 'dispStartDtime'
+  | 'dispEndDtime';
+
+const CURATION_SORT_OPTIONS: Array<{ value: CurationSortKey; label: string }> =
+  [
+    { value: 'curationCreatedAt', label: '등록일' },
+    { value: 'curationName', label: '큐레이션명' },
+    { value: 'dispStartDtime', label: '게시 시작일' },
+    { value: 'dispEndDtime', label: '게시 종료일' },
+  ];
 
 const mapCurationListToRow = (
   listItem: curationListItemProps
@@ -82,17 +89,148 @@ const mapCurationListToRow = (
   uploader: listItem.creatorName ?? '',
 });
 
+async function loadAllCurationList(
+  apiInstance: AxiosInstance,
+  signal?: AbortSignal
+): Promise<ProdCurationRow[]> {
+  const firstRes = await apiInstance.get(
+    '/admin/curation?page=1&size=100&periodType=ALL',
+    { signal }
+  );
+  const { dataList, pageInfo } = firstRes.data.data as {
+    dataList: curationListItemProps[];
+    pageInfo: { totalCount: number };
+  };
+  const totalPages = Math.ceil(pageInfo.totalCount / 100);
+  let all: curationListItemProps[] = [...dataList];
+  if (totalPages > 1) {
+    const pagePromises = Array.from({ length: totalPages - 1 }, (_, i) =>
+      apiInstance.get(`/admin/curation?page=${i + 2}&size=100&periodType=ALL`, {
+        signal,
+      })
+    );
+    const results = await Promise.all(pagePromises);
+    results.forEach((res) => {
+      all = all.concat(
+        (
+          res.data.data as {
+            dataList: curationListItemProps[];
+          }
+        ).dataList
+      );
+    });
+  }
+  return all.map(mapCurationListToRow);
+}
+
 const CurationLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
+  const { isServerLoggedIn } = usePickleServerStore();
+  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
-  const [exhibitionFilter, setExhibitionFilter] =
+  // ── 데이터 탭 ──────────────────────────────────────────────────────────────
+  const [allCurationData, setAllCurationData] = useState<ProdCurationRow[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataKeyword, setDataKeyword] = useState('');
+  const [dataUsageFilter, setDataUsageFilter] = useState<'All' | 'Y' | 'N'>(
+    'All'
+  );
+  const [dataExhibitionFilter, setDataExhibitionFilter] =
     useState<ExhibitionFilter>('All');
-  const exhibitionFilterRef = useRef<ExhibitionFilter>(exhibitionFilter);
-  exhibitionFilterRef.current = exhibitionFilter;
+  const [dataPage, setDataPage] = useState(1);
+  const [dataPageSize, setDataPageSize] = useState(10);
+  const [isPageSizeChanging, startPageSizeTransition] = useTransition();
+  const dataAbortRef = useRef<AbortController | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const syncScrollRef = useRef<HTMLDivElement>(null);
 
-  // 동기화 탭
+  useEffect(() => {
+    if (!isPickleLoggedIn) {
+      setAllCurationData([]);
+      return;
+    }
+    const env = isStaging ? 'stg' : 'prod';
+    const { cache, isStale, setCache } = useCurationStore.getState();
+    if (!isStale(env)) {
+      setAllCurationData(cache[env]!.data);
+      return;
+    }
+    dataAbortRef.current?.abort();
+    const controller = new AbortController();
+    dataAbortRef.current = controller;
+    setDataLoading(true);
+    setAllCurationData([]);
+    setDataPage(1);
+    loadAllCurationList(apiInstance, controller.signal)
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setAllCurationData(data);
+          if (data.length > 0) setCache(env, data);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDataLoading(false);
+      });
+    return () => controller.abort();
+  }, [isStaging, isPickleLoggedIn]);
+
+  const filteredCurationData = useMemo(() => {
+    return allCurationData.filter((item) => {
+      if (dataUsageFilter !== 'All' && item.activeState !== dataUsageFilter)
+        return false;
+      if (
+        dataExhibitionFilter !== 'All' &&
+        item.exhibitionState !== dataExhibitionFilter
+      )
+        return false;
+      if (
+        dataKeyword.trim() &&
+        !item.curationName.toLowerCase().includes(dataKeyword.toLowerCase())
+      )
+        return false;
+      return true;
+    });
+  }, [allCurationData, dataUsageFilter, dataExhibitionFilter, dataKeyword]);
+
+  const {
+    sortKey: dataSortKey,
+    setSortKey: setDataSortKey,
+    sortDirection: dataSortDir,
+    setSortDirection: setDataSortDir,
+    sortedData: sortedCurationData,
+  } = useListSort<ProdCurationRow, CurationSortKey>({
+    data: filteredCurationData,
+    sortOptions: CURATION_SORT_OPTIONS,
+    initialSortKey: 'curationCreatedAt',
+    initialSortDirection: 'desc',
+  });
+
+  useEffect(() => {
+    setDataPage(1);
+  }, [
+    dataUsageFilter,
+    dataExhibitionFilter,
+    dataKeyword,
+    dataSortKey,
+    dataSortDir,
+    dataPageSize,
+  ]);
+
+  const dataTotalPages =
+    dataPageSize === 0
+      ? 1
+      : Math.ceil(sortedCurationData.length / dataPageSize);
+  const displayCurationData =
+    dataPageSize === 0
+      ? sortedCurationData
+      : sortedCurationData.slice(
+          (dataPage - 1) * dataPageSize,
+          dataPage * dataPageSize
+        );
+
+  // ── 동기화 탭 ─────────────────────────────────────────────────────────────
   const [newCurations, setNewCurations] = useState<ProdCurationRow[]>([]);
   const [allCurations, setAllCurations] = useState<ProdCurationRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -120,58 +258,6 @@ const CurationLayout = () => {
     defaultSheetName,
     storageKey,
   });
-
-  const {
-    prodData,
-    prodLoading,
-    prodPage,
-    prodTotalPages,
-    prodTotalCount,
-    prodSearchQuery,
-    setProdSearchQuery,
-    usageFilter,
-    fetchPage,
-    handleProdPageChange,
-    handleSearch,
-    handleUsageFilterChange,
-    cancelOngoingWork,
-  } = useProdPagination<ProdCurationRow>({
-    fetcher: async ({ page, filter, keyword, signal }) => {
-      const exhibition = exhibitionFilterRef.current;
-      const params = new URLSearchParams({
-        page: String(page),
-        size: String(DATA_PAGE_SIZE),
-        periodType: 'ALL',
-      });
-      if (filter !== 'All') params.set('usageYn', filter);
-      if (exhibition !== 'All')
-        params.set('status', EXHIBITION_STATUS_MAP[exhibition]);
-      if (keyword.trim()) params.set('keyword', keyword.trim());
-
-      const listRes = await apiInstance.get(
-        `/admin/curation?${params.toString()}`,
-        { signal }
-      );
-      const { dataList, pageInfo } = listRes.data.data as {
-        dataList: curationListItemProps[];
-        pageInfo: { totalCount: number };
-      };
-
-      return {
-        dataList: (dataList ?? []).map(mapCurationListToRow),
-        totalCount: pageInfo.totalCount ?? 0,
-      };
-    },
-    deps: [isStaging, loginToken],
-    pageSize: DATA_PAGE_SIZE,
-    enabled: !!loginToken,
-  });
-
-  const handleExhibitionFilterChange = (value: ExhibitionFilter) => {
-    exhibitionFilterRef.current = value;
-    setExhibitionFilter(value);
-    fetchPage(1, usageFilter, prodSearchQuery);
-  };
 
   const handleLoadAllCurations = async () => {
     if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
@@ -211,7 +297,6 @@ const CurationLayout = () => {
       setAllCurations([]);
       setSyncPreviewMode(null);
       setSyncPage(1);
-      cancelOngoingWork();
 
       const newList = await getNewCurationData(
         loginToken,
@@ -309,61 +394,99 @@ const CurationLayout = () => {
           <TabHeader activeTab={activeTab} onChange={setActiveTab} />
 
           {activeTab === 'data' && (
-            <div className='flex-1 p-8 flex flex-col'>
+            <div className='flex-1 p-8 flex flex-col min-h-0'>
               <div className='flex justify-between items-center flex-shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   큐레이션 총{' '}
-                  <span className='font-extrabold'>{prodTotalCount}</span>개
+                  <span className='font-extrabold'>
+                    {sortedCurationData.length}
+                  </span>
+                  개
                 </h3>
-                <div className='flex gap-6 items-center'>
+                <SortControls
+                  sortKey={dataSortKey}
+                  sortOptions={CURATION_SORT_OPTIONS}
+                  onSortKeyChange={setDataSortKey}
+                  sortDirection={dataSortDir}
+                  onSortDirectionChange={setDataSortDir}
+                />
+              </div>
+              <div className='flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-xl gap-4'>
+                <div className='flex items-center gap-6 flex-wrap'>
                   <UsageFilterRadio
                     name='usageFilter'
-                    value={usageFilter}
-                    onChange={handleUsageFilterChange}
+                    value={dataUsageFilter}
+                    onChange={(v) => setDataUsageFilter(v)}
                   />
                   <UsageFilterRadio
                     name='exhibitionFilter'
                     label='전시 상태'
                     options={EXHIBITION_OPTIONS}
-                    value={exhibitionFilter}
-                    onChange={handleExhibitionFilterChange}
+                    value={dataExhibitionFilter}
+                    onChange={(v) =>
+                      setDataExhibitionFilter(v as ExhibitionFilter)
+                    }
                   />
+                </div>
+                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-[220px]'>
                   <input
                     type='text'
-                    value={prodSearchQuery}
-                    onChange={(e) => setProdSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    value={dataKeyword}
+                    onChange={(e) => setDataKeyword(e.target.value)}
                     placeholder='큐레이션명 검색'
-                    className='border border-gray-300 px-4 py-2 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-60'
+                    className='outline-none text-sm flex-1 text-gray-700 placeholder-gray-400'
                   />
-                  <button
-                    onClick={handleSearch}
-                    className='cursor-pointer'
-                    disabled={prodLoading}
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='w-4 h-4 text-gray-400 shrink-0'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                    strokeWidth={2}
                   >
-                    <img
-                      src='/redo.svg'
-                      alt='새로고침'
-                      width={22}
-                      height={22}
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      d='M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z'
                     />
-                  </button>
+                  </svg>
                 </div>
               </div>
-              <LoadingOverlay loading={prodLoading}>
+              <LoadingOverlay loading={dataLoading}>
                 큐레이션 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
-              {!prodLoading && (
-                <div className='overflow-x-scroll episode-table-scroll pb-1'>
-                  <ProdCurationList data={prodData} isStaging={isStaging} />
+              {!dataLoading && (
+                <div className='relative flex-1 min-h-0'>
+                  {isPageSizeChanging && (
+                    <div className='absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70'>
+                      <div className='flex items-center gap-2 text-sm text-gray-500'>
+                        <div className='h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent' />
+                        렌더링 중...
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    ref={tableScrollRef}
+                    className='overflow-auto episode-table-scroll h-full pb-1'
+                  >
+                    <ProdCurationList
+                      data={displayCurationData}
+                      scrollRef={tableScrollRef}
+                      isStaging={isStaging}
+                    />
+                  </div>
                 </div>
               )}
               <Pagination
-                page={prodPage}
-                totalPages={prodTotalPages}
-                onChange={handleProdPageChange}
+                page={dataPage}
+                totalPages={dataTotalPages}
+                onChange={setDataPage}
+                pageSize={dataPageSize}
+                onPageSizeChange={(size) =>
+                  startPageSizeTransition(() => setDataPageSize(size))
+                }
               />
             </div>
           )}
@@ -403,12 +526,16 @@ const CurationLayout = () => {
                 </LoadingOverlay>
                 {!loading && syncPreviewMode && (
                   <>
-                    <div className='overflow-x-scroll episode-table-scroll pb-1 flex-1'>
+                    <div
+                      ref={syncScrollRef}
+                      className='overflow-x-scroll episode-table-scroll pb-1 flex-1'
+                    >
                       <ProdCurationList
                         data={syncDisplayData.slice(
                           (syncPage - 1) * SYNC_PAGE_SIZE,
                           syncPage * SYNC_PAGE_SIZE
                         )}
+                        scrollRef={syncScrollRef}
                         isStaging={isStaging}
                       />
                     </div>

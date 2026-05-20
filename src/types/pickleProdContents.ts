@@ -112,6 +112,8 @@ export interface usingCurationExcelProps {
   uploader?: string;
 }
 
+export type ProdCurationRow = usingCurationExcelProps & { curationId: number };
+
 export interface curationEpisodesProps {
   channelId: number;
   episodeId: number;
