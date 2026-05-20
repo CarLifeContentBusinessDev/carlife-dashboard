@@ -324,14 +324,8 @@ const Header = () => {
           </div>
         )}
 
-        {googleInitialized &&
-          (loginToken ? (
-            <Button onClick={handleGoogleLogout}>Google 로그아웃</Button>
-          ) : (
-            <Button onClick={handleGoogleLogin}>Google 로그인</Button>
-          ))}
-        {isAnyServiceLoggedIn && (
-          <Button onClick={handleLogout}>전체 로그아웃</Button>
+        {googleInitialized && !loginToken && (
+          <Button onClick={handleGoogleLogin}>Google 로그인</Button>
         )}
       </div>
 
