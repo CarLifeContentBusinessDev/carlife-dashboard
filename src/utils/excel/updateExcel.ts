@@ -309,8 +309,9 @@ export async function addMissingRows(
           row.thumbnailUrl,
           row.audioUrl,
           row.channelId,
+          '',
         ]);
-        lastColumn = 'M';
+        lastColumn = 'N';
       } else {
         values = (batch as usingChannelProps[]).map((row, index) => {
           // 첫 번째 행의 dispDtime 확인 (디버깅용)
@@ -436,7 +437,7 @@ export async function overwriteExcelData(
       spreadsheetId: targetSpreadsheetId,
       range: buildSheetRange(
         targetSheet,
-        `B${targetStartRow}:${category === 'episode' ? 'M' : 'N'}`
+        `B${targetStartRow}:${category === 'episode' ? 'N' : 'N'}`
       ),
       resource: {},
     });
@@ -458,6 +459,7 @@ export async function overwriteExcelData(
         row.thumbnailUrl,
         row.audioUrl,
         row.channelId,
+        '',
       ]);
     } else {
       values = (data as usingChannelProps[]).map((row) => [
@@ -520,6 +522,40 @@ export async function overwriteExcelData(
         resource: { values: batch },
       });
     }
+
+    // 6. rowCount를 데이터 수에 맞게 정확히 조정하고 필터 범위 갱신
+    setProgress?.('시트 행 수 및 필터 조정 중...');
+    const exactRowCount = targetStartRow - 1 + values.length + 1;
+    const lastColIndex = category === 'episode' ? 13 : 14;
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: targetSpreadsheetId,
+      resource: {
+        requests: [
+          {
+            updateSheetProperties: {
+              properties: {
+                sheetId,
+                gridProperties: { rowCount: exactRowCount },
+              },
+              fields: 'gridProperties.rowCount',
+            },
+          },
+          {
+            setBasicFilter: {
+              filter: {
+                range: {
+                  sheetId,
+                  startRowIndex: targetStartRow - 2,
+                  endRowIndex: exactRowCount - 1,
+                  startColumnIndex: 1,
+                  endColumnIndex: lastColIndex,
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
 
     toast.success('데이터 덮어쓰기 완료!');
   } catch (err) {

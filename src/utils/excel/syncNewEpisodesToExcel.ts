@@ -22,7 +22,7 @@ async function clearExcelFromRow(
   sheetName: string
 ) {
   let lastLine = 'M';
-  if (category === 'episode') lastLine = 'M';
+  if (category === 'episode') lastLine = 'N';
 
   try {
     const sheets = getSheetsClient();
@@ -83,6 +83,13 @@ async function overwriteExcelData(
     setAllLoading(true);
     const sheets = getSheetsClient();
 
+    // 시트 ID 조회 (rowCount/필터 조정에 필요)
+    const meta = await sheets.spreadsheets.get({ spreadsheetId });
+    const sheetMeta = meta.result.sheets?.find(
+      (s) => s.properties?.title === sheetName
+    );
+    const sheetId = sheetMeta?.properties?.sheetId;
+
     for (let i = 0; i < newData.length; i += batchSize) {
       setProgress(`${Math.round((i / newData.length) * 100)}%`);
       const batch = newData.slice(i, i + batchSize);
@@ -107,11 +114,12 @@ async function overwriteExcelData(
             row.thumbnailUrl,
             row.audioUrl,
             row.channelId,
+            '',
           ];
         });
         const startRow = i + STARTROW;
         const endRow = startRow + batch.length - 1;
-        range = `${sheetName}!B${startRow}:M${endRow}`;
+        range = `${sheetName}!B${startRow}:N${endRow}`;
       } else {
         values = (batch as usingChannelProps[]).map((row) => {
           const createdAtStr = excelDateTime(row.createdAt);
@@ -134,7 +142,7 @@ async function overwriteExcelData(
         });
         const startRow = i + STARTROW;
         const endRow = startRow + batch.length - 1;
-        range = `${sheetName}!B${startRow}:M${endRow}`;
+        range = `${sheetName}!B${startRow}:N${endRow}`;
       }
 
       await sheets.spreadsheets.values.update({
@@ -142,6 +150,42 @@ async function overwriteExcelData(
         range,
         valueInputOption: 'RAW',
         resource: { values },
+      });
+    }
+
+    // rowCount를 데이터 수에 맞게 정확히 조정하고 필터 범위 갱신
+    if (sheetId !== undefined && sheetId !== null) {
+      setProgress('시트 행 수 및 필터 조정 중...');
+      const exactRowCount = STARTROW - 1 + newData.length + 1;
+      const lastColIndex = category === 'episode' ? 13 : 14;
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        resource: {
+          requests: [
+            {
+              updateSheetProperties: {
+                properties: {
+                  sheetId,
+                  gridProperties: { rowCount: exactRowCount },
+                },
+                fields: 'gridProperties.rowCount',
+              },
+            },
+            {
+              setBasicFilter: {
+                filter: {
+                  range: {
+                    sheetId,
+                    startRowIndex: STARTROW - 2,
+                    endRowIndex: exactRowCount - 1,
+                    startColumnIndex: 1,
+                    endColumnIndex: lastColIndex,
+                  },
+                },
+              },
+            },
+          ],
+        },
       });
     }
 

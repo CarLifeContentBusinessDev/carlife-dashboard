@@ -54,7 +54,6 @@ const COLUMNS = [
   { key: 'likeCnt', label: '좋아요수', width: '90px' },
   { key: 'listenCnt', label: '청취수', width: '90px' },
   { key: 'uploader', label: '게시자', width: '120px' },
-  { key: 'note', label: '비고', width: '100px' },
 ] as const;
 
 const getCellContent = (
@@ -116,8 +115,6 @@ const getCellContent = (
     case 'dispDtime':
     case 'createdAt':
       return formatDateString(String(row[key] ?? ''));
-    case 'note':
-      return '';
     default:
       return String(row[key as keyof usingCurationExcelProps] ?? '');
   }

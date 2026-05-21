@@ -16,7 +16,7 @@ function delay(ms: number) {
 async function clearExcelFromRow(startRow: number, endRow: number) {
   try {
     const sheets = getSheetsClient();
-    const range = `${sheetName}!B${startRow}:W${endRow}`;
+    const range = `${sheetName}!B${startRow}:X${endRow}`;
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId,
@@ -35,17 +35,26 @@ function excelDateTime(date?: string | number) {
   return isNaN(d.getTime()) ? '' : formatDateString(d.toISOString());
 }
 
+const STARTROW = 4;
+
 async function overwriteExcelData(
   newData: usingCurationExcelProps[],
   setProgress: (progress: string) => void
 ) {
   const existingData = await getUsedRange();
   const totalRowsToClear = Math.max(newData.length + 3, existingData!);
-  await clearExcelFromRow(4, totalRowsToClear);
+  await clearExcelFromRow(STARTROW, totalRowsToClear);
   const batchSize = 1000;
 
   try {
     const sheets = getSheetsClient();
+
+    // 시트 ID 조회 (rowCount/필터 조정에 필요)
+    const meta = await sheets.spreadsheets.get({ spreadsheetId });
+    const sheetMeta = meta.result.sheets?.find(
+      (s) => s.properties?.title === sheetName
+    );
+    const sheetId = sheetMeta?.properties?.sheetId;
 
     for (let i = 0; i < newData.length; i += batchSize) {
       setProgress(`${Math.round((i / newData.length) * 100)}%`);
@@ -74,17 +83,53 @@ async function overwriteExcelData(
         row.likeCnt,
         row.listenCnt,
         row.uploader,
+        '',
       ]);
 
-      const startRow = i + 4;
+      const startRow = i + STARTROW;
       const endRow = startRow + batch.length - 1;
-      const range = `${sheetName}!B${startRow}:W${endRow}`;
+      const range = `${sheetName}!B${startRow}:X${endRow}`;
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range,
         valueInputOption: 'RAW',
         resource: { values },
+      });
+    }
+
+    // rowCount를 데이터 수에 맞게 정확히 조정하고 필터 범위 갱신
+    if (sheetId !== undefined && sheetId !== null) {
+      setProgress('시트 행 수 및 필터 조정 중...');
+      const exactRowCount = STARTROW - 1 + newData.length + 1;
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        resource: {
+          requests: [
+            {
+              updateSheetProperties: {
+                properties: {
+                  sheetId,
+                  gridProperties: { rowCount: exactRowCount },
+                },
+                fields: 'gridProperties.rowCount',
+              },
+            },
+            {
+              setBasicFilter: {
+                filter: {
+                  range: {
+                    sheetId,
+                    startRowIndex: STARTROW - 2,
+                    endRowIndex: exactRowCount - 1,
+                    startColumnIndex: 1,
+                    endColumnIndex: 23,
+                  },
+                },
+              },
+            },
+          ],
+        },
       });
     }
 
