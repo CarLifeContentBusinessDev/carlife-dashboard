@@ -152,39 +152,39 @@ function App() {
           <Route element={<AuthGuard />}>
             <Route element={<Layout />}>
               {/* Pickle - 상용 콘텐츠 */}
-              <Route path='/episode-list' element={<EpisodeLayout />} />
+              <Route path='/episode-list' element={<EpisodeLayout key='prod' />} />
               <Route
                 path='/episode/detail/:id'
-                element={<ProdEpisodeDetail />}
+                element={<ProdEpisodeDetail key='prod' />}
               />
               <Route
                 path='/channel/detail/:id'
-                element={<ProdChannelDetail />}
+                element={<ProdChannelDetail key='prod' />}
               />
               <Route
                 path='/curation/detail/:id'
-                element={<ProdCurationDetail />}
+                element={<ProdCurationDetail key='prod' />}
               />
-              <Route path='/channel-book-list' element={<ChannelLayout />} />
-              <Route path='/curation-list' element={<CurationLayout />} />
-              <Route path='/stg/episode-list' element={<EpisodeLayout />} />
+              <Route path='/channel-book-list' element={<ChannelLayout key='prod' />} />
+              <Route path='/curation-list' element={<CurationLayout key='prod' />} />
+              <Route path='/stg/episode-list' element={<EpisodeLayout key='stg' />} />
               <Route
                 path='/stg/episode/detail/:id'
-                element={<ProdEpisodeDetail />}
+                element={<ProdEpisodeDetail key='stg' />}
               />
               <Route
                 path='/stg/channel/detail/:id'
-                element={<ProdChannelDetail />}
+                element={<ProdChannelDetail key='stg' />}
               />
               <Route
                 path='/stg/curation/detail/:id'
-                element={<ProdCurationDetail />}
+                element={<ProdCurationDetail key='stg' />}
               />
               <Route
                 path='/stg/channel-book-list'
-                element={<ChannelLayout />}
+                element={<ChannelLayout key='stg' />}
               />
-              <Route path='/stg/curation-list' element={<CurationLayout />} />
+              <Route path='/stg/curation-list' element={<CurationLayout key='stg' />} />
 
               {/* Pickle - 데모 콘텐츠 */}
               <Route path='/demo'>
