@@ -100,6 +100,8 @@ export async function overwriteCurationExcelData(
   spreadsheetId?: string
 ): Promise<void> {
   try {
+    const targetSpreadsheetId =
+      spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID;
     const targetSheet =
       sheetName || localStorage.getItem('sheetName') || 'Sheet1';
     const sheets = getSheetsClient();
@@ -127,27 +129,70 @@ export async function overwriteCurationExcelData(
       row.likeCnt,
       row.listenCnt,
       row.uploader,
+      '',
     ]);
 
     const STARTROW = 4;
     const MAX_ROWS = 300000;
-    const lastColumn = 'W';
+    const lastColumn = 'X';
 
     const range = `${targetSheet}!B${STARTROW}:${lastColumn}${STARTROW + values.length - 1}`;
     const clearRange = `${targetSheet}!B${STARTROW}:${lastColumn}${MAX_ROWS}`;
 
     await sheets.spreadsheets.values.clear({
-      spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
+      spreadsheetId: targetSpreadsheetId,
       range: clearRange,
       resource: {},
     });
 
     await sheets.spreadsheets.values.update({
-      spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
+      spreadsheetId: targetSpreadsheetId,
       range,
       valueInputOption: 'RAW',
       resource: { values },
     });
+
+    // rowCount를 데이터 수에 맞게 정확히 조정하고 필터 범위 갱신
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId: targetSpreadsheetId,
+    });
+    const sheetMeta = meta.result.sheets?.find(
+      (s) => s.properties?.title === targetSheet
+    );
+    const sheetId = sheetMeta?.properties?.sheetId;
+
+    if (sheetId !== undefined && sheetId !== null) {
+      const exactRowCount = STARTROW - 1 + values.length + 1;
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: targetSpreadsheetId,
+        resource: {
+          requests: [
+            {
+              updateSheetProperties: {
+                properties: {
+                  sheetId,
+                  gridProperties: { rowCount: exactRowCount },
+                },
+                fields: 'gridProperties.rowCount',
+              },
+            },
+            {
+              setBasicFilter: {
+                filter: {
+                  range: {
+                    sheetId,
+                    startRowIndex: STARTROW - 2,
+                    endRowIndex: exactRowCount - 1,
+                    startColumnIndex: 1,
+                    endColumnIndex: 23,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      });
+    }
 
     toast.success('큐레이션 데이터 덮어쓰기 완료!');
   } catch (err) {
@@ -224,11 +269,12 @@ export async function addMissingCurationRows(
       row.likeCnt,
       row.listenCnt,
       row.uploader,
+      '',
     ]);
 
     const startRow = existingData.length + i + 4;
     const endRow = startRow + batch.length - 1;
-    const range = `${sheetName}!B${startRow}:W${endRow}`;
+    const range = `${sheetName}!B${startRow}:X${endRow}`;
 
     try {
       setProgress(`${Math.round((i / missingRows.length) * 100)}%`);

@@ -19,8 +19,6 @@ const COLUMNS = [
   { key: 'thumbnailUrl', label: 'thumbnail_url', width: '160px' },
   { key: 'audioUrl', label: 'audio_url', width: '160px' },
   { key: 'channelId', label: 'channelId', width: '80px' },
-  { key: 'category', label: '카테고리', width: '100px' },
-  { key: 'note', label: '비고', width: '100px' },
 ];
 
 const getCellContent = (ep: usingDataProps, key: string): React.ReactNode => {
