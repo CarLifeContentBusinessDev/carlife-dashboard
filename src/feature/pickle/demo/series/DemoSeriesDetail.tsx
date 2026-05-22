@@ -36,8 +36,8 @@ const SERIES_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '에피소드 목록',
     tableName: 'episodes',
-    detailPath: '/demo/episode/detail',
-    editPath: '/demo/episode',
+    detailPath: '/demo/episodes/detail',
+    editPath: '/demo/episodes/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
@@ -64,7 +64,7 @@ const DemoSeriesDetail = () => {
       childMenu='시리즈 상세'
       tableName='series'
       listPath='/demo/series'
-      editPath='/demo/series'
+      editPath='/demo/series/edit'
       select='*, sections(title)'
       fieldLabels={SERIES_FIELD_LABELS}
       fieldOrder={SERIES_FIELD_ORDER}

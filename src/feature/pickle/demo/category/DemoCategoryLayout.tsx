@@ -146,7 +146,7 @@ const DemoCategoryLayout = () => {
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='카테고리명을 입력하세요.'
       addLabel='카테고리 추가'
-      onAdd={() => navigate('/demo/category/new')}
+      onAdd={() => navigate('/demo/categories/new')}
     >
       <LoadingOverlay loading={loading}>
         카테고리 목록을 불러오는 중입니다.

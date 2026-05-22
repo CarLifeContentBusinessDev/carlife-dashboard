@@ -90,7 +90,7 @@ const DemoEpisodeLayout = () => {
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='에피소드명을 입력하세요.'
       addLabel='에피소드 추가'
-      onAdd={() => navigate('/demo/episode/new')}
+      onAdd={() => navigate('/demo/episodes/new')}
     >
       <LoadingOverlay loading={loading}>
         에피소드 목록을 불러오는 중입니다.
