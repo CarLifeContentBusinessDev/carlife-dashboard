@@ -90,98 +90,96 @@ const DemoBroadcastingEdit = () => {
 
       {/* 탭 콘텐츠 */}
       <div className='flex-1'>
-        {activeTab === 'basic' && (
-          <div className='flex flex-col gap-6'>
-            <div className='flex gap-5'>
-              <ThumbnailPreview
-                url={broadcasting.img_url || ''}
-                title={broadcasting.title || ''}
-              />
-              <div className='flex flex-col gap-2'>
-                <FormField label='Title'>
-                  <input
-                    className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                    name='title'
-                    value={broadcasting.title || ''}
-                    onChange={handleChange}
-                    placeholder='title'
-                  />
-                </FormField>
-                <FormField label='channel'>
-                  <input
-                    className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                    name='channel'
-                    value={broadcasting.channel || ''}
-                    onChange={handleChange}
-                    placeholder='channel'
-                  />
-                </FormField>
-                <FormField label='frequency'>
-                  <input
-                    className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                    name='frequency'
-                    value={broadcasting.frequency || ''}
-                    onChange={handleChange}
-                    placeholder='frequency'
-                  />
-                </FormField>
-              </div>
-            </div>
-
-            <FormField label='Thumbnail URL'>
-              <input
-                className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition font-mono'
-                name='img_url'
-                value={broadcasting.img_url || ''}
-                onChange={handleChange}
-                placeholder='https://...'
-              />
-            </FormField>
-
-            <div className='grid grid-cols-2 gap-6'>
-              <FormField
-                label='Language'
-                hint='지원할 언어를 쉼표로 구분하여 입력하세요. 예: ko, en, de, jp'
-              >
+        <div className='flex flex-col gap-6'>
+          <div className='flex gap-5'>
+            <ThumbnailPreview
+              url={broadcasting.img_url || ''}
+              title={broadcasting.title || ''}
+            />
+            <div className='flex flex-col gap-2'>
+              <FormField label='Title'>
                 <input
                   className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                  name='language'
-                  value={
-                    Array.isArray(broadcasting.language)
-                      ? broadcasting.language.join(', ')
-                      : ''
-                  }
-                  onChange={handleLangChange}
-                  placeholder='ko, en, de, jp'
-                />
-                {Array.isArray(broadcasting.language) &&
-                  broadcasting.language.length > 0 && (
-                    <div className='flex gap-1.5 mt-1 flex-wrap'>
-                      {broadcasting.language.map((lang) => (
-                        <span
-                          key={lang}
-                          className='px-2.5 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium'
-                        >
-                          {lang}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-              </FormField>
-
-              <FormField label='Order'>
-                <input
-                  className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                  name='order'
-                  type='number'
-                  value={broadcasting.order ?? ''}
+                  name='title'
+                  value={broadcasting.title || ''}
                   onChange={handleChange}
-                  placeholder='0'
+                  placeholder='title'
+                />
+              </FormField>
+              <FormField label='channel'>
+                <input
+                  className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                  name='channel'
+                  value={broadcasting.channel || ''}
+                  onChange={handleChange}
+                  placeholder='channel'
+                />
+              </FormField>
+              <FormField label='frequency'>
+                <input
+                  className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                  name='frequency'
+                  value={broadcasting.frequency || ''}
+                  onChange={handleChange}
+                  placeholder='frequency'
                 />
               </FormField>
             </div>
           </div>
-        )}
+
+          <FormField label='Thumbnail URL'>
+            <input
+              className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition font-mono'
+              name='img_url'
+              value={broadcasting.img_url || ''}
+              onChange={handleChange}
+              placeholder='https://...'
+            />
+          </FormField>
+
+          <div className='grid grid-cols-2 gap-6'>
+            <FormField
+              label='Language'
+              hint='지원할 언어를 쉼표로 구분하여 입력하세요. 예: ko, en, de, jp'
+            >
+              <input
+                className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                name='language'
+                value={
+                  Array.isArray(broadcasting.language)
+                    ? broadcasting.language.join(', ')
+                    : ''
+                }
+                onChange={handleLangChange}
+                placeholder='ko, en, de, jp'
+              />
+              {Array.isArray(broadcasting.language) &&
+                broadcasting.language.length > 0 && (
+                  <div className='flex gap-1.5 mt-1 flex-wrap'>
+                    {broadcasting.language.map((lang) => (
+                      <span
+                        key={lang}
+                        className='px-2.5 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium'
+                      >
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                )}
+            </FormField>
+
+            <FormField label='Order'>
+              <input
+                className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                name='order'
+                type='number'
+                value={broadcasting.order ?? ''}
+                onChange={handleChange}
+                placeholder='0'
+              />
+            </FormField>
+          </div>
+        </div>
       </div>
     </FormLayout>
   );

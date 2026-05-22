@@ -32,14 +32,18 @@ const BROADCASTING_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '프로그램 목록',
     tableName: 'programs',
-    detailPath: '/demo/program/detail',
-    editPath: '/demo/program',
+    detailPath: '/demo/programs/detail',
+    editPath: '/demo/programs/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
       { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
       { key: 'type', label: 'type', width: 'minmax(40px,1fr)' },
-      { key: 'categories.title', label: '카테고리', width: 'minmax(40px,1.5fr)' },
+      {
+        key: 'categories.title',
+        label: '카테고리',
+        width: 'minmax(40px,1.5fr)',
+      },
       { key: 'language', label: '국가', width: 'minmax(80px,1fr)' },
       { key: 'is_active', label: '상태', width: 'minmax(40px,1fr)' },
     ],
@@ -57,8 +61,8 @@ const DemoBroadcastingDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='방송사 상세'
       tableName='broadcastings'
-      listPath='/demo/broadcasting'
-      editPath='/demo/broadcasting'
+      listPath='/demo/broadcastings'
+      editPath='/demo/broadcastings/edit'
       select='*'
       fieldLabels={BROADCASTING_FIELD_LABELS}
       fieldOrder={BROADCASTING_FIELD_ORDER}

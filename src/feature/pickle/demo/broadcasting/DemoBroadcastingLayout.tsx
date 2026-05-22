@@ -123,7 +123,7 @@ const DemoBroadcastingLayout = () => {
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='방송사명, 채널명, 주파수를 입력하세요.'
       addLabel='방송사 추가'
-      onAdd={() => navigate('/demo/broadcasting/new')}
+      onAdd={() => navigate('/demo/broadcastings/new')}
     >
       <LoadingOverlay loading={loading}>
         방송사 목록을 불러오는 중입니다.

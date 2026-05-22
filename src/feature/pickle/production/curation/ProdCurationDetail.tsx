@@ -333,7 +333,9 @@ const ProdCurationDetail = () => {
                     key={`${episode.episodeId ?? 0}-${index}`}
                     className={`flex items-center border-b border-gray-200 py-3 hover:bg-gray-50 cursor-pointer `}
                     onClick={() =>
-                      navigate(`/episode/detail/${episode.episodeId}`)
+                      isStaging
+                        ? navigate(`/stg/episodes/detail/${episode.episodeId}`)
+                        : navigate(`/episodes/detail/${episode.episodeId}`)
                     }
                   >
                     {EPISODE_COLUMNS.map((col) => (

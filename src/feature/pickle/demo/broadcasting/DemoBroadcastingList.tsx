@@ -32,8 +32,8 @@ const DemoBroadcastingList: React.FC<DemoBroadcastingListProps> = ({
       selectedLang={selectedLang}
       onDeleted={onDeleted}
       tableName='broadcastings'
-      detailPath='/demo/broadcasting/detail'
-      editPath='/demo/broadcasting'
+      detailPath='/demo/broadcastings/detail'
+      editPath='/demo/broadcastings/edit'
       columnDefs={columnDefs}
     />
   );

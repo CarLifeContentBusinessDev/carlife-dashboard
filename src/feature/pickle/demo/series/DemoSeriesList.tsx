@@ -32,7 +32,7 @@ const DemoSeriesList: React.FC<DemoSeriesListProps> = ({
       onDeleted={onDeleted}
       tableName='series'
       detailPath='/demo/series/detail'
-      editPath='/demo/series'
+      editPath='/demo/series/edit'
       columnDefs={columnDefs}
     />
   );

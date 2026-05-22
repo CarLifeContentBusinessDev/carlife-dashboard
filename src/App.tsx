@@ -152,84 +152,93 @@ function App() {
           <Route element={<AuthGuard />}>
             <Route element={<Layout />}>
               {/* Pickle - 상용 콘텐츠 */}
-              <Route path='/episode-list' element={<EpisodeLayout key='prod' />} />
+              <Route path='/episodes' element={<EpisodeLayout key='prod' />} />
               <Route
-                path='/episode/detail/:id'
+                path='/episodes/detail/:id'
                 element={<ProdEpisodeDetail key='prod' />}
               />
               <Route
-                path='/channel/detail/:id'
+                path='/channels/detail/:id'
                 element={<ProdChannelDetail key='prod' />}
               />
               <Route
-                path='/curation/detail/:id'
+                path='/curations/detail/:id'
                 element={<ProdCurationDetail key='prod' />}
               />
-              <Route path='/channel-book-list' element={<ChannelLayout key='prod' />} />
-              <Route path='/curation-list' element={<CurationLayout key='prod' />} />
-              <Route path='/stg/episode-list' element={<EpisodeLayout key='stg' />} />
+              <Route path='/channels' element={<ChannelLayout key='prod' />} />
               <Route
-                path='/stg/episode/detail/:id'
+                path='/curations'
+                element={<CurationLayout key='prod' />}
+              />
+              <Route
+                path='/stg/episodes'
+                element={<EpisodeLayout key='stg' />}
+              />
+              <Route
+                path='/stg/episodes/detail/:id'
                 element={<ProdEpisodeDetail key='stg' />}
               />
               <Route
-                path='/stg/channel/detail/:id'
+                path='/stg/channels/detail/:id'
                 element={<ProdChannelDetail key='stg' />}
               />
               <Route
-                path='/stg/curation/detail/:id'
+                path='/stg/curations/detail/:id'
                 element={<ProdCurationDetail key='stg' />}
               />
               <Route
-                path='/stg/channel-book-list'
+                path='/stg/channels'
                 element={<ChannelLayout key='stg' />}
               />
-              <Route path='/stg/curation-list' element={<CurationLayout key='stg' />} />
+              <Route
+                path='/stg/curations'
+                element={<CurationLayout key='stg' />}
+              />
 
               {/* Pickle - 데모 콘텐츠 */}
               <Route path='/demo'>
-                <Route path='program'>
+                <Route path='programs'>
                   <Route index element={<DemoProgramLayout />} />
                   <Route path='detail/:id' element={<DemoProgramDetail />} />
-                  <Route path=':id' element={<DemoProgramEdit />} />
+                  <Route path='edit/:id' element={<DemoProgramEdit />} />
                   <Route path='new' element={<DemoProgramAdd />} />
                 </Route>
 
-                <Route path='episode'>
+                <Route path='episodes'>
                   <Route index element={<DemoEpisodeLayout />} />
                   <Route path='detail/:id' element={<DemoEpisodeDetail />} />
-                  <Route path=':id' element={<DemoEpisodeEdit />} />
+                  <Route path='edit/:id' element={<DemoEpisodeEdit />} />
                   <Route path='new' element={<DemoEpisodeAdd />} />
                 </Route>
 
                 <Route path='series'>
                   <Route index element={<DemoSeriesLayout />} />
                   <Route path='detail/:id' element={<DemoSeriesDetail />} />
-                  <Route path=':id' element={<DemoSeriesEdit />} />
+                  <Route path='edit/:id' element={<DemoSeriesEdit />} />
                   <Route path='new' element={<DemoSeriesAdd />} />
                 </Route>
 
-                <Route path='theme'>
+                <Route path='themes'>
                   <Route index element={<DemoThemeLayout />} />
                   <Route path='detail/:id' element={<DemoThemeDetail />} />
-                  <Route path=':id' element={<DemoThemeEdit />} />
+                  <Route path='edit/:id' element={<DemoThemeEdit />} />
                   <Route path='new' element={<DemoThemeAdd />} />
                 </Route>
 
-                <Route path='category'>
+                <Route path='categories'>
                   <Route index element={<DemoCategoryLayout />} />
                   <Route path='detail/:id' element={<DemoCategoryDetail />} />
-                  <Route path=':id' element={<DemoCategoryEdit />} />
+                  <Route path='edit/:id' element={<DemoCategoryEdit />} />
                   <Route path='new' element={<DemoCategoryAdd />} />
                 </Route>
 
-                <Route path='broadcasting'>
+                <Route path='broadcastings'>
                   <Route index element={<DemoBroadcastingLayout />} />
                   <Route
                     path='detail/:id'
                     element={<DemoBroadcastingDetail />}
                   />
-                  <Route path=':id' element={<DemoBroadcastingEdit />} />
+                  <Route path='edit/:id' element={<DemoBroadcastingEdit />} />
                   <Route path='new' element={<DemoBroadcastingAdd />} />
                 </Route>
               </Route>

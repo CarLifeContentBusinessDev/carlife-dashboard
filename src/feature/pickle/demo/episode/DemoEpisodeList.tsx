@@ -30,8 +30,8 @@ const DemoEpisodeList: React.FC<DemoEpisodeListProps> = ({
       selectedLang={selectedLang}
       onDeleted={onDeleted}
       tableName='episodes'
-      detailPath='/demo/episode/detail'
-      editPath='/demo/episode'
+      detailPath='/demo/episodes/detail'
+      editPath='/demo/episodes/edit'
       columnDefs={columnDefs}
     />
   );

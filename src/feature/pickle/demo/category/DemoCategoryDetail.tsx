@@ -40,14 +40,18 @@ const CATEGORY_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '프로그램 목록',
     tableName: 'programs',
-    detailPath: '/demo/program/detail',
-    editPath: '/demo/program',
+    detailPath: '/demo/programs/detail',
+    editPath: '/demo/programs/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
       { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
       { key: 'type', label: 'type', width: 'minmax(40px,1fr)' },
-      { key: 'broadcastings.title', label: '방송사', width: 'minmax(40px,1.5fr)' },
+      {
+        key: 'broadcastings.title',
+        label: '방송사',
+        width: 'minmax(40px,1.5fr)',
+      },
       { key: 'language', label: '국가', width: 'minmax(80px,1fr)' },
       { key: 'is_active', label: '상태', width: 'minmax(40px,1fr)' },
     ],
@@ -66,8 +70,8 @@ const DemoCategoryDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='카테고리 상세'
       tableName='categories'
-      listPath='/demo/category'
-      editPath='/demo/category'
+      listPath='/demo/categories'
+      editPath='/demo/categories/edit'
       select='*'
       fieldLabels={CATEGORY_FIELD_LABELS}
       fieldOrder={CATEGORY_FIELD_ORDER}

@@ -33,33 +33,33 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     ),
     children: [
       {
-        id: 'episode',
-        to: '/episode-list',
+        id: 'episodes',
+        to: '/episodes',
         label: '에피소드 관리',
       },
       {
-        id: 'channel-book-list',
-        to: '/channel-book-list',
+        id: 'channels',
+        to: '/channels',
         label: '채널·도서 관리',
       },
       {
-        id: 'curation-list',
-        to: '/curation-list',
+        id: 'curations',
+        to: '/curations',
         label: '큐레이션 관리',
       },
       {
-        id: 'stg_episode',
-        to: '/stg/episode-list',
+        id: 'stg_episodes',
+        to: '/stg/episodes',
         label: '에피소드 관리 (stg)',
       },
       {
-        id: 'stg_channel-book-list',
-        to: '/stg/channel-book-list',
+        id: 'stg_channels',
+        to: '/stg/channels',
         label: '채널·도서 관리 (stg)',
       },
       {
-        id: 'stg_curation-list',
-        to: '/stg/curation-list',
+        id: 'stg_curations',
+        to: '/stg/curations',
         label: '큐레이션 관리 (stg)',
       },
     ],
@@ -76,14 +76,14 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
       />
     ),
     children: [
-      { id: 'programs', to: '/demo/program', label: '프로그램 관리' },
-      { id: 'episodes', to: '/demo/episode', label: '에피소드 관리' },
+      { id: 'programs', to: '/demo/programs', label: '프로그램 관리' },
+      { id: 'episodes', to: '/demo/episodes', label: '에피소드 관리' },
       { id: 'series', to: '/demo/series', label: '시리즈 관리' },
-      { id: 'themes', to: '/demo/theme', label: '테마 관리' },
-      { id: 'categories', to: '/demo/category', label: '카테고리 관리' },
+      { id: 'themes', to: '/demo/themes', label: '테마 관리' },
+      { id: 'categories', to: '/demo/categories', label: '카테고리 관리' },
       {
         id: 'broadcastings',
-        to: '/demo/broadcasting',
+        to: '/demo/broadcastings',
         label: '방송사 관리',
       },
     ],
@@ -131,50 +131,56 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
     icon: (
       <img src='/admin-fill.svg' width={24} height={24} alt='어드민 바로가기' />
     ),
-    children: (
-      () => {
-        const ensureAdminLoginPath = (base?: string) => {
-          if (!base) return '';
-          // 이미 admin 웹 또는 로그인 해시가 포함돼 있으면 그대로 리턴
-          if (/admin-web|#\/login/.test(base)) return base;
-          try {
-            // 정상적인 URL이면 origin을 사용해 admin 경로를 붙임
-            const u = new URL(base);
-            return `${u.origin}/admin-web/#/login`;
-          } catch {
-            // URL 파싱 실패 시 단순히 슬래시를 정리하고 붙임
-            return `${base.replace(/\/$/, '')}/admin-web/#/login`;
-          }
-        };
+    children: (() => {
+      const ensureAdminLoginPath = (base?: string) => {
+        if (!base) return '';
+        // 이미 admin 웹 또는 로그인 해시가 포함돼 있으면 그대로 리턴
+        if (/admin-web|#\/login/.test(base)) return base;
+        try {
+          // 정상적인 URL이면 origin을 사용해 admin 경로를 붙임
+          const u = new URL(base);
+          return `${u.origin}/admin-web/#/login`;
+        } catch {
+          // URL 파싱 실패 시 단순히 슬래시를 정리하고 붙임
+          return `${base.replace(/\/$/, '')}/admin-web/#/login`;
+        }
+      };
 
-        return [
-          {
-            id: 'picknow-stg',
-            to: ensureAdminLoginPath(import.meta.env.VITE_PICKNOW_ADMIN_EPI_URL_STG),
-            label: '검증 서버',
-          },
-          {
-            id: 'picknow-kr-demo',
-            to: ensureAdminLoginPath(import.meta.env.VITE_PICKNOW_API_URL_KR_DEMO),
-            label: 'KR-DEMO 서버',
-          },
-          {
-            id: 'picknow-kr-prod-kia',
-            to: ensureAdminLoginPath(import.meta.env.VITE_PICKNOW_API_URL_KR_PROD_KIA),
-            label: '상용 한국 서버 - KIA',
-          },
-          {
-            id: 'picknow-kr-prod',
-            to: ensureAdminLoginPath(import.meta.env.VITE_PICKNOW_API_URL_KR_PROD),
-            label: '상용 한국 서버 - MOTREX, KGM',
-          },
-          {
-            id: 'picknow-na-prod',
-            to: ensureAdminLoginPath(import.meta.env.VITE_PICKNOW_API_URL_US),
-            label: '상용 북미 서버 - MOTREX',
-          },
-        ];
-      }
-    )(),
+      return [
+        {
+          id: 'picknow-stg',
+          to: ensureAdminLoginPath(
+            import.meta.env.VITE_PICKNOW_ADMIN_EPI_URL_STG
+          ),
+          label: '검증 서버',
+        },
+        {
+          id: 'picknow-kr-demo',
+          to: ensureAdminLoginPath(
+            import.meta.env.VITE_PICKNOW_API_URL_KR_DEMO
+          ),
+          label: 'KR-DEMO 서버',
+        },
+        {
+          id: 'picknow-kr-prod-kia',
+          to: ensureAdminLoginPath(
+            import.meta.env.VITE_PICKNOW_API_URL_KR_PROD_KIA
+          ),
+          label: '상용 한국 서버 - KIA',
+        },
+        {
+          id: 'picknow-kr-prod',
+          to: ensureAdminLoginPath(
+            import.meta.env.VITE_PICKNOW_API_URL_KR_PROD
+          ),
+          label: '상용 한국 서버 - MOTREX, KGM',
+        },
+        {
+          id: 'picknow-na-prod',
+          to: ensureAdminLoginPath(import.meta.env.VITE_PICKNOW_API_URL_US),
+          label: '상용 북미 서버 - MOTREX',
+        },
+      ];
+    })(),
   },
 ];

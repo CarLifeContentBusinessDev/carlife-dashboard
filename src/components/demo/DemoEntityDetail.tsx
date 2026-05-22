@@ -71,6 +71,7 @@ interface DisplayRow {
 
 const LABEL_COLUMN_CLASS = 'grid-cols-[170px_1fr]';
 const BADGE_FIELDS = new Set(['is_active', 'is_searchable']);
+const EMPTY_RELATED_LIST: RelatedListConfig[] = [];
 
 const hasRenderableValue = (value: unknown) => {
   if (value == null) return false;
@@ -332,7 +333,7 @@ const DemoEntityDetail = ({
   fieldOrder = [],
   hiddenFields = [],
   summaryFields = [],
-  relatedList = [],
+  relatedList = EMPTY_RELATED_LIST,
 }: DemoEntityDetailProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -594,8 +595,12 @@ const DemoEntityDetail = ({
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'>
           <div className='bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6 w-80'>
             <div>
-              <h3 className='text-base font-semibold text-gray-900'>정말 삭제하시겠습니까?</h3>
-              <p className='text-sm text-gray-500 mt-1'>이 작업은 되돌릴 수 없습니다.</p>
+              <h3 className='text-base font-semibold text-gray-900'>
+                정말 삭제하시겠습니까?
+              </h3>
+              <p className='text-sm text-gray-500 mt-1'>
+                이 작업은 되돌릴 수 없습니다.
+              </p>
             </div>
             <div className='flex justify-end gap-2'>
               <button

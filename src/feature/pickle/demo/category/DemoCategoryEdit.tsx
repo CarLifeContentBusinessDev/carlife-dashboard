@@ -14,7 +14,7 @@ const DemoCategoryEdit = () => {
 
   const initLang = searchParams.get('lang') ?? 'ko';
   const [activeTab, setActiveTab] = useState(
-    initLang === 'ko' ? 'basic' : 'localize'
+    initLang === 'ko' || initLang === 'all' ? 'basic' : 'localize'
   );
 
   const langRefs = useRef<Record<string, HTMLDivElement | null>>({});

@@ -34,14 +34,18 @@ const THEME_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '프로그램 목록',
     tableName: 'programs',
-    detailPath: '/demo/program/detail',
-    editPath: '/demo/program',
+    detailPath: '/demo/programs/detail',
+    editPath: '/demo/programs/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
       { key: 'title', label: 'title', width: 'minmax(80px,2fr)' },
       { key: 'type', label: 'type', width: 'minmax(40px,1fr)' },
-      { key: 'categories.title', label: '카테고리', width: 'minmax(40px,1.5fr)' },
+      {
+        key: 'categories.title',
+        label: '카테고리',
+        width: 'minmax(40px,1.5fr)',
+      },
       { key: 'language', label: '국가', width: 'minmax(80px,1fr)' },
       { key: 'is_active', label: '상태', width: 'minmax(40px,1fr)' },
     ],
@@ -61,8 +65,8 @@ const DemoThemeDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='테마 상세'
       tableName='themes'
-      listPath='/demo/theme'
-      editPath='/demo/theme'
+      listPath='/demo/themes'
+      editPath='/demo/themes/edit'
       select='*, sections(title)'
       fieldLabels={THEME_FIELD_LABELS}
       fieldOrder={THEME_FIELD_ORDER}

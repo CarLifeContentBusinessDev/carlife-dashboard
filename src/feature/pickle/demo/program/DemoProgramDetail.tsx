@@ -56,8 +56,8 @@ const PROGRAM_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '에피소드 목록',
     tableName: 'episodes',
-    detailPath: '/demo/episode/detail',
-    editPath: '/demo/episode',
+    detailPath: '/demo/episodes/detail',
+    editPath: '/demo/episodes/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'title', label: 'title', width: 'minmax(80px,3fr)' },
@@ -80,8 +80,8 @@ const DemoProgramDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='프로그램 상세'
       tableName='programs'
-      listPath='/demo/program'
-      editPath='/demo/program'
+      listPath='/demo/programs'
+      editPath='/demo/programs/edit'
       select='*, categories(title), broadcastings(title, channel)'
       fieldLabels={PROGRAM_FIELD_LABELS}
       fieldOrder={PROGRAM_FIELD_ORDER}
