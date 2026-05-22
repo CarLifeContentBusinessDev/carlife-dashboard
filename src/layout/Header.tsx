@@ -94,12 +94,6 @@ const Header = () => {
   }, [pickleDropdownOpen]);
 
   const handleGoogleLogin = async () => {
-    if (selectedService === 'picknow') {
-      const { selectedServerIds } = usePicknowServerStore.getState();
-      if (!selectedServerIds.some((id) => isPicknowLoggedIn(id))) {
-        return toast.warn('서버에 먼저 로그인해주세요!');
-      }
-    }
     const token = await getGoogleToken();
     if (token) {
       setLoginToken(token);
