@@ -33,32 +33,32 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     ),
     children: [
       {
-        id: 'episode',
+        id: 'episodes',
         to: '/episodes',
         label: '에피소드 관리',
       },
       {
-        id: 'channel-book-list',
+        id: 'channels',
         to: '/channels',
         label: '채널·도서 관리',
       },
       {
-        id: 'curation-list',
+        id: 'curations',
         to: '/curations',
         label: '큐레이션 관리',
       },
       {
-        id: 'stg_episode',
+        id: 'stg_episodes',
         to: '/stg/episodes',
         label: '에피소드 관리 (stg)',
       },
       {
-        id: 'stg_channel-book-list',
+        id: 'stg_channels',
         to: '/stg/channels',
         label: '채널·도서 관리 (stg)',
       },
       {
-        id: 'stg_curation-list',
+        id: 'stg_curations',
         to: '/stg/curations',
         label: '큐레이션 관리 (stg)',
       },

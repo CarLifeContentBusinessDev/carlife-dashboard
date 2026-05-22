@@ -4,10 +4,7 @@ import type { usingDataProps } from '@/types/pickleProdContents';
 import { api, stgApi } from '@/utils/api/api';
 import formatDateString from '@/utils/format/formatDateString';
 import { formatPlayTime } from '@/utils/format/formatPlayTime';
-import {
-  GREEN_BADGE_STYLE,
-  RED_BADGE_STYLE,
-} from '@/constants/badgeStyles';
+import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },
@@ -113,11 +110,12 @@ const ProdEpisodeDetail = () => {
   const [loading, setLoading] = useState(!stateEpisode);
   const [fetchError, setFetchError] = useState(false);
 
+  const isStaging = location.pathname.startsWith('/stg/');
+
   useEffect(() => {
     if (stateEpisode || !id) return;
 
     const controller = new AbortController();
-    const isStaging = location.pathname.startsWith('/stg/');
     const apiInstance = isStaging ? stgApi : api;
 
     apiInstance
@@ -175,7 +173,9 @@ const ProdEpisodeDetail = () => {
             <p className='text-sm text-gray-400 mt-1'>ID: {id}</p>
           </div>
           <button
-            onClick={() => navigate(from)}
+            onClick={() =>
+              isStaging ? navigate(`/stg/episodes`) : navigate(`/episodes`)
+            }
             className='px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition text-sm'
           >
             목록
