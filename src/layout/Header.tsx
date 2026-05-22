@@ -19,6 +19,7 @@ import type { PicknowServer, PickleServer } from '@/constants/servers';
 import { setTestMode } from '@/utils/api/api';
 import { supabase } from '@/lib/supabase';
 import { useAccessTokenStore } from '@/store/useAccessTokenStore';
+import type { ServiceType } from '@/store/useServiceStore';
 
 const SERVICE_LABELS: Record<string, string> = {
   pickle: 'Pickle Admin',
@@ -98,10 +99,6 @@ const Header = () => {
       if (!selectedServerIds.some((id) => isPicknowLoggedIn(id))) {
         return toast.warn('서버에 먼저 로그인해주세요!');
       }
-    } else if (selectedService === 'pickle') {
-      if (Object.keys(pickleTokens).length === 0) {
-        return toast.warn('서버에 먼저 로그인해주세요!');
-      }
     }
     const token = await getGoogleToken();
     if (token) {
@@ -120,30 +117,38 @@ const Header = () => {
     toast.success('Google 로그아웃에 성공하였습니다.');
   };
 
-  const handleLogout = () => {
+  const handleServiceLogout = (service: ServiceType) => {
     setTestMode(false);
-    clearLoginToken();
-    if (selectedService === 'picknow') {
+    if (service === 'picknow') {
       PICKNOW_SERVERS.forEach((server) => clearPicknowToken(server.id));
       clearServiceToken('picknow');
-      clearAccessToken();
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('accessToken');
-    } else if (selectedService === 'pickle') {
-      PICKLE_SERVERS.forEach((server) => clearPickleToken(server.id));
-      clearAccessToken();
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('pickleToken');
-      supabase.auth.signOut();
     } else {
-      if (selectedService) clearServiceToken(selectedService);
-      localStorage.removeItem('refreshToken');
-      clearAccessToken();
+      PICKLE_SERVERS.forEach((server) => clearPickleToken(server.id));
+      clearServiceToken('pickle');
       supabase.auth.signOut();
     }
-    clearSelectedService();
-    navigate('/');
+
+    const remainingPicknowCount =
+      service === 'picknow' ? 0 : picknowConnectedCount;
+    const remainingPickleCount =
+      service === 'pickle' ? 0 : pickleConnectedCount;
+
+    if (remainingPicknowCount === 0 && remainingPickleCount === 0) {
+      clearAccessToken();
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('accessToken');
+    }
+
+    if (selectedService === service) {
+      clearSelectedService();
+      navigate('/');
+    }
+
+    toast.success(
+      service === 'picknow'
+        ? 'Picknow 로그아웃에 성공하였습니다.'
+        : 'Pickle 로그아웃에 성공하였습니다.'
+    );
   };
 
   const picknowConnectedCount = PICKNOW_SERVERS.filter((s) =>
@@ -153,6 +158,11 @@ const Header = () => {
   const pickleConnectedCount = PICKLE_SERVERS.filter((s) =>
     isPickleLoggedIn(s.id)
   ).length;
+
+  const hasPicknowSession =
+    selectedService === 'picknow' && picknowConnectedCount > 0;
+  const hasPickleSession =
+    selectedService === 'pickle' && pickleConnectedCount > 0;
 
   const serviceLabel = selectedService
     ? SERVICE_LABELS[selectedService]
@@ -331,7 +341,16 @@ const Header = () => {
             <Button onClick={handleGoogleLogin}>Google 로그인</Button>
           )
         )}
-        <Button onClick={handleLogout}>전체 로그아웃</Button>
+        {hasPicknowSession && (
+          <Button onClick={() => handleServiceLogout('picknow')}>
+            Picknow 로그아웃
+          </Button>
+        )}
+        {hasPickleSession && (
+          <Button onClick={() => handleServiceLogout('pickle')}>
+            Pickle 로그아웃
+          </Button>
+        )}
       </div>
 
       {loginModalPicknowServer && (
