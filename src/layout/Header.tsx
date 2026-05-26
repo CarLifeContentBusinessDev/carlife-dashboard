@@ -111,6 +111,14 @@ const Header = () => {
     toast.success('Google 로그아웃에 성공하였습니다.');
   };
 
+  const picknowConnectedCount = PICKNOW_SERVERS.filter((s) =>
+    isPicknowLoggedIn(s.id)
+  ).length;
+
+  const pickleConnectedCount = PICKLE_SERVERS.filter((s) =>
+    isPickleLoggedIn(s.id)
+  ).length;
+
   const handleServiceLogout = (service: ServiceType) => {
     setTestMode(false);
     if (service === 'picknow') {
@@ -130,7 +138,6 @@ const Header = () => {
     if (remainingPicknowCount === 0 && remainingPickleCount === 0) {
       clearAccessToken();
       localStorage.removeItem('refreshToken');
-      localStorage.removeItem('accessToken');
     }
 
     if (selectedService === service) {
@@ -144,14 +151,6 @@ const Header = () => {
         : 'Pickle 로그아웃에 성공하였습니다.'
     );
   };
-
-  const picknowConnectedCount = PICKNOW_SERVERS.filter((s) =>
-    isPicknowLoggedIn(s.id)
-  ).length;
-
-  const pickleConnectedCount = PICKLE_SERVERS.filter((s) =>
-    isPickleLoggedIn(s.id)
-  ).length;
 
   const hasPicknowSession =
     selectedService === 'picknow' && picknowConnectedCount > 0;
