@@ -110,22 +110,91 @@ interface BinaryCodeItem {
   attribute3: string;
 }
 
+interface PageInfoResponse {
+  page?: number;
+  size?: number;
+  totalCount?: number;
+}
+
+type ListPayload<T> =
+  | T[]
+  | {
+      dataList?: T[];
+      items?: T[];
+      list?: T[];
+      content?: T[];
+      rows?: T[];
+    };
+
+const extractList = <T>(payload: ListPayload<T> | null | undefined): T[] => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload) return [];
+
+  const list =
+    payload.dataList ??
+    payload.items ??
+    payload.list ??
+    payload.content ??
+    payload.rows;
+
+  return Array.isArray(list) ? list : [];
+};
+
+const fetchAllPagedList = async <T>(
+  apiInstance: AxiosInstance,
+  url: string,
+  params?: Record<string, string | number>
+): Promise<T[]> => {
+  const firstResponse = await apiInstance.get<PagedListResponse<T>>(url, {
+    params: { ...params, page: 1, size: 1000 },
+  });
+
+  const firstData = firstResponse.data.data;
+  const firstList = extractList(firstData);
+  const totalCount = firstData.pageInfo?.totalCount ?? firstList.length;
+
+  if (totalCount <= firstList.length) {
+    return firstList;
+  }
+
+  const pageSize = firstData.pageInfo?.size ?? (firstList.length || 1000);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const remainingPages = Array.from(
+    { length: Math.max(totalPages - 1, 0) },
+    (_, index) => index + 2
+  );
+
+  const remainingResults = await Promise.all(
+    remainingPages.map(async (page) => {
+      const response = await apiInstance.get<PagedListResponse<T>>(url, {
+        params: { ...params, page, size: pageSize },
+      });
+      return extractList(response.data.data);
+    })
+  );
+
+  return firstList.concat(...remainingResults);
+};
+
 interface BinaryCodeResponse {
   resultCode: string;
   resultMessage: string;
-  data: BinaryCodeItem[];
+  data: ListPayload<BinaryCodeItem>;
 }
 
 interface PicknowOemDeviceResponse {
   resultCode: string;
   resultMessage: string;
-  data: PicknowOemDevice[];
+  data: ListPayload<PicknowOemDevice>;
 }
 
-interface PicknowBookmarkListResponse {
+interface PagedListResponse<T> {
   resultCode: string;
   resultMessage: string;
-  data: PicknowBookmarkListItem[];
+  data: ListPayload<T> & {
+    pageInfo?: PageInfoResponse;
+  };
 }
 
 interface PicknowBookmarkDetailResponse {
@@ -293,9 +362,14 @@ const getValueFromConfig = (
   return { value: '', heightRange: '' };
 };
 
-const stringifyBooleanArray = (values?: string[]): string => {
-  if (!values || values.length === 0) return '';
-  return values.join('\n');
+const stringifyBooleanArray = (values?: string[] | string | null): string => {
+  if (!values) return '';
+  if (Array.isArray(values)) {
+    return values.filter(Boolean).join('\n');
+  }
+
+  const normalized = String(values).trim();
+  return normalized;
 };
 
 const formatUnSupportedDomainList = (
@@ -529,7 +603,10 @@ export async function syncPicknowConfigurationSheet(
     { params: { comCodeGroupCd: 'BinaryCode' } }
   );
   const binaryCodeMap = new Map<string, BinaryCodeItem>(
-    (binaryCodeResponse.data.data ?? []).map((item) => [item.comCodeCd, item])
+    extractList(binaryCodeResponse.data.data).map((item) => [
+      item.comCodeCd,
+      item,
+    ])
   );
 
   const findSettingRow = (oem: string, device: string) => {
@@ -554,7 +631,7 @@ export async function syncPicknowConfigurationSheet(
     const oemDeviceResponse = await apiInstance.get<PicknowOemDeviceResponse>(
       '/admin/v2/oem-device'
     );
-    oemDevices = oemDeviceResponse.data.data ?? [];
+    oemDevices = extractList(oemDeviceResponse.data.data);
   } catch {
     supportsOemDevice = false;
   }
@@ -570,7 +647,9 @@ export async function syncPicknowConfigurationSheet(
     seqToClients = resolved.seqToClients;
 
     if (matchedSeqs.length === 0) {
-      throw new Error('선택한 OEM/DEVICE에 해당하는 데이터를 찾을 수 없습니다.');
+      throw new Error(
+        '선택한 OEM/DEVICE에 해당하는 데이터를 찾을 수 없습니다.'
+      );
     }
   }
 
@@ -600,12 +679,11 @@ export async function syncPicknowConfigurationSheet(
         };
       })();
 
-  const bookmarkListResponse =
-    await apiInstance.get<PicknowBookmarkListResponse>('/admin/v2/bookmark', {
-      params: bookmarkParams,
-    });
-
-  const bookmarkList = bookmarkListResponse.data.data ?? [];
+  const bookmarkList = await fetchAllPagedList<PicknowBookmarkListItem>(
+    apiInstance,
+    '/admin/v2/bookmark',
+    bookmarkParams
+  );
   const uniqueBookmarks = Array.from(
     new Map(
       bookmarkList.map((bookmark) => [bookmark.bookmarkSeq, bookmark])
