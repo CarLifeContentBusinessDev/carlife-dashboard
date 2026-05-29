@@ -248,20 +248,6 @@ export async function preparePicknowConfigurationSheet(
               fields: 'pixelSize',
             },
           },
-          // 필터 영역 설정
-          {
-            setBasicFilter: {
-              filter: {
-                range: {
-                  sheetId,
-                  startRowIndex: 1, // 헤더 2행
-                  endRowIndex: 1000,
-                  startColumnIndex: 1, // B열
-                  endColumnIndex: 24, // X열
-                },
-              },
-            },
-          },
           {
             updateSheetProperties: {
               properties: {
@@ -278,6 +264,47 @@ export async function preparePicknowConfigurationSheet(
         ],
       },
     });
+  }
+
+  // 기존 필터뷰가 남아있을 수 있으므로 최신 시트 정보를 가져와서
+  // filterViews를 삭제한 뒤 기본 필터를 재설정합니다.
+  try {
+    const latestSpreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+    const targetSheet = latestSpreadsheet.result.sheets?.find(
+      (s) => s.properties?.sheetId === sheetId
+    );
+
+    const requests: any[] = [];
+    const filterViews = targetSheet?.filterViews ?? [];
+    for (const fv of filterViews) {
+      if (fv && fv.filterViewId != null) {
+        requests.push({ deleteFilterView: { filterId: fv.filterViewId } });
+      }
+    }
+
+    requests.push({ clearBasicFilter: { sheetId } });
+    requests.push({
+      setBasicFilter: {
+        filter: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            endRowIndex: 1000,
+            startColumnIndex: 1,
+            endColumnIndex: 24,
+          },
+        },
+      },
+    });
+
+    if (requests.length > 0) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        resource: { requests },
+      });
+    }
+  } catch (err) {
+    console.warn('필터 재설정 실패:', err);
   }
 
   // B1 셀에 개수 및 업데이트 시간 작성
