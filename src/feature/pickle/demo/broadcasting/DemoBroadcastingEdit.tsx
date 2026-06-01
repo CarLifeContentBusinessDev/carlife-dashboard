@@ -142,7 +142,8 @@ const DemoBroadcastingEdit = () => {
             <FormField label='Language'>
               <div className='flex gap-3 flex-wrap'>
                 {LANG_OPTIONS.map((lang) => {
-                  const selected = broadcasting.language.includes(lang.code);
+                  const selected =
+                    broadcasting.language.includes(lang.code) ?? false;
 
                   return (
                     <button

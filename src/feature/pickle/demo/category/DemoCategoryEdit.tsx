@@ -6,7 +6,7 @@ import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import { LANG_OPTIONS, LANG_SECTIONS } from '@/constants/languages';
 import useDemoEdit from '@/hook/useDemoEdit';
 import type { Category } from '@/types/pickleDemoContents';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 const DemoCategoryEdit = () => {
@@ -18,6 +18,7 @@ const DemoCategoryEdit = () => {
   );
 
   const langRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const hasScrolled = useRef(false);
 
   const {
     data: category,
@@ -33,12 +34,19 @@ const DemoCategoryEdit = () => {
     numericFields: ['order'],
   });
 
-  const visibleLangSections = LANG_SECTIONS.filter((section) =>
-    category?.language?.includes(section.lang)
-  );
+  const visibleLangSections = useMemo(() => {
+    return LANG_SECTIONS.filter((section) =>
+      category?.language?.includes(section.lang)
+    );
+  }, [category?.language]);
 
   useEffect(() => {
-    if (!category || activeTab !== 'localize') return;
+    if (activeTab !== 'localize') {
+      hasScrolled.current = false;
+      return;
+    }
+    if (!category || hasScrolled.current) return;
+
     const targetLang = visibleLangSections.some(
       (section) => section.lang === initLang
     )
@@ -48,6 +56,7 @@ const DemoCategoryEdit = () => {
 
     const el = langRefs.current[targetLang];
     if (el) {
+      hasScrolled.current = true;
       setTimeout(
         () => el.scrollIntoView({ behavior: 'smooth', block: 'start' }),
         100
@@ -164,7 +173,8 @@ const DemoCategoryEdit = () => {
             <FormField label='Language'>
               <div className='flex gap-3 flex-wrap'>
                 {LANG_OPTIONS.map((lang) => {
-                  const selected = category.language.includes(lang.code);
+                  const selected =
+                    category.language.includes(lang.code) ?? false;
 
                   return (
                     <button
