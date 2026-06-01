@@ -151,13 +151,13 @@ const fetchAllPagedList = async <T>(
 
   const firstData = firstResponse.data.data;
   const firstList = extractList(firstData);
-  const totalCount = firstData.pageInfo?.totalCount ?? firstList.length;
+  const totalCount = firstData?.pageInfo?.totalCount ?? firstList.length;
 
   if (totalCount <= firstList.length) {
     return firstList;
   }
 
-  const pageSize = firstData.pageInfo?.size ?? (firstList.length || 1000);
+  const pageSize = firstData?.pageInfo?.size || firstList.length || 1000;
 
   const totalPages = Math.ceil(totalCount / pageSize);
   const remainingPages = Array.from(
