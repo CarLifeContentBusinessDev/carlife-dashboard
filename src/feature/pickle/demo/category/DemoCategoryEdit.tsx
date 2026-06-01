@@ -183,36 +183,6 @@ const DemoCategoryEdit = () => {
                 })}
               </div>
             </FormField>
-
-            {/* <FormField
-              label='Language'
-              hint='지원할 언어를 쉼표로 구분하여 입력하세요. 예: ko, en, de, jp'
-            >
-              <input
-                className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                name='language'
-                value={
-                  Array.isArray(category.language)
-                    ? category.language.join(', ')
-                    : ''
-                }
-                onChange={handleLangChange}
-                placeholder='ko, en, de, jp'
-              />
-              {Array.isArray(category.language) &&
-                category.language.length > 0 && (
-                  <div className='flex gap-1.5 mt-1 flex-wrap'>
-                    {category.language.map((lang) => (
-                      <span
-                        key={lang}
-                        className='px-2.5 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium'
-                      >
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
-                )}
-            </FormField> */}
           </div>
         )}
 

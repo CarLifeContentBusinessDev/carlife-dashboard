@@ -7,6 +7,7 @@ import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
 import useDemoEdit from '@/hook/useDemoEdit';
 import type { Broadcasting } from '@/types/pickleDemoContents';
+import { LANG_OPTIONS } from '@/constants/languages';
 
 const DemoBroadcastingEdit = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,7 @@ const DemoBroadcastingEdit = () => {
     saving,
     error,
     handleChange,
-    handleLangChange,
+    handleLangToggle,
     save,
     navigate,
   } = useDemoEdit<Broadcasting>({
@@ -138,34 +139,27 @@ const DemoBroadcastingEdit = () => {
           </FormField>
 
           <div className='grid grid-cols-2 gap-6'>
-            <FormField
-              label='Language'
-              hint='지원할 언어를 쉼표로 구분하여 입력하세요. 예: ko, en, de, jp'
-            >
-              <input
-                className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                name='language'
-                value={
-                  Array.isArray(broadcasting.language)
-                    ? broadcasting.language.join(', ')
-                    : ''
-                }
-                onChange={handleLangChange}
-                placeholder='ko, en, de, jp'
-              />
-              {Array.isArray(broadcasting.language) &&
-                broadcasting.language.length > 0 && (
-                  <div className='flex gap-1.5 mt-1 flex-wrap'>
-                    {broadcasting.language.map((lang) => (
-                      <span
-                        key={lang}
-                        className='px-2.5 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium'
-                      >
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
-                )}
+            <FormField label='Language'>
+              <div className='flex gap-3 flex-wrap'>
+                {LANG_OPTIONS.map((lang) => {
+                  const selected = broadcasting.language.includes(lang.code);
+
+                  return (
+                    <button
+                      key={lang.code}
+                      type='button'
+                      onClick={() => handleLangToggle(lang.code)}
+                      className={`px-4 h-10 rounded-full text-sm font-medium transition border ${
+                        selected
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  );
+                })}
+              </div>
             </FormField>
 
             <FormField label='Order'>
