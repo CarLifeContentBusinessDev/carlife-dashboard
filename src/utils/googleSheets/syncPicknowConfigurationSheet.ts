@@ -362,14 +362,127 @@ const getValueFromConfig = (
   return { value: '', heightRange: '' };
 };
 
-const stringifyBooleanArray = (values?: string[] | string | null): string => {
-  if (!values) return '';
-  if (Array.isArray(values)) {
-    return values.filter(Boolean).join('\n');
+const extractSheetText = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value).trim();
   }
 
-  const normalized = String(values).trim();
-  return normalized;
+  if (Array.isArray(value)) {
+    return value.map(extractSheetText).filter(Boolean).join('\n');
+  }
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+
+    const domainValue =
+      extractSheetText(record.domain) ||
+      extractSheetText(record.parentDomain) ||
+      extractSheetText(record.host) ||
+      extractSheetText(record.site);
+    const keywordValues =
+      record.keywordList ??
+      record.keywords ??
+      record.children ??
+      record.subKeywords ??
+      record.subKeywordList ??
+      record.keyword ??
+      record.items;
+
+    if (domainValue && keywordValues) {
+      const keywords = Array.isArray(keywordValues)
+        ? keywordValues.map(extractSheetText).filter(Boolean)
+        : [extractSheetText(keywordValues)].filter(Boolean);
+
+      if (keywords.length > 0) {
+        return `${domainValue}\n→ ${keywords.join(', ')}`;
+      }
+    }
+
+    const preferredKeys = [
+      'value',
+      'text',
+      'name',
+      'label',
+      'title',
+      'domain',
+      'url',
+      'keyword',
+      'pattern',
+      'host',
+      'rule',
+    ];
+
+    for (const key of preferredKeys) {
+      const candidate = extractSheetText(record[key]);
+      if (candidate) {
+        return candidate;
+      }
+    }
+
+    const primitiveValues = Object.values(record)
+      .map(extractSheetText)
+      .filter(Boolean);
+
+    if (primitiveValues.length > 0) {
+      return primitiveValues.join(' ');
+    }
+
+    return JSON.stringify(value);
+  }
+
+  return String(value).trim();
+};
+
+const stringifyBooleanArray = (values?: unknown[] | string | null): string => {
+  if (!values) return '';
+  if (Array.isArray(values)) {
+    return values.map(extractSheetText).filter(Boolean).join('\n');
+  }
+
+  return extractSheetText(values);
+};
+
+const formatBlackListForSheet = (values?: unknown): string => {
+  if (!values) return '';
+
+  if (Array.isArray(values)) {
+    return values.map(extractSheetText).filter(Boolean).join('\n');
+  }
+
+  const entries =
+    typeof values === 'object' && values !== null
+      ? Object.entries(values as Record<string, unknown>)
+      : [];
+
+  if (entries.length === 0) {
+    return extractSheetText(values);
+  }
+
+  const lines: string[] = [];
+
+  entries.forEach(([domain, keywords]) => {
+    const domainText = extractSheetText(domain);
+    if (!domainText) return;
+
+    const keywordList = Array.isArray(keywords)
+      ? keywords.map(extractSheetText).filter(Boolean)
+      : [extractSheetText(keywords)].filter(Boolean);
+
+    if (keywordList.length === 0) {
+      lines.push(domainText);
+      return;
+    }
+
+    lines.push(`${domainText}\n-> ${keywordList.join(', ')}`);
+  });
+
+  return lines.join('\n\n');
 };
 
 const formatUnSupportedDomainList = (
@@ -379,7 +492,14 @@ const formatUnSupportedDomainList = (
   const entries = Object.entries(map).filter(([domain]) => domain !== '');
   if (entries.length === 0) return '';
   return entries
-    .map(([domain, keywords]) => `${domain}\n→ ${keywords.join(', ')}`)
+    .map(([domain, keywords]) => {
+      const keywordText = keywords
+        .map((keyword) => extractSheetText(keyword))
+        .filter(Boolean)
+        .join(', ');
+
+      return keywordText ? `${domain}\n-> ${keywordText}` : domain;
+    })
     .join('\n\n');
 };
 
@@ -828,7 +948,7 @@ export async function syncPicknowConfigurationSheet(
           formatZoomFactorForSheet(resolvedZoom.value),
           resolvedUA.value,
           stringifyBooleanArray(detail.urlConfig?.whiteList),
-          stringifyBooleanArray(detail.urlConfig?.blackList),
+          formatBlackListForSheet(detail.urlConfig?.blackList),
           formatUnSupportedDomainList(detail.urlConfig?.unSupportedDomainList),
           formatBinaryCodes(
             detail.binaryCds ?? [],
