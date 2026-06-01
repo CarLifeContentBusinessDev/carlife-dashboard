@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import FormActionsButton from '@/components/form/FormActionButton';
 import FormField from '@/components/form/FormField';
 import FormLayout from '@/components/form/FormLayout';
 import FormTabs from '@/components/form/FormTabs';
 import { ThumbnailPreview } from '@/components/table/ThumbnailPreview';
+import { LANG_OPTIONS, LANG_SECTIONS } from '@/constants/languages';
 import useDemoEdit from '@/hook/useDemoEdit';
 import type { Category } from '@/types/pickleDemoContents';
-import { LANG_SECTIONS } from '@/constants/languages';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 const DemoCategoryEdit = () => {
   const [searchParams] = useSearchParams();
@@ -25,7 +25,7 @@ const DemoCategoryEdit = () => {
     saving,
     error,
     handleChange,
-    handleLangChange,
+    handleLangToggle,
     save,
     navigate,
   } = useDemoEdit<Category>({
@@ -33,16 +33,27 @@ const DemoCategoryEdit = () => {
     numericFields: ['order'],
   });
 
+  const visibleLangSections = LANG_SECTIONS.filter((section) =>
+    category?.language?.includes(section.lang)
+  );
+
   useEffect(() => {
     if (!category || activeTab !== 'localize') return;
-    const el = langRefs.current[initLang];
+    const targetLang = visibleLangSections.some(
+      (section) => section.lang === initLang
+    )
+      ? initLang
+      : visibleLangSections[0]?.lang;
+    if (!targetLang) return;
+
+    const el = langRefs.current[targetLang];
     if (el) {
       setTimeout(
         () => el.scrollIntoView({ behavior: 'smooth', block: 'start' }),
         100
       );
     }
-  }, [category, activeTab, initLang]);
+  }, [category, activeTab, initLang, visibleLangSections]);
 
   const handleSave = async () => {
     if (!category) return;
@@ -150,7 +161,30 @@ const DemoCategoryEdit = () => {
               />
             </FormField>
 
-            <FormField
+            <FormField label='Language'>
+              <div className='flex gap-3 flex-wrap'>
+                {LANG_OPTIONS.map((lang) => {
+                  const selected = category.language.includes(lang.code);
+
+                  return (
+                    <button
+                      key={lang.code}
+                      type='button'
+                      onClick={() => handleLangToggle(lang.code)}
+                      className={`px-4 h-10 rounded-full text-sm font-medium transition border ${
+                        selected
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </FormField>
+
+            {/* <FormField
               label='Language'
               hint='지원할 언어를 쉼표로 구분하여 입력하세요. 예: ko, en, de, jp'
             >
@@ -178,73 +212,79 @@ const DemoCategoryEdit = () => {
                     ))}
                   </div>
                 )}
-            </FormField>
+            </FormField> */}
           </div>
         )}
 
         {activeTab === 'localize' && (
           <div className='flex flex-col divide-y divide-gray-100'>
-            {LANG_SECTIONS.map((section) => {
-              const isActive = section.lang === initLang;
-              return (
-                <div
-                  key={section.lang}
-                  ref={(el) => {
-                    langRefs.current[section.lang] = el;
-                  }}
-                  className={`py-6 rounded-xl transition-colors duration-500 px-4 ${
-                    isActive ? 'bg-blue-50 ring-1 ring-blue-100' : ''
-                  }`}
-                >
-                  <div className='flex items-center gap-2 mb-4'>
-                    <span className='font-semibold text-gray-700 text-sm'>
-                      {section.label}
-                    </span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-mono ${
-                        isActive
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {section.lang}
-                    </span>
-                    {isActive && (
-                      <span className='text-xs text-blue-500 font-medium'>
-                        현재 편집 중
+            {visibleLangSections.length === 0 ? (
+              <div className='py-10 text-center text-sm text-gray-500'>
+                선택된 해외 언어가 없습니다.
+              </div>
+            ) : (
+              visibleLangSections.map((section) => {
+                const isActive = section.lang === initLang;
+                return (
+                  <div
+                    key={section.lang}
+                    ref={(el) => {
+                      langRefs.current[section.lang] = el;
+                    }}
+                    className={`py-6 rounded-xl transition-colors duration-500 px-4 ${
+                      isActive ? 'bg-blue-50 ring-1 ring-blue-100' : ''
+                    }`}
+                  >
+                    <div className='flex items-center gap-2 mb-4'>
+                      <span className='font-semibold text-gray-700 text-sm'>
+                        {section.label}
                       </span>
-                    )}
-                  </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-mono ${
+                          isActive
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {section.lang}
+                      </span>
+                      {isActive && (
+                        <span className='text-xs text-blue-500 font-medium'>
+                          현재 편집 중
+                        </span>
+                      )}
+                    </div>
 
-                  <div className='flex gap-6 items-start'>
-                    <ThumbnailPreview
-                      url={(category[section.imgKey] as string) || ''}
-                      title={(category[section.titleKey] as string) || ''}
-                    />
-                    <div className='flex flex-col gap-4 flex-1'>
-                      <FormField label='Title'>
-                        <input
-                          className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
-                          name={section.titleKey}
-                          value={(category[section.titleKey] as string) || ''}
-                          onChange={handleChange}
-                          placeholder={`${section.label} 제목`}
-                        />
-                      </FormField>
-                      <FormField label='Thumbnail URL'>
-                        <input
-                          className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition font-mono'
-                          name={section.imgKey}
-                          value={(category[section.imgKey] as string) || ''}
-                          onChange={handleChange}
-                          placeholder='https://...'
-                        />
-                      </FormField>
+                    <div className='flex gap-6 items-start'>
+                      <ThumbnailPreview
+                        url={(category[section.imgKey] as string) || ''}
+                        title={(category[section.titleKey] as string) || ''}
+                      />
+                      <div className='flex flex-col gap-4 flex-1'>
+                        <FormField label='Title'>
+                          <input
+                            className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                            name={section.titleKey}
+                            value={(category[section.titleKey] as string) || ''}
+                            onChange={handleChange}
+                            placeholder={`${section.label} 제목`}
+                          />
+                        </FormField>
+                        <FormField label='Thumbnail URL'>
+                          <input
+                            className='w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition font-mono'
+                            name={section.imgKey}
+                            value={(category[section.imgKey] as string) || ''}
+                            onChange={handleChange}
+                            placeholder='https://...'
+                          />
+                        </FormField>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         )}
       </div>
