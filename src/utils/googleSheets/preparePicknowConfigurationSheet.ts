@@ -276,6 +276,8 @@ export async function preparePicknowConfigurationSheet(
 
     const requests: any[] = [];
     const filterViews = targetSheet?.filterViews ?? [];
+    const sheetRowCount =
+      targetSheet?.properties?.gridProperties?.rowCount ?? 1000;
     for (const fv of filterViews) {
       if (fv && fv.filterViewId != null) {
         requests.push({ deleteFilterView: { filterId: fv.filterViewId } });
@@ -289,7 +291,7 @@ export async function preparePicknowConfigurationSheet(
           range: {
             sheetId,
             startRowIndex: 1,
-            endRowIndex: 1000,
+            endRowIndex: sheetRowCount,
             startColumnIndex: 1,
             endColumnIndex: 24,
           },
