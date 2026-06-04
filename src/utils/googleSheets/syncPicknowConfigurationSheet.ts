@@ -1023,6 +1023,20 @@ export async function syncPicknowConfigurationSheet(
             fields: 'gridProperties.rowCount',
           },
         },
+        { clearBasicFilter: { sheetId } },
+        {
+          setBasicFilter: {
+            filter: {
+              range: {
+                sheetId,
+                startRowIndex: 1,
+                endRowIndex: rowCount,
+                startColumnIndex: 1,
+                endColumnIndex: 24,
+              },
+            },
+          },
+        },
       ],
     },
   });

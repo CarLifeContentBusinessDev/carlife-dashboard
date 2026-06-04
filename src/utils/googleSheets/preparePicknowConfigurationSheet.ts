@@ -266,8 +266,7 @@ export async function preparePicknowConfigurationSheet(
     });
   }
 
-  // 기존 필터뷰가 남아있을 수 있으므로 최신 시트 정보를 가져와서
-  // filterViews를 삭제한 뒤 기본 필터를 재설정합니다.
+  // 기본 필터(setBasicFilter)는 데이터를 쓴 뒤 syncPicknowConfigurationSheet에서 설정합니다.
   try {
     const latestSpreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
     const targetSheet = latestSpreadsheet.result.sheets?.find(
@@ -276,8 +275,6 @@ export async function preparePicknowConfigurationSheet(
 
     const requests: any[] = [];
     const filterViews = targetSheet?.filterViews ?? [];
-    const sheetRowCount =
-      targetSheet?.properties?.gridProperties?.rowCount ?? 1000;
     for (const fv of filterViews) {
       if (fv && fv.filterViewId != null) {
         requests.push({ deleteFilterView: { filterId: fv.filterViewId } });
@@ -285,19 +282,6 @@ export async function preparePicknowConfigurationSheet(
     }
 
     requests.push({ clearBasicFilter: { sheetId } });
-    requests.push({
-      setBasicFilter: {
-        filter: {
-          range: {
-            sheetId,
-            startRowIndex: 1,
-            endRowIndex: sheetRowCount,
-            startColumnIndex: 1,
-            endColumnIndex: 24,
-          },
-        },
-      },
-    });
 
     if (requests.length > 0) {
       await sheets.spreadsheets.batchUpdate({
@@ -306,7 +290,7 @@ export async function preparePicknowConfigurationSheet(
       });
     }
   } catch (err) {
-    console.warn('필터 재설정 실패:', err);
+    console.warn('필터뷰 삭제 실패:', err);
   }
 
   // B1 셀에 개수 및 업데이트 시간 작성
