@@ -30,6 +30,16 @@ const ContentColumn = ({ className, value, width }: ContentColumnProps) => {
   );
 };
 
+const formatPlayTime = (totalSeconds: number | string) => {
+  const seconds = Number(totalSeconds);
+  if (isNaN(seconds)) return '0분 0초';
+
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+
+  return `${m}분 ${s}초`;
+};
+
 const EpisodeList = ({ data }: { data: usingDataProps[] }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -176,7 +186,9 @@ const EpisodeList = ({ data }: { data: usingDataProps[] }) => {
                             ? formatDateString(epi.dispDtime)
                             : column.key === 'createdAt'
                               ? formatDateString(epi.createdAt)
-                              : epi[column.key as keyof usingDataProps]
+                              : column.key === 'playTime'
+                                ? formatPlayTime(epi.playTime)
+                                : epi[column.key as keyof usingDataProps]
                         }
                         width={column.width}
                       />

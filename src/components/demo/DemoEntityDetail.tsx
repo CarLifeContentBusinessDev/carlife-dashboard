@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { BLUE_BADGE_STYLE } from '@/constants/badgeStyles';
+import { formatPlayTime, parsePlayTime } from '@/utils/format/formatPlayTime';
 
 export type RelatedListQuery =
   | {
@@ -246,10 +247,24 @@ const ImagePreview = ({ url }: { url: string }) => {
   );
 };
 
-const AudioPreview = ({ url }: { url: string }) => {
+const AudioPreview = ({
+  url,
+  onLoad,
+}: {
+  url: string;
+  onLoad?: (secs: number) => void;
+}) => {
   return (
     <div className='w-full max-w-xl'>
-      <audio controls preload='metadata' className='w-full'>
+      <audio
+        controls
+        preload='metadata'
+        className='w-full'
+        onLoadedMetadata={(e) => {
+          const dur = e.currentTarget.duration;
+          if (isFinite(dur) && dur > 0) onLoad?.(Math.round(dur));
+        }}
+      >
         <source src={url} />
         브라우저에서 오디오 재생을 지원하지 않습니다.
       </audio>
@@ -346,6 +361,17 @@ const DemoEntityDetail = ({
   const [row, setRow] = useState<Record<string, unknown> | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+
+  const resolveDuration = (raw: unknown): string => {
+    if (audioDuration != null && audioDuration > 0)
+      return formatPlayTime(audioDuration);
+    if (raw != null) {
+      const secs = parsePlayTime(raw as number | string);
+      if (secs > 0) return formatPlayTime(secs);
+    }
+    return '-';
+  };
 
   const handleDelete = async () => {
     if (!id) return;
@@ -699,7 +725,11 @@ const DemoEntityDetail = ({
                           {entry.formatted}
                         </span>
                       ) : (
-                        <span className='text-gray-800'>{entry.formatted}</span>
+                        <span className='text-gray-800'>
+                          {entry.key === 'duration'
+                            ? resolveDuration(entry.value)
+                            : entry.formatted}
+                        </span>
                       )}
                     </div>
                   ))}
@@ -735,7 +765,12 @@ const DemoEntityDetail = ({
                             ) : entry.isImage ? (
                               <ImagePreview url={String(entry.value)} />
                             ) : entry.isAudio ? (
-                              <AudioPreview url={String(entry.value)} />
+                              <AudioPreview
+                                url={String(entry.value)}
+                                onLoad={setAudioDuration}
+                              />
+                            ) : entry.key === 'duration' ? (
+                              resolveDuration(entry.value)
                             ) : (
                               entry.formatted
                             )}
@@ -767,7 +802,12 @@ const DemoEntityDetail = ({
                       ) : entry.isImage ? (
                         <ImagePreview url={String(entry.value)} />
                       ) : entry.isAudio ? (
-                        <AudioPreview url={String(entry.value)} />
+                        <AudioPreview
+                          url={String(entry.value)}
+                          onLoad={setAudioDuration}
+                        />
+                      ) : entry.key === 'duration' ? (
+                        resolveDuration(entry.value)
                       ) : (
                         entry.formatted
                       )}

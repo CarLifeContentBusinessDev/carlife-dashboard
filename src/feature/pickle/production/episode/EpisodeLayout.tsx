@@ -1,6 +1,3 @@
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { toast } from 'react-toastify';
-import { useEpisodeStore } from '@/store/useEpisodeStore';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
 import Pagination from '@/components/common/Pagination';
 import PickleLoginBanner from '@/components/common/PickleLoginBanner';
@@ -15,6 +12,7 @@ import useListSort from '@/hook/useListSort';
 import { useSheetSelection } from '@/hook/useSheetSelection';
 import { useStagingEnv } from '@/hook/useStagingEnv';
 import { SYNC_PAGE_SIZE, useSyncState } from '@/hook/useSyncState';
+import { useEpisodeStore } from '@/store/useEpisodeStore';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { usePickleServerStore } from '@/store/usePickleServerStore';
 import type { usingDataProps } from '@/types/pickleProdContents';
@@ -24,8 +22,11 @@ import { getNewDataWithExcel } from '@/utils/excel/getNewData';
 import { clearExcelRange, overwriteExcelData } from '@/utils/excel/updateExcel';
 import { findChangedData } from '@/utils/excel/updateLogs';
 import { updateSheetSyncTime } from '@/utils/excel/updateSheetSyncTime';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'react-toastify';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
+import { enrichEpisodesWithAudioDuration } from '@/utils/audio/fetchAudioDuration';
 
 const CATEGORY = 'episode';
 
@@ -230,6 +231,9 @@ const EpisodeLayout = () => {
 
     try {
       setExcelLoading(true);
+
+      const enrichedDataToSync = enrichEpisodesWithAudioDuration(dataToSync);
+
       const duplicateToSync =
         syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
       const shouldAppendLogs =
@@ -237,7 +241,7 @@ const EpisodeLayout = () => {
 
       if (syncPreviewMode === 'new') {
         await appendNewDataToTop(
-          dataToSync,
+          enrichedDataToSync,
           setProgress,
           CATEGORY,
           setExcelLoading,
@@ -247,7 +251,7 @@ const EpisodeLayout = () => {
         );
       } else {
         await overwriteExcelData(
-          dataToSync,
+          enrichedDataToSync,
           loginToken,
           CATEGORY,
           currentSheet,
@@ -260,12 +264,14 @@ const EpisodeLayout = () => {
       }
 
       if (shouldAppendLogs) {
+        const enrichedDuplicateToSync =
+          enrichEpisodesWithAudioDuration(duplicateToSync);
         const logsSheet = getSheetName('Episode_Logs');
         setProgress(
           `Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`
         );
         await appendNewDataToTop(
-          duplicateToSync,
+          enrichedDuplicateToSync,
           setProgress,
           CATEGORY,
           setExcelLoading,

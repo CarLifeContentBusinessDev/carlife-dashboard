@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import { api, stgApi } from '@/utils/api/api';
 import formatDateString from '@/utils/format/formatDateString';
+import { saveAudioDurationToCache } from '@/utils/audio/fetchAudioDuration';
 import { formatPlayTime } from '@/utils/format/formatPlayTime';
 import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 
@@ -29,71 +30,6 @@ const isAudioUrl = (url: string) =>
   /\.(mp3|wav|m4a|aac|ogg|flac|m3u8)(\?.*)?$/i.test(url) ||
   url.toLowerCase().includes('audio');
 
-const renderValue = (key: keyof usingDataProps, value: string | number) => {
-  if (key === 'usageYn') {
-    return (
-      <span
-        className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold border ${
-          value === 'Y'
-            ? `${GREEN_BADGE_STYLE} border-green-200`
-            : `${RED_BADGE_STYLE} border-red-200`
-        }`}
-      >
-        {value === 'Y' ? 'Active' : 'Inactive'}
-      </span>
-    );
-  }
-
-  if (key === 'dispDtime' || key === 'createdAt') {
-    return <span>{formatDateString(String(value))}</span>;
-  }
-
-  if (key === 'playTime') {
-    return <span>{formatPlayTime(Number(value))}</span>;
-  }
-
-  if (typeof value === 'string' && value.startsWith('http')) {
-    if (isImageUrl(value)) {
-      return (
-        <div className='flex flex-col gap-2'>
-          <div className='w-44 h-44 rounded-xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center'>
-            <img
-              src={value}
-              alt='thumbnail'
-              className='w-full h-full object-cover'
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    if (isAudioUrl(value)) {
-      return (
-        <div className='flex flex-col gap-2 w-full max-w-xl'>
-          <audio controls preload='metadata' className='w-full'>
-            <source src={value} />
-          </audio>
-        </div>
-      );
-    }
-
-    return (
-      <a
-        href={value}
-        target='_blank'
-        rel='noopener noreferrer'
-        className='text-blue-500 text-sm underline break-all'
-      >
-        {value}
-      </a>
-    );
-  }
-
-  return <span className='break-all'>{String(value ?? '-')}</span>;
-};
 
 const ProdEpisodeDetail = () => {
   const { id } = useParams();
@@ -109,6 +45,7 @@ const ProdEpisodeDetail = () => {
   );
   const [loading, setLoading] = useState(!stateEpisode);
   const [fetchError, setFetchError] = useState(false);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
 
   const isStaging = location.pathname.startsWith('/stg/');
 
@@ -132,6 +69,86 @@ const ProdEpisodeDetail = () => {
 
     return () => controller.abort();
   }, [id, stateEpisode, location.pathname]);
+
+  const renderValue = (key: keyof usingDataProps, value: string | number) => {
+    if (key === 'usageYn') {
+      return (
+        <span
+          className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold border ${
+            value === 'Y'
+              ? `${GREEN_BADGE_STYLE} border-green-200`
+              : `${RED_BADGE_STYLE} border-red-200`
+          }`}
+        >
+          {value === 'Y' ? 'Active' : 'Inactive'}
+        </span>
+      );
+    }
+
+    if (key === 'dispDtime' || key === 'createdAt') {
+      return <span>{formatDateString(String(value))}</span>;
+    }
+
+    if (key === 'playTime') {
+      const seconds =
+        audioDuration ?? (typeof value === 'number' && value > 0 ? value : null);
+      return <span>{seconds != null ? formatPlayTime(seconds) : '-'}</span>;
+    }
+
+    if (typeof value === 'string' && value.startsWith('http')) {
+      if (isImageUrl(value)) {
+        return (
+          <div className='flex flex-col gap-2'>
+            <div className='w-44 h-44 rounded-xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center'>
+              <img
+                src={value}
+                alt='thumbnail'
+                className='w-full h-full object-cover'
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+          </div>
+        );
+      }
+
+      if (isAudioUrl(value)) {
+        return (
+          <div className='flex flex-col gap-2 w-full max-w-xl'>
+            <audio
+              controls
+              preload='metadata'
+              className='w-full'
+              onLoadedMetadata={(e) => {
+                const dur = e.currentTarget.duration;
+                if (isFinite(dur) && dur > 0) {
+                  const rounded = Math.round(dur);
+                  setAudioDuration(rounded);
+                  if (episode?.audioUrl) saveAudioDurationToCache(episode.audioUrl, rounded);
+                }
+              }}
+            >
+              <source src={value} />
+            </audio>
+          </div>
+        );
+      }
+
+      return (
+        <a
+          href={value}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='text-blue-500 text-sm underline break-all'
+        >
+          {value}
+        </a>
+      );
+    }
+
+    return <span className='break-all'>{String(value ?? '-')}</span>;
+  };
 
   if (loading) {
     return (
