@@ -1,15 +1,18 @@
 export function formatPlayTime(seconds: number | string): string {
-  const totalSeconds = typeof seconds === 'string' ? parseInt(seconds, 10) : seconds;
+  const parsed = typeof seconds === 'string' ? parseFloat(seconds) : seconds;
 
-  if (isNaN(totalSeconds) || totalSeconds < 0) {
-    return '0시간 0분 0초';
+  if (isNaN(parsed) || parsed < 0) {
+    return '0분 0초';
   }
 
+  const totalSeconds = Math.round(parsed);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const secs = totalSeconds % 60;
 
-  return `${hours}시간 ${minutes}분 ${secs}초`;
+  if (hours > 0) {
+    return `${hours}시간 ${minutes}분 ${secs}초`;
+  } else return `${minutes}분 ${secs}초`;
 }
 
 export function parsePlayTime(timeString: string | number): number {

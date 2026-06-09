@@ -2,6 +2,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'react';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import formatDateString from '@/utils/format/formatDateString';
+import { formatPlayTime } from '@/utils/format/formatPlayTime';
 
 interface HeaderColumnProps {
   label: string;
@@ -176,7 +177,9 @@ const EpisodeList = ({ data }: { data: usingDataProps[] }) => {
                             ? formatDateString(epi.dispDtime)
                             : column.key === 'createdAt'
                               ? formatDateString(epi.createdAt)
-                              : epi[column.key as keyof usingDataProps]
+                              : column.key === 'playTime'
+                                ? formatPlayTime(epi.playTime)
+                                : epi[column.key as keyof usingDataProps]
                         }
                         width={column.width}
                       />
