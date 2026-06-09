@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import { api, stgApi } from '@/utils/api/api';
-import formatDateString from '@/utils/format/formatDateString';
 import { saveAudioDurationToCache } from '@/utils/audio/fetchAudioDuration';
+import formatDateString from '@/utils/format/formatDateString';
 import { formatPlayTime } from '@/utils/format/formatPlayTime';
-import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const FIELD_DEFS: { key: keyof usingDataProps; label: string }[] = [
   // { key: 'episodeId', label: '에피소드 ID' },
@@ -30,7 +30,6 @@ const isAudioUrl = (url: string) =>
   /\.(mp3|wav|m4a|aac|ogg|flac|m3u8)(\?.*)?$/i.test(url) ||
   url.toLowerCase().includes('audio');
 
-
 const ProdEpisodeDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -46,6 +45,10 @@ const ProdEpisodeDetail = () => {
   const [loading, setLoading] = useState(!stateEpisode);
   const [fetchError, setFetchError] = useState(false);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
+
+  useEffect(() => {
+    setAudioDuration(null);
+  }, [id]);
 
   const isStaging = location.pathname.startsWith('/stg/');
 
@@ -90,8 +93,11 @@ const ProdEpisodeDetail = () => {
     }
 
     if (key === 'playTime') {
+      const numValue = Number(value);
+
       const seconds =
-        audioDuration ?? (typeof value === 'number' && value > 0 ? value : null);
+        audioDuration ?? (!isNaN(numValue) && numValue > 0 ? numValue : null);
+
       return <span>{seconds != null ? formatPlayTime(seconds) : '-'}</span>;
     }
 
@@ -125,7 +131,8 @@ const ProdEpisodeDetail = () => {
                 if (isFinite(dur) && dur > 0) {
                   const rounded = Math.round(dur);
                   setAudioDuration(rounded);
-                  if (episode?.audioUrl) saveAudioDurationToCache(episode.audioUrl, rounded);
+                  if (episode?.audioUrl)
+                    saveAudioDurationToCache(episode.audioUrl, rounded);
                 }
               }}
             >

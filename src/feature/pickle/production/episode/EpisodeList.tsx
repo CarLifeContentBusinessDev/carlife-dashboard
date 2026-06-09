@@ -2,6 +2,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'react';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import formatDateString from '@/utils/format/formatDateString';
+import { formatPlayTime } from '@/utils/format/formatPlayTime';
 
 interface HeaderColumnProps {
   label: string;
@@ -28,16 +29,6 @@ const ContentColumn = ({ className, value, width }: ContentColumnProps) => {
       {value}
     </p>
   );
-};
-
-const formatPlayTime = (totalSeconds: number | string) => {
-  const seconds = Number(totalSeconds);
-  if (isNaN(seconds)) return '0분 0초';
-
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-
-  return `${m}분 ${s}초`;
 };
 
 const EpisodeList = ({ data }: { data: usingDataProps[] }) => {

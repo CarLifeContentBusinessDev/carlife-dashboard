@@ -363,6 +363,10 @@ const DemoEntityDetail = ({
   const [deleting, setDeleting] = useState(false);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
 
+  useEffect(() => {
+    setAudioDuration(null);
+  }, [id]);
+
   const resolveDuration = (raw: unknown): string => {
     if (audioDuration != null && audioDuration > 0)
       return formatPlayTime(audioDuration);

@@ -26,7 +26,10 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'react-toastify';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
-import { enrichEpisodesWithAudioDuration } from '@/utils/audio/fetchAudioDuration';
+import {
+  enrichEpisodesWithAudioDuration,
+  warmAudioDurationCache,
+} from '@/utils/audio/fetchAudioDuration';
 
 const CATEGORY = 'episode';
 

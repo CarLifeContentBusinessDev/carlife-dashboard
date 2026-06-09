@@ -1,11 +1,11 @@
 export function formatPlayTime(seconds: number | string): string {
-  const totalSeconds =
-    typeof seconds === 'string' ? parseInt(seconds, 10) : seconds;
+  const parsed = typeof seconds === 'string' ? parseInt(seconds, 10) : seconds;
 
-  if (isNaN(totalSeconds) || totalSeconds < 0) {
+  if (isNaN(parsed) || parsed < 0) {
     return '0분 0초';
   }
 
+  const totalSeconds = Math.round(parsed);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const secs = totalSeconds % 60;
