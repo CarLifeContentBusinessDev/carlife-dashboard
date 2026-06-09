@@ -1,5 +1,5 @@
 export function formatPlayTime(seconds: number | string): string {
-  const parsed = typeof seconds === 'string' ? parseInt(seconds, 10) : seconds;
+  const parsed = typeof seconds === 'string' ? parseFloat(seconds) : seconds;
 
   if (isNaN(parsed) || parsed < 0) {
     return '0분 0초';

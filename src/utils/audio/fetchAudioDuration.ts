@@ -28,8 +28,15 @@ function writeCache(cache: Record<string, CacheEntry>): void {
 export function saveAudioDurationToCache(url: string, duration: number): void {
   if (!url || duration <= 0) return;
   const cache = readCache();
+  const now = Date.now();
+  const cleanCache: Record<string, CacheEntry> = {};
+  for (const [key, entry] of Object.entries(cache)) {
+    if (now - entry.cachedAt <= CACHE_TTL_MS) {
+      cleanCache[key] = entry;
+    }
+  }
   cache[url] = { duration, cachedAt: Date.now() };
-  writeCache(cache);
+  writeCache(cleanCache);
 }
 
 function getCachedDuration(url: string): number | null {
@@ -72,10 +79,6 @@ function fetchFromNetwork(
   });
 }
 
-/**
- * playTime=0인 에피소드 중 캐시 미스인 항목만 백그라운드에서 오디오 메타데이터를 로드해 캐시에 저장합니다.
- * UI를 차단하지 않으며, 반환된 함수를 호출하면 중단됩니다.
- */
 export function warmAudioDurationCache(
   episodes: usingDataProps[],
   concurrency = 5

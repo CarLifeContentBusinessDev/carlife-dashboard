@@ -17,6 +17,7 @@ import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { usePickleServerStore } from '@/store/usePickleServerStore';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import { fetchAllData } from '@/utils/api/fetchAllData';
+import { enrichEpisodesWithAudioDuration } from '@/utils/audio/fetchAudioDuration';
 import { appendNewDataToTop } from '@/utils/excel/appendNewDataToExcel';
 import { getNewDataWithExcel } from '@/utils/excel/getNewData';
 import { clearExcelRange, overwriteExcelData } from '@/utils/excel/updateExcel';
@@ -26,10 +27,6 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'react-toastify';
 import EpisodeList from './EpisodeList';
 import ProdEpisodeList from './ProdEpisodeList';
-import {
-  enrichEpisodesWithAudioDuration,
-  warmAudioDurationCache,
-} from '@/utils/audio/fetchAudioDuration';
 
 const CATEGORY = 'episode';
 

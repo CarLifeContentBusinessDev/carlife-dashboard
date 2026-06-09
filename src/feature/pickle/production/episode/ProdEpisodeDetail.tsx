@@ -131,8 +131,7 @@ const ProdEpisodeDetail = () => {
                 if (isFinite(dur) && dur > 0) {
                   const rounded = Math.round(dur);
                   setAudioDuration(rounded);
-                  if (episode?.audioUrl)
-                    saveAudioDurationToCache(episode.audioUrl, rounded);
+                  saveAudioDurationToCache(value, rounded);
                 }
               }}
             >

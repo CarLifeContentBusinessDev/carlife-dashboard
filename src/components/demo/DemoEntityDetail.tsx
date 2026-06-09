@@ -370,7 +370,7 @@ const DemoEntityDetail = ({
   const resolveDuration = (raw: unknown): string => {
     if (audioDuration != null && audioDuration > 0)
       return formatPlayTime(audioDuration);
-    if (raw != null) {
+    if (raw != null && (typeof raw === 'number' || typeof raw === 'string')) {
       const secs = parsePlayTime(raw as number | string);
       if (secs > 0) return formatPlayTime(secs);
     }
