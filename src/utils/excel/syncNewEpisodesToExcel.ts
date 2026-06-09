@@ -6,6 +6,7 @@ import type {
 import { getSheetsClient } from '@/utils/auth/auth';
 import formatDateString from '@/utils/format/formatDateString';
 import { formatPlayTime } from '@/utils/format/formatPlayTime';
+import { getAudioDuration } from '@/utils/format/getAudioDuration';
 import { getExcelData, getUsedRange } from './updateExcel';
 
 const spreadsheetId = import.meta.env.VITE_SPREADSHEET_ID;
@@ -79,6 +80,20 @@ async function overwriteExcelData(
   await clearExcelFromRow(STARTROW, totalRowsToClear, category, sheetName);
   const batchSize = 10000;
 
+  // playTime === 0인 에피소드는 오디오 파일 기준으로 재생 시간 보정
+  const resolvedPlayTimes = new Map<number, number>();
+  if (category === 'episode') {
+    const zeroPlayTimeEps = (newData as usingDataProps[]).filter(
+      (ep) => ep.playTime === 0 && ep.audioUrl
+    );
+    await Promise.all(
+      zeroPlayTimeEps.map(async (ep) => {
+        const duration = await getAudioDuration(ep.audioUrl);
+        resolvedPlayTimes.set(ep.episodeId, duration);
+      })
+    );
+  }
+
   try {
     setAllLoading(true);
     const sheets = getSheetsClient();
@@ -108,7 +123,7 @@ async function overwriteExcelData(
             row.episodeName,
             dispDtimeStr,
             createdAtStr,
-            formatPlayTime(row.playTime),
+            formatPlayTime(resolvedPlayTimes.get(row.episodeId) ?? row.playTime),
             row.likeCnt,
             row.listenCnt,
             row.thumbnailUrl,
