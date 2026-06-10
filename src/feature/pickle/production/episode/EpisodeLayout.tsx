@@ -17,7 +17,7 @@ import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { usePickleServerStore } from '@/store/usePickleServerStore';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import { fetchAllData } from '@/utils/api/fetchAllData';
-import { enrichEpisodesWithAudioDuration } from '@/utils/audio/fetchAudioDuration';
+import { resolveAudioDurationsForSync } from '@/utils/audio/fetchAudioDuration';
 import { appendNewDataToTop } from '@/utils/excel/appendNewDataToExcel';
 import { getNewDataWithExcel } from '@/utils/excel/getNewData';
 import { clearExcelRange, overwriteExcelData } from '@/utils/excel/updateExcel';
@@ -232,7 +232,12 @@ const EpisodeLayout = () => {
     try {
       setExcelLoading(true);
 
-      const enrichedDataToSync = enrichEpisodesWithAudioDuration(dataToSync);
+      const enrichedDataToSync = await resolveAudioDurationsForSync(
+        dataToSync,
+        isStaging ? 'stg' : 'prod',
+        setProgress,
+        20
+      );
 
       const duplicateToSync =
         syncPreviewMode === 'new' ? duplicateNewEpi : duplicateAllEpisodes;
@@ -264,8 +269,12 @@ const EpisodeLayout = () => {
       }
 
       if (shouldAppendLogs) {
-        const enrichedDuplicateToSync =
-          enrichEpisodesWithAudioDuration(duplicateToSync);
+        const enrichedDuplicateToSync = await resolveAudioDurationsForSync(
+          duplicateToSync,
+          isStaging ? 'stg' : 'prod',
+          setProgress,
+          20
+        );
         const logsSheet = getSheetName('Episode_Logs');
         setProgress(
           `Episode_Logs 시트에 변경된 데이터 ${duplicateToSync.length}개 추가 중...`
