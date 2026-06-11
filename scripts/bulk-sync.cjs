@@ -1,6 +1,6 @@
 // scripts/bulk-sync.cjs
 // 사용법: node scripts/bulk-sync.cjs [prod|stg]
-// 전제: scripts/all_episodes.json 파일이 먼저 준비되어 있어야 합니다.
+// 전제: scripts/all_episodes.json 파일
 
 require('dotenv').config({
   path: require('path').resolve(__dirname, '../.env'),
@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
-// ─── 설정 ──────────────────────────────────────────────────────────────────────
+// 설정
 const ENV = process.argv[2] === 'stg' ? 'stg' : 'prod';
 const TABLE_NAME = `pickle_episodes_${ENV}`;
 const CONCURRENCY = 80;
@@ -29,7 +29,6 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-// ────────────────────────────────────────────────────────────────────────────────
 
 const jsonPath = path.join(__dirname, 'all_episodes.json');
 if (!fs.existsSync(jsonPath)) {
@@ -45,8 +44,9 @@ const targets = allEpisodes.filter(
 );
 
 async function fetchMetadata(url) {
+  let res;
   try {
-    const res = await axios.get(url, {
+    res = await axios.get(url, {
       responseType: 'stream',
       timeout: 8000,
     });
@@ -60,8 +60,6 @@ async function fetchMetadata(url) {
       duration: true,
     });
 
-    res.data.destroy();
-
     const duration = metadata.format?.duration
       ? Math.round(metadata.format.duration)
       : null;
@@ -69,6 +67,10 @@ async function fetchMetadata(url) {
     return { duration, fileSize };
   } catch {
     return { duration: null, fileSize: null };
+  } finally {
+    if (res && res.data) {
+      res.data.destroy();
+    }
   }
 }
 

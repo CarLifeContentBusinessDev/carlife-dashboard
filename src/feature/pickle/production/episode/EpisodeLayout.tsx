@@ -39,7 +39,7 @@ type EpisodeSortKey =
   | 'listenCnt';
 
 const EPISODE_SORT_OPTIONS: Array<{ value: EpisodeSortKey; label: string }> = [
-  { value: 'dispDtime', label: '게시일자' },
+  { value: 'dispDtime', label: '게시일' },
   { value: 'createdAt', label: '등록일' },
   { value: 'channelName', label: '채널명' },
   { value: 'episodeName', label: '에피소드명' },
@@ -246,7 +246,7 @@ const EpisodeLayout = () => {
         dataToSync,
         isStaging ? 'stg' : 'prod',
         setProgress,
-        20
+        6
       );
 
       const duplicateToSync =
@@ -283,7 +283,7 @@ const EpisodeLayout = () => {
           duplicateToSync,
           isStaging ? 'stg' : 'prod',
           setProgress,
-          20
+          6
         );
         const logsSheet = getSheetName('Episode_Logs');
         setProgress(

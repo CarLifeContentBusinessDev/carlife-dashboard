@@ -142,9 +142,16 @@ export async function resolveAudioDurationsForSync(
 
     if (upsertBuffer.length > 0) {
       setProgress?.(`자체 DB 캐시 갱신 중... (${upsertBuffer.length}건)`);
-      await supabaseObigoPickle
-        .from(tableName)
-        .upsert(upsertBuffer, { onConflict: 'id' });
+      const UPSERT_BATCH_SIZE = 100;
+      for (let i = 0; i < upsertBuffer.length; i += UPSERT_BATCH_SIZE) {
+        const chunk = upsertBuffer.slice(i, i + UPSERT_BATCH_SIZE);
+        const { error } = await supabaseObigoPickle
+          .from(tableName)
+          .upsert(chunk, { onConflict: 'id' });
+        if (error) {
+          console.error('Supabase 캐시 갱신 실패:', error);
+        }
+      }
     }
   }
 
