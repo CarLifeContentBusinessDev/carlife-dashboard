@@ -1,50 +1,21 @@
+import { supabaseObigoPickle } from '@/lib/supabase';
 import type { usingDataProps } from '@/types/pickleProdContents';
+import { executeWithConcurrencyLimit } from '@/utils/api/requestPool';
 
-const CACHE_KEY = 'pickle_audio_duration_cache';
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7일
+type EpisodeEnv = 'prod' | 'stg';
 
-interface CacheEntry {
-  duration: number;
-  cachedAt: number;
+function getTableName(env: EpisodeEnv): string {
+  return env === 'prod' ? 'pickle_episodes_prod' : 'pickle_episodes_stg';
 }
 
-function readCache(): Record<string, CacheEntry> {
+async function fetchContentLength(url: string): Promise<number | null> {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) ?? '{}');
+    const res = await fetch(url, { method: 'HEAD' });
+    const len = res.headers.get('Content-Length');
+    return len ? parseInt(len, 10) : null;
   } catch {
-    return {};
+    return null;
   }
-}
-
-function writeCache(cache: Record<string, CacheEntry>): void {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // localStorage 용량 초과 시 무시
-  }
-}
-
-/** 상세 페이지에서 오디오 메타데이터 로드 성공 시 호출 */
-export function saveAudioDurationToCache(url: string, duration: number): void {
-  if (!url || duration <= 0) return;
-  const cache = readCache();
-  const now = Date.now();
-  const cleanCache: Record<string, CacheEntry> = {};
-  for (const [key, entry] of Object.entries(cache)) {
-    if (now - entry.cachedAt <= CACHE_TTL_MS) {
-      cleanCache[key] = entry;
-    }
-  }
-  cache[url] = { duration, cachedAt: Date.now() };
-  writeCache(cleanCache);
-}
-
-function getCachedDuration(url: string): number | null {
-  if (!url) return null;
-  const entry = readCache()[url];
-  if (!entry) return null;
-  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) return null;
-  return entry.duration;
 }
 
 function fetchFromNetwork(
@@ -54,70 +25,139 @@ function fetchFromNetwork(
   return new Promise((resolve) => {
     const audio = new Audio();
     audio.preload = 'metadata';
+    audio.muted = true;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      audio.onloadedmetadata = null;
+      audio.onerror = null;
+      audio.src = '';
+      audio.load();
+    };
 
     const timer = setTimeout(() => {
-      audio.src = '';
+      cleanup();
       resolve(null);
     }, timeoutMs);
 
     audio.onloadedmetadata = () => {
-      clearTimeout(timer);
       const dur = audio.duration;
-      audio.src = '';
-      const result = isFinite(dur) && dur > 0 ? Math.round(dur) : null;
-      if (result !== null) saveAudioDurationToCache(url, result);
-      resolve(result);
+      cleanup();
+      resolve(isFinite(dur) && dur > 0 ? Math.round(dur) : null);
     };
 
     audio.onerror = () => {
-      clearTimeout(timer);
-      audio.src = '';
+      cleanup();
       resolve(null);
     };
-
     audio.src = url;
   });
 }
 
-export function warmAudioDurationCache(
+export async function resolveAudioDurationsForSync(
   episodes: usingDataProps[],
-  concurrency = 5
-): () => void {
-  const targets = episodes.filter(
-    (ep) =>
-      ep.audioUrl &&
-      (!ep.playTime || ep.playTime <= 0) &&
-      getCachedDuration(ep.audioUrl) === null
+  env: EpisodeEnv,
+  setProgress?: (msg: string) => void,
+  concurrency = 6
+): Promise<usingDataProps[]> {
+  const targetEpisodes = episodes.filter(
+    (ep) => (!ep.playTime || ep.playTime <= 0) && ep.audioUrl
+  );
+  if (targetEpisodes.length === 0) return episodes;
+
+  const targetIds = targetEpisodes.map((ep) => ep.episodeId);
+  const tableName = getTableName(env);
+
+  setProgress?.('자체 DB 캐시 확인 중...');
+
+  const CHUNK_SIZE = 500;
+  // duration > 0: 성공한 캐시
+  const cacheMap = new Map<number, number>();
+  // DB에 존재하는 모든 ID (duration=0 포함) — 재시도 방지용
+  const attemptedSet = new Set<number>();
+
+  for (let i = 0; i < targetIds.length; i += CHUNK_SIZE) {
+    const chunk = targetIds.slice(i, i + CHUNK_SIZE);
+    const { data, error } = await supabaseObigoPickle
+      .from(tableName)
+      .select('id, duration')
+      .in('id', chunk);
+    if (error) {
+      console.error('Supabase 조회 실패:', error);
+      continue;
+    }
+    data?.forEach((item: { id: number | string; duration: number }) => {
+      const id = Number(item.id);
+      attemptedSet.add(id);
+      if (item.duration > 0) cacheMap.set(id, item.duration);
+    });
+  }
+
+  // DB에 한 번도 없는 것만 수집 시도
+  const realUncached = targetEpisodes.filter(
+    (ep) => !attemptedSet.has(ep.episodeId)
   );
 
-  if (targets.length === 0) return () => {};
+  if (realUncached.length > 0) {
+    let done = 0;
+    setProgress?.(
+      `신규 오디오 재생 시간 수집 중... 0 / ${realUncached.length}`
+    );
 
-  let cancelled = false;
+    const upsertBuffer: Array<{
+      id: number;
+      audio_url: string;
+      duration: number;
+      file_size: number | null;
+      checked_at: string;
+    }> = [];
 
-  (async () => {
-    for (let i = 0; i < targets.length; i += concurrency) {
-      if (cancelled) break;
-      const batch = targets.slice(i, i + concurrency);
-      await Promise.all(batch.map((ep) => fetchFromNetwork(ep.audioUrl)));
+    const tasks = realUncached.map((ep) => async () => {
+      const [duration, fileSize] = await Promise.all([
+        fetchFromNetwork(ep.audioUrl),
+        fetchContentLength(ep.audioUrl),
+      ]);
+      done += 1;
+
+      const resolvedDuration = duration && duration > 0 ? duration : 0;
+      if (resolvedDuration > 0) cacheMap.set(ep.episodeId, resolvedDuration);
+
+      // 성공/실패 모두 DB에 저장 — duration=0이면 "시도했지만 실패"로 기록
+      upsertBuffer.push({
+        id: ep.episodeId,
+        audio_url: ep.audioUrl,
+        duration: resolvedDuration,
+        file_size: fileSize,
+        checked_at: new Date().toISOString(),
+      });
+
+      if (done % 5 === 0 || done === realUncached.length) {
+        setProgress?.(
+          `신규 오디오 재생 시간 수집 중... ${done} / ${realUncached.length}`
+        );
+      }
+    });
+
+    await executeWithConcurrencyLimit(tasks, { concurrency });
+
+    if (upsertBuffer.length > 0) {
+      setProgress?.(`자체 DB 캐시 갱신 중... (${upsertBuffer.length}건)`);
+      const UPSERT_BATCH_SIZE = 100;
+      for (let i = 0; i < upsertBuffer.length; i += UPSERT_BATCH_SIZE) {
+        const chunk = upsertBuffer.slice(i, i + UPSERT_BATCH_SIZE);
+        const { error } = await supabaseObigoPickle
+          .from(tableName)
+          .upsert(chunk, { onConflict: 'id' });
+        if (error) {
+          console.error('Supabase 캐시 갱신 실패:', error);
+        }
+      }
     }
-  })();
+  }
 
-  return () => {
-    cancelled = true;
-  };
-}
-
-export function enrichEpisodesWithAudioDuration(
-  episodes: usingDataProps[]
-): usingDataProps[] {
-  const cache = readCache();
-  const now = Date.now();
   return episodes.map((ep) => {
     if (ep.playTime && ep.playTime > 0) return ep;
-    if (!ep.audioUrl) return ep;
-    const entry = cache[ep.audioUrl];
-    if (!entry) return ep;
-    if (now - entry.cachedAt > CACHE_TTL_MS) return ep;
-    return { ...ep, playTime: entry.duration };
+    const cachedDuration = cacheMap.get(ep.episodeId);
+    return cachedDuration ? { ...ep, playTime: cachedDuration } : ep;
   });
 }

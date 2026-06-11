@@ -194,12 +194,16 @@ const ChannelLayout = () => {
 
     try {
       setLoading(true);
-      const allData = await fetchAllData(
-        CATEGORY,
-        setProgress,
-        undefined,
-        apiInstance
-      );
+      const env = isStaging ? 'stg' : 'prod';
+      const { cache, isStale, setCache } = useChannelStore.getState();
+
+      let allData: usingChannelProps[];
+      if (!isStale(env) && cache[env]?.data.length) {
+        allData = cache[env]!.data;
+      } else {
+        allData = await fetchAllData(CATEGORY, setProgress, undefined, apiInstance);
+        if (allData.length > 0) setCache(env, allData);
+      }
       const sortedAllData = sortChannels(allData);
       setAddData(sortedAllData);
       setSyncTotalPages(Math.ceil(sortedAllData.length / SYNC_PAGE_SIZE));

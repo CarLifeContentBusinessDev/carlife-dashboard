@@ -1,7 +1,6 @@
 import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 import type { usingDataProps } from '@/types/pickleProdContents';
 import { api, stgApi } from '@/utils/api/api';
-import { saveAudioDurationToCache } from '@/utils/audio/fetchAudioDuration';
 import formatDateString from '@/utils/format/formatDateString';
 import { formatPlayTime } from '@/utils/format/formatPlayTime';
 import { useEffect, useState } from 'react';
@@ -131,7 +130,7 @@ const ProdEpisodeDetail = () => {
                 if (isFinite(dur) && dur > 0) {
                   const rounded = Math.round(dur);
                   setAudioDuration(rounded);
-                  saveAudioDurationToCache(value, rounded);
+                  // saveAudioDurationToCache(value, rounded);
                 }
               }}
             >
