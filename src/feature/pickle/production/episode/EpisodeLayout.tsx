@@ -31,18 +31,18 @@ import ProdEpisodeList from './ProdEpisodeList';
 const CATEGORY = 'episode';
 
 type EpisodeSortKey =
+  | 'dispDtime'
   | 'createdAt'
   | 'channelName'
   | 'episodeName'
-  | 'dispDtime'
   | 'likeCnt'
   | 'listenCnt';
 
 const EPISODE_SORT_OPTIONS: Array<{ value: EpisodeSortKey; label: string }> = [
+  { value: 'dispDtime', label: '게시일자' },
   { value: 'createdAt', label: '등록일' },
   { value: 'channelName', label: '채널명' },
   { value: 'episodeName', label: '에피소드명' },
-  { value: 'dispDtime', label: '게시일자' },
   { value: 'likeCnt', label: '좋아요수' },
   { value: 'listenCnt', label: '청취수' },
 ];
@@ -123,7 +123,7 @@ const EpisodeLayout = () => {
   } = useListSort<usingDataProps, EpisodeSortKey>({
     data: filteredEpiData,
     sortOptions: EPISODE_SORT_OPTIONS,
-    initialSortKey: 'createdAt',
+    initialSortKey: 'dispDtime',
     initialSortDirection: 'desc',
   });
 
@@ -198,12 +198,22 @@ const EpisodeLayout = () => {
   const handleLoadAllEpisodes = async () => {
     setLoading(true);
     try {
-      const allList = await fetchAllData(
-        CATEGORY,
-        setProgress,
-        undefined,
-        apiInstance
-      );
+      const env = isStaging ? 'stg' : 'prod';
+      const { cache, isStale, setCache } = useEpisodeStore.getState();
+
+      let allList: usingDataProps[];
+      if (!isStale(env) && cache[env]?.data.length) {
+        allList = cache[env]!.data;
+      } else {
+        allList = await fetchAllData(
+          CATEGORY,
+          setProgress,
+          undefined,
+          apiInstance
+        );
+        if (allList.length > 0) setCache(env, allList);
+      }
+
       const duplicateData = await findChangedData(allList);
       setProgress('');
       setAllEpisodes(allList);

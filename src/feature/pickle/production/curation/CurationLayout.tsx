@@ -271,8 +271,18 @@ const CurationLayout = () => {
       setSyncPreviewMode(null);
       setSyncPage(1);
 
-      const allData = await fetchAllCurationData(apiInstance);
-      setAllCurations(allData as ProdCurationRow[]);
+      const env = isStaging ? 'stg' : 'prod';
+      const { cache, isStale, setCache } = useCurationStore.getState();
+
+      let allData: ProdCurationRow[];
+      if (!isStale(env) && cache[env]?.data.length) {
+        allData = cache[env]!.data;
+      } else {
+        const fetched = await fetchAllCurationData(apiInstance);
+        allData = fetched as ProdCurationRow[];
+        if (allData.length > 0) setCache(env, allData);
+      }
+      setAllCurations(allData);
       setSyncTotalPages(Math.ceil(allData.length / SYNC_PAGE_SIZE));
       setSyncPreviewMode('all');
       toast.info(
