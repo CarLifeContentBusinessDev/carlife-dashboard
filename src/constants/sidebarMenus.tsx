@@ -184,3 +184,23 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
     })(),
   },
 ];
+
+export const PICKSERIES_MENU_GROUPS: MenuGroup[] = [
+  {
+    id: 'picksereis-operation-data',
+    label: '운영 데이터 추출',
+    icon: <img src='/excel.svg' width={24} height={24} alt='엑셀' />,
+    children: [
+      {
+        id: 'pickseries-weekly-data',
+        to: '/pickseries/operation/weekly',
+        label: '주간지표',
+      },
+      {
+        id: 'pickseries-operation-data',
+        to: '/pickseries/operation/oem',
+        label: 'OEM지표',
+      },
+    ],
+  },
+];

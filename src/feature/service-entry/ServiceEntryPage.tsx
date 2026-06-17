@@ -5,6 +5,7 @@ import type { ServiceType } from '@/store/useServiceStore';
 const SERVICE_HOME: Record<ServiceType, string> = {
   pickle: '/episodes',
   picknow: '/picknow/excel-sync',
+  pickseries: '/pickseries/operation/weekly',
 };
 
 export default function ServiceEntryPage() {
@@ -35,6 +36,7 @@ export default function ServiceEntryPage() {
       </div>
 
       <div className='flex gap-6'>
+        {/* Pickle */}
         <button
           onClick={() => handleSelect('pickle')}
           className='w-64 h-52 rounded-2xl bg-[#1B1E2F] text-white flex flex-col items-center justify-center gap-3 shadow-xl hover:scale-105 transition-transform cursor-pointer'
@@ -44,6 +46,7 @@ export default function ServiceEntryPage() {
           <span className='text-sm text-gray-400'>상용 & 데모 콘텐츠 관리</span>
         </button>
 
+        {/* Picknow */}
         <button
           onClick={() => handleSelect('picknow')}
           className='w-64 h-52 rounded-2xl bg-[#1B1E2F] text-white flex flex-col items-center justify-center gap-3 shadow-xl hover:scale-105 transition-transform cursor-pointer'
@@ -51,6 +54,21 @@ export default function ServiceEntryPage() {
           <img src='/picknow_logo.svg' alt='picknow' width={48} height={48} />
           <span className='text-2xl font-bold'>Picknow</span>
           <span className='text-sm text-gray-400'>Configuration 추출</span>
+        </button>
+
+        {/* 픽시리즈 운영 */}
+        <button
+          onClick={() => handleSelect('pickseries')}
+          className='w-64 h-52 rounded-2xl bg-[#1B1E2F] text-white flex flex-col items-center justify-center gap-3 shadow-xl hover:scale-105 transition-transform cursor-pointer'
+        >
+          <img
+            src='/pickseries_logo.svg'
+            alt='pickseries'
+            width={48}
+            height={48}
+          />
+          <span className='text-2xl font-bold'>Pick Series</span>
+          <span className='text-sm text-gray-400'>운영 통합 대시보드 관리</span>
         </button>
       </div>
     </div>

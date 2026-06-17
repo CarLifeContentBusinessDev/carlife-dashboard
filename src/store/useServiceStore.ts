@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 
-export type ServiceType = 'pickle' | 'picknow';
+export type ServiceType = 'pickle' | 'picknow' | 'pickseries';
 
 const SERVICE_TOKEN_KEYS: Record<ServiceType, string> = {
   pickle: 'pickleToken',
   picknow: 'picknowToken',
+  pickseries: 'pickseriesToken',
 };
 
 export const getServiceToken = (service: ServiceType): string | null =>
@@ -23,7 +24,8 @@ interface ServiceState {
 }
 
 export const useServiceStore = create<ServiceState>((set) => ({
-  selectedService: (localStorage.getItem('selectedService') as ServiceType) || null,
+  selectedService:
+    (localStorage.getItem('selectedService') as ServiceType) || null,
   setSelectedService: (service) => {
     localStorage.setItem('selectedService', service);
     set({ selectedService: service });

@@ -100,6 +100,9 @@ const DemoCategoryDetail = lazy(
 const DemoBroadcastingDetail = lazy(
   () => import('./feature/pickle/demo/broadcasting/DemoBroadcastingDetail')
 );
+const PickSeriesOperationData = lazy(
+  () => import('./feature/pickseries/PickSeriesOperationData')
+);
 
 const LOGOUT_EVENT_NAME = 'app:logout';
 
@@ -245,6 +248,16 @@ function App() {
 
               {/* Picknow */}
               <Route path='/picknow/excel-sync' element={<Configuration />} />
+
+              {/* PickSeries */}
+              <Route
+                path='/pickseries/operation/weekly'
+                element={<PickSeriesOperationData />}
+              />
+              <Route
+                path='/pickseries/operation/oem'
+                element={<PickSeriesOperationData />}
+              />
             </Route>
           </Route>
         </Routes>

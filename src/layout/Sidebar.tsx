@@ -4,6 +4,7 @@ import Button from '@/components/common/Button';
 import {
   PICKLE_MENU_GROUPS,
   PICKNOW_MENU_GROUPS,
+  PICKSERIES_MENU_GROUPS,
 } from '@/constants/sidebarMenus';
 import MenuGroupItem from './components/MenuGroupItem';
 import MenuButton from './components/MenuButton';
@@ -15,7 +16,11 @@ const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
 
   const menuGroups =
-    selectedService === 'picknow' ? PICKNOW_MENU_GROUPS : PICKLE_MENU_GROUPS;
+    selectedService === 'picknow'
+      ? PICKNOW_MENU_GROUPS
+      : selectedService === 'pickseries'
+        ? PICKSERIES_MENU_GROUPS
+        : PICKLE_MENU_GROUPS;
 
   return (
     <aside

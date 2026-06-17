@@ -24,6 +24,7 @@ import type { ServiceType } from '@/store/useServiceStore';
 const SERVICE_LABELS: Record<string, string> = {
   pickle: 'Pickle Admin',
   picknow: 'Picknow Admin',
+  pickseries: 'PickSeries Admin',
 };
 
 const Header = () => {
@@ -168,7 +169,9 @@ const Header = () => {
           src={
             selectedService === 'pickle'
               ? '/pickle_logo.svg'
-              : '/picknow_logo.svg'
+              : selectedService === 'picknow'
+                ? '/picknow_logo.svg'
+                : '/pickseries_logo.svg'
           }
           alt='로고'
           width={40}
