@@ -34,32 +34,32 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     children: [
       {
         id: 'episodes',
-        to: '/episodes',
+        to: '/pickle/episodes',
         label: '에피소드 관리',
       },
       {
         id: 'channels',
-        to: '/channels',
+        to: '/pickle/channels',
         label: '채널·도서 관리',
       },
       {
         id: 'curations',
-        to: '/curations',
+        to: '/pickle/curations',
         label: '큐레이션 관리',
       },
       {
         id: 'stg_episodes',
-        to: '/stg/episodes',
+        to: '/pickle/stg/episodes',
         label: '에피소드 관리 (stg)',
       },
       {
         id: 'stg_channels',
-        to: '/stg/channels',
+        to: '/pickle/ stg/channels',
         label: '채널·도서 관리 (stg)',
       },
       {
         id: 'stg_curations',
-        to: '/stg/curations',
+        to: '/pickle/stg/curations',
         label: '큐레이션 관리 (stg)',
       },
     ],
@@ -76,14 +76,18 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
       />
     ),
     children: [
-      { id: 'programs', to: '/demo/programs', label: '프로그램 관리' },
-      { id: 'episodes', to: '/demo/episodes', label: '에피소드 관리' },
-      { id: 'series', to: '/demo/series', label: '시리즈 관리' },
-      { id: 'themes', to: '/demo/themes', label: '테마 관리' },
-      { id: 'categories', to: '/demo/categories', label: '카테고리 관리' },
+      { id: 'programs', to: '/pickle/demo/programs', label: '프로그램 관리' },
+      { id: 'episodes', to: '/pickle/demo/episodes', label: '에피소드 관리' },
+      { id: 'series', to: '/pickle/demo/series', label: '시리즈 관리' },
+      { id: 'themes', to: '/pickle/demo/themes', label: '테마 관리' },
+      {
+        id: 'categories',
+        to: '/pickle/demo/categories',
+        label: '카테고리 관리',
+      },
       {
         id: 'broadcastings',
-        to: '/demo/broadcastings',
+        to: '/pickle/demo/broadcastings',
         label: '방송사 관리',
       },
     ],

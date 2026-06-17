@@ -3,7 +3,7 @@ import { useServiceStore } from '@/store/useServiceStore';
 import type { ServiceType } from '@/store/useServiceStore';
 
 const SERVICE_HOME: Record<ServiceType, string> = {
-  pickle: '/episodes',
+  pickle: '/pickle/episodes',
   picknow: '/picknow/excel-sync',
   pickseries: '/pickseries/operation/weekly',
 };
