@@ -897,8 +897,8 @@ export async function syncPicknowConfigurationSheet(
         }
       }
 
-      // determine setting for this OEM/DEVICE (prefer a client-specific match)
-      const setting = findSettingRow(mapping.oem, mapping.device);
+      const setting =
+        matchingSettings[0] ?? findSettingRow(mapping.oem, mapping.device);
 
       const settingCountryCd = setting?.국가코드?.trim();
       if (settingCountryCd) {
