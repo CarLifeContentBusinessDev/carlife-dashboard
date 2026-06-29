@@ -7,13 +7,13 @@ interface LoginTokenState {
 }
 
 export const useLoginTokenStore = create<LoginTokenState>((set) => ({
-  loginToken: localStorage.getItem('loginToken') || '',
+  loginToken: localStorage.getItem('googleAccessToken') || '',
   setLoginToken: (token: string) => {
-    localStorage.setItem('loginToken', token);
+    localStorage.setItem('googleAccessToken', token);
     set({ loginToken: token });
   },
   clearLoginToken: () => {
-    localStorage.removeItem('loginToken');
+    localStorage.removeItem('googleAccessToken');
     set({ loginToken: '' });
   },
 }));

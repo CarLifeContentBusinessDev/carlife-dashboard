@@ -37,7 +37,7 @@ const getSheetList = async (spreadsheetId: string) => {
           spreadsheetId,
         });
 
-        localStorage.setItem('loginToken', newToken);
+        localStorage.setItem('googleAccessToken', newToken);
 
         const sheetList = retryResponse.result.sheets?.map((sheet) => ({
           id: String(sheet.properties?.sheetId ?? ''),

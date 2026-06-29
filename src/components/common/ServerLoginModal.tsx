@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import JSEncrypt from 'jsencrypt';
 import { toast } from 'react-toastify';
-import { usePicknowServerStore } from '@/store/usePicknowServerStore';
 import { getPicknowServerApi } from '@/utils/api/api';
-import type { PicknowServer } from '@/constants/servers';
+import type { PicknowServer, PickSeriesServer } from '@/constants/servers';
 
 interface Props {
-  server: PicknowServer;
+  server: PicknowServer | PickSeriesServer;
   onClose: () => void;
+  setServerToken: (id: string, token: string, refreshToken: string) => void;
 }
 
 interface PicknowLoginResponse {
@@ -19,13 +19,22 @@ interface PicknowLoginResponse {
   };
 }
 
-export default function ServerLoginModal({ server, onClose }: Props) {
+export default function ServerLoginModal({
+  server,
+  onClose,
+  setServerToken,
+}: Props) {
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { setServerToken } = usePicknowServerStore();
+
+  const logoSrc = server.id.startsWith('pickle')
+    ? '/pickle_logo.svg'
+    : server.id.startsWith('picknow')
+      ? '/picknow_logo.svg'
+      : '/pickseries_logo.svg';
 
   useEffect(() => {
     const savedId = localStorage.getItem(`rememberId_${server.id}`);
@@ -43,18 +52,33 @@ export default function ServerLoginModal({ server, onClose }: Props) {
     setLoading(true);
     setError('');
     try {
-      const encrypt = new JSEncrypt();
-      encrypt.setPublicKey(server.publicKey);
-      const encryptedPassword = encrypt.encrypt(password);
-      if (!encryptedPassword) {
-        setError('비밀번호 암호화에 실패했습니다.');
-        return;
+      let passwordToSend = password;
+
+      if (server.publicKey) {
+        const encrypt = new JSEncrypt();
+        encrypt.setPublicKey(server.publicKey);
+        const encryptedPassword = encrypt.encrypt(password);
+        if (!encryptedPassword) {
+          setError('비밀번호 암호화에 실패했습니다.');
+          return;
+        }
+        passwordToSend = encryptedPassword;
       }
 
+      let loginData = server.label.startsWith('Pickle')
+        ? { adminId: id, password: passwordToSend }
+        : server.label.startsWith('Picknow')
+          ? { email: id, password: passwordToSend }
+          : { email: id, password: passwordToSend };
+
       const serverApi = getPicknowServerApi(server);
+      const loginUrl = server.label.startsWith('Pickjoy')
+        ? '/api/admin/v1/login'
+        : '/admin/login';
+
       const res = await serverApi.post<PicknowLoginResponse>(
-        '/admin/login',
-        { email: id, password: encryptedPassword },
+        loginUrl,
+        loginData,
         { headers: { 'Content-Type': 'application/json' } }
       );
 
@@ -93,7 +117,7 @@ export default function ServerLoginModal({ server, onClose }: Props) {
       <div className='bg-white rounded-2xl shadow-xl p-8 w-96 flex flex-col gap-5'>
         <div className='text-center'>
           <img
-            src='/picknow_logo.svg'
+            src={logoSrc}
             alt='로고'
             width={40}
             height={40}

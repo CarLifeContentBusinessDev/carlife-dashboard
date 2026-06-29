@@ -18,6 +18,7 @@ export default function Configuration() {
     toggleSelectedServer,
     isServerLoggedIn,
     serverTokens,
+    setServerToken,
   } = usePicknowServerStore();
 
   const selectedServers: PicknowServer[] = PICKNOW_SERVERS.filter((s) =>
@@ -109,7 +110,7 @@ export default function Configuration() {
         const results = await Promise.all(
           loggedIn.map(async (s) => ({
             id: s.id,
-            data: await fetchSettingData(s.spreadsheetId),
+            data: await fetchSettingData(s.spreadsheetId!),
           }))
         );
         setRowsByServer((prev) => ({
@@ -199,7 +200,7 @@ export default function Configuration() {
               customerName,
               selections,
               apiInstance,
-              server.spreadsheetId
+              server.spreadsheetId!
             );
             results.success.push(`${server.label} / ${customerName}`);
             if (syncResult.failedBookmarkSeqs.length > 0) {
@@ -941,6 +942,7 @@ export default function Configuration() {
       {loginModalServer && (
         <ServerLoginModal
           server={loginModalServer}
+          setServerToken={setServerToken}
           onClose={() => {
             const server = loginModalServer;
             setLoginModalServer(null);

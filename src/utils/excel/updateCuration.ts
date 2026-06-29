@@ -42,7 +42,7 @@ export async function getCurationExcelData(
         if (!refreshedToken)
           throw new Error('토큰 재발급 실패, 엑셀 조회 중단');
 
-        localStorage.setItem('loginToken', refreshedToken);
+        localStorage.setItem('googleAccessToken', refreshedToken);
 
         const retryResponse = await sheets.spreadsheets.values.get({
           spreadsheetId,
@@ -291,7 +291,7 @@ export async function addMissingCurationRows(
           throw new Error('토큰 재발급 실패, 엑셀 업데이트 중단');
 
         token = refreshedToken;
-        localStorage.setItem('loginToken', token);
+        localStorage.setItem('googleAccessToken', token);
 
         await sheets.spreadsheets.values.update({
           spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,

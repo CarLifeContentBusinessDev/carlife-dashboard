@@ -2,6 +2,7 @@ import {
   getSheetsClient,
   initializeGoogleAPI,
   getGoogleToken,
+  silentRefreshGoogleToken,
 } from '@/utils/auth/auth';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { buildSheetRange } from '@/utils/excel/sheetRange';
@@ -36,21 +37,31 @@ export async function fetchSettingData(
 
   const sheets = getSheetsClient();
 
-  let response;
-  try {
-    response = await sheets.spreadsheets.values.get({
+  const fetchRange = () =>
+    sheets.spreadsheets.values.get({
       spreadsheetId,
       range: buildSheetRange('Setting', 'B3:G1000'),
     });
-  } catch (err: any) {
-    // 401이면 저장된 토큰을 클리어하여 다음번에 재로그인 유도
-    if (err?.status === 401) {
-      useLoginTokenStore.getState().clearLoginToken();
+
+  let response;
+  try {
+    response = await fetchRange();
+  } catch (firstErr: unknown) {
+    const status = (firstErr as Record<string, unknown>)?.status as number | undefined;
+
+    if (status === 401) {
+      const newToken = await silentRefreshGoogleToken();
+      if (!newToken) {
+        throw new Error('Google 인증이 만료되었습니다. 다시 로그인해주세요.');
+      }
       try {
-        gapi.client.setToken(null);
-      } catch (_) {}
+        response = await fetchRange();
+      } catch {
+        throw new Error('Google 인증이 만료되었습니다. 다시 로그인해주세요.');
+      }
+    } else {
+      throw firstErr;
     }
-    throw err;
   }
 
   const values = response.result.values ?? [];

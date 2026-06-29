@@ -31,7 +31,7 @@ export default function ServiceEntryPage() {
           <h1 className='text-4xl font-bold text-[#1B1E2F]'>
             Car Life Content Business
           </h1>
-          <h1 className='text-4xl font-bold text-[#1B1E2F]'>Admin Page</h1>
+          <h1 className='text-4xl font-bold text-[#1B1E2F]'>DashBoard</h1>
         </div>
       </div>
 

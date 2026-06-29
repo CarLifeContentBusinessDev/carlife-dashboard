@@ -19,8 +19,10 @@ let gisInited = false;
 
 let gisInitPromise: Promise<void> | null = null;
 
+let silentRefreshPromise: Promise<string | null> | null = null;
+
 const clearSavedGoogleToken = () => {
-  localStorage.removeItem('loginToken');
+  localStorage.removeItem('googleAccessToken');
   useLoginTokenStore.getState().clearLoginToken();
 };
 
@@ -150,7 +152,7 @@ export async function getGoogleToken(): Promise<string | null> {
 
     // 기존 토큰 확인 및 유효성 검증
 
-    const existingToken = localStorage.getItem('loginToken');
+    const existingToken = localStorage.getItem('googleAccessToken');
 
     if (existingToken) {
       // gapi에 토큰 설정
@@ -212,7 +214,7 @@ export async function getGoogleToken(): Promise<string | null> {
 
         const token = response.access_token;
 
-        localStorage.setItem('loginToken', token);
+        localStorage.setItem('googleAccessToken', token);
 
         useLoginTokenStore.getState().setLoginToken(token);
 
@@ -233,6 +235,40 @@ export async function getGoogleToken(): Promise<string | null> {
 
     return null;
   }
+}
+
+// 팝업 없이 조용히 Google 토큰 재발급 시도 (사용자 Google 세션이 살아있을 때만 성공)
+
+export function silentRefreshGoogleToken(): Promise<string | null> {
+  if (silentRefreshPromise) return silentRefreshPromise;
+
+  silentRefreshPromise = new Promise<string | null>((resolve) => {
+    if (!tokenClient || !gisInited) {
+      silentRefreshPromise = null;
+      resolve(null);
+      return;
+    }
+
+    tokenClient.callback = (response: google.accounts.oauth2.TokenResponse) => {
+      silentRefreshPromise = null;
+
+      if (response.error) {
+        clearSavedGoogleToken();
+        resolve(null);
+        return;
+      }
+
+      const token = response.access_token;
+      localStorage.setItem('googleAccessToken', token);
+      useLoginTokenStore.getState().setLoginToken(token);
+      gapi.client.setToken({ access_token: token });
+      resolve(token);
+    };
+
+    tokenClient.requestAccessToken({ prompt: 'none' });
+  });
+
+  return silentRefreshPromise;
 }
 
 // Google 로그아웃

@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
-import { useAccessTokenStore } from './store/useAccessTokenStore';
 import AuthGuard from './components/common/AuthGuard';
 import Layout from './layout/Layout';
+import { supabase } from './lib/supabase';
+import { useAccessTokenStore } from './store/useAccessTokenStore';
 
 const ServiceEntryPage = lazy(
   () => import('./feature/service-entry/ServiceEntryPage')
@@ -99,8 +99,11 @@ const DemoCategoryDetail = lazy(
 const DemoBroadcastingDetail = lazy(
   () => import('./feature/pickle/demo/broadcasting/DemoBroadcastingDetail')
 );
-const PickSeriesOperationData = lazy(
-  () => import('./feature/pickseries/PickSeriesOperationData')
+const PickSeriesWeeklyData = lazy(
+  () => import('./feature/pickseries/PickSeriesWeeklyData')
+);
+const PickSeriesOEMData = lazy(
+  () => import('./feature/pickseries/PickSeriesOEMData')
 );
 
 const LOGOUT_EVENT_NAME = 'app:logout';
@@ -260,12 +263,9 @@ function App() {
               <Route path='pickseries'>
                 <Route
                   path='operation/weekly'
-                  element={<PickSeriesOperationData />}
+                  element={<PickSeriesWeeklyData />}
                 />
-                <Route
-                  path='operation/oem'
-                  element={<PickSeriesOperationData />}
-                />
+                <Route path='operation/oem' element={<PickSeriesOEMData />} />
               </Route>
             </Route>
           </Route>

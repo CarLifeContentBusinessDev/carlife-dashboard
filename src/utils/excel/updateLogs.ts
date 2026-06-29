@@ -49,7 +49,7 @@ export async function findUpdateData(
   updateProgress(0);
 
   const excelData = (await getExcelData(
-    localStorage.getItem('loginToken')!,
+    localStorage.getItem('googleAccessToken')!,
     'episode'
   )) as usingDataProps[];
 
