@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import Button from '@/components/common/Button';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { usePickSeriesServerStore } from '@/store/usePickSeriesServerStore';
@@ -7,12 +8,28 @@ import {
   type WeeklySheetData,
 } from '@/utils/googleSheets/fetchPickSeriesWeeklySheet';
 import WeeklyCard from '@/components/card/WeeklyCard';
+import { BottomBar } from '@/components/bottomBar/BottomBar';
+import ExtractionOverlay from '@/components/overlay/ExtractionOverlay';
+import { extractPickjoyWeeklyData } from '@/utils/pickseries/extractPickjoyWeeklyData';
+import { writePickSeriesWeeklySheet } from '@/utils/googleSheets/writePickSeriesWeeklySheet';
+import type { ExtractionProgress } from '@/utils/pickseries/extractPickjoyOEMData';
 
 interface ProductGroup {
   id: string;
   label: string;
   tabName: string;
   serverIds: string[];
+}
+
+function isDateSelectable(date: string): boolean {
+  const parts = date.split('.');
+  if (parts.length < 3) return false;
+  const [year, month, day] = parts.map(Number);
+  if (!year || !month || !day) return false;
+  const weekEnd = new Date(year, month - 1, day + 6);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return weekEnd < today;
 }
 
 const PRODUCT_GROUPS: ProductGroup[] = [
@@ -54,6 +71,13 @@ export default function PickSeriesWeeklyData() {
     Record<string, Set<string>>
   >({});
 
+  const [extractionStatus, setExtractionStatus] = useState<
+    'idle' | 'running' | 'done' | 'error'
+  >('idle');
+  const [extractionProgress, setExtractionProgress] =
+    useState<ExtractionProgress | null>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
+
   const fetchingProducts = useRef<Set<string>>(new Set());
   const initializedProducts = useRef<Set<string>>(new Set());
 
@@ -93,7 +117,7 @@ export default function PickSeriesWeeklyData() {
             }));
             setSelectedDates((prev) => {
               const next = new Set(prev);
-              data.dates.forEach((d) => next.add(d));
+              data.dates.filter(isDateSelectable).forEach((d) => next.add(d));
               return next;
             });
           }
@@ -128,6 +152,7 @@ export default function PickSeriesWeeklyData() {
   }, [loggedInProducts, productStates]);
 
   const toggleDate = useCallback((date: string) => {
+    if (!isDateSelectable(date)) return;
     setSelectedDates((prev) => {
       const next = new Set(prev);
       if (next.has(date)) next.delete(date);
@@ -221,7 +246,10 @@ export default function PickSeriesWeeklyData() {
   }, []);
 
   const activeSelectedDates = useMemo(
-    () => incompleteDates.filter((d) => selectedDates.has(d)),
+    () =>
+      incompleteDates.filter(
+        (d) => isDateSelectable(d) && selectedDates.has(d)
+      ),
     [incompleteDates, selectedDates]
   );
 
@@ -237,10 +265,104 @@ export default function PickSeriesWeeklyData() {
     [productStates, activeSelectedDates]
   );
 
+  const handleExtractionReset = useCallback(() => {
+    setExtractionStatus('idle');
+    setExtractionProgress(null);
+    setExtractionError(null);
+  }, []);
+
+  const refreshProduct = useCallback((product: ProductGroup) => {
+    setProductStates((prev) => ({
+      ...prev,
+      [product.id]: { data: prev[product.id]?.data ?? null, loading: true, error: null },
+    }));
+    fetchPickSeriesWeeklySheet(product.tabName)
+      .then((data) => {
+        setProductStates((prev) => ({
+          ...prev,
+          [product.id]: { data, loading: false, error: null },
+        }));
+      })
+      .catch((err: unknown) => {
+        const message =
+          (err instanceof Error ? err.message : null) ?? '알 수 없는 오류';
+        setProductStates((prev) => ({
+          ...prev,
+          [product.id]: {
+            data: prev[product.id]?.data ?? null,
+            loading: false,
+            error: message,
+          },
+        }));
+      });
+  }, []);
+
+  const handleExtract = useCallback(async () => {
+    const pickjoyProduct = loggedInProducts.find((p) => p.id === 'pickjoy');
+    const pickjoyData = productStates['pickjoy']?.data;
+    const pickjoyToken = serverTokens['pickjoy'];
+
+    if (!pickjoyProduct) {
+      toast.error(
+        '픽조이 서버가 연결되지 않았습니다. 서버 연결 후 다시 시도해주세요.'
+      );
+      return;
+    }
+    if (!pickjoyData || !pickjoyToken) {
+      toast.error(
+        '픽조이 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.'
+      );
+      return;
+    }
+
+    const selectedItems =
+      selectedItemsByProduct['pickjoy'] ?? new Set<string>();
+
+    setExtractionStatus('running');
+    setExtractionProgress(null);
+    setExtractionError(null);
+
+    try {
+      const results = await extractPickjoyWeeklyData({
+        token: pickjoyToken,
+        selectedItems,
+        dates: activeSelectedDates,
+        onProgress: setExtractionProgress,
+      });
+      await writePickSeriesWeeklySheet(
+        pickjoyProduct.tabName,
+        pickjoyData,
+        results
+      );
+      refreshProduct(pickjoyProduct);
+      setExtractionStatus('done');
+    } catch (err) {
+      setExtractionError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
+      setExtractionStatus('error');
+    }
+  }, [
+    loggedInProducts,
+    productStates,
+    serverTokens,
+    selectedItemsByProduct,
+    activeSelectedDates,
+    refreshProduct,
+  ]);
+
   const hasAnyLoggedIn = loggedInProducts.length > 0;
 
   return (
-    <div className='flex flex-col min-h-full'>
+    <div className='relative flex flex-col min-h-full'>
+      {extractionStatus !== 'idle' && (
+        <ExtractionOverlay
+          status={extractionStatus}
+          progress={extractionProgress}
+          errorMessage={extractionError}
+          onReset={handleExtractionReset}
+        />
+      )}
       <div className='flex-1 p-6'>
         {/* 헤더 */}
         <div className='flex justify-between mb-5'>
@@ -251,12 +373,12 @@ export default function PickSeriesWeeklyData() {
             </span>
           </div>
           <Button
-            onClick={() =>
+            onClick={() => {
               window.open(
                 `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_PICKSERIES_SPREADSHEET_ID}/edit`,
                 '_blank'
-              )
-            }
+              );
+            }}
           >
             스프레드 시트 바로가기
           </Button>
@@ -309,19 +431,25 @@ export default function PickSeriesWeeklyData() {
                     모든 주차가 완료되었습니다.
                   </span>
                 ) : (
-                  incompleteDates.map((date) => (
-                    <button
-                      key={date}
-                      onClick={() => toggleDate(date)}
-                      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
-                        selectedDates.has(date)
-                          ? 'bg-indigo-600 border-indigo-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400'
-                      }`}
-                    >
-                      {date}
-                    </button>
-                  ))
+                  incompleteDates.map((date) => {
+                    const selectable = isDateSelectable(date);
+                    return (
+                      <button
+                        key={date}
+                        onClick={() => toggleDate(date)}
+                        disabled={!selectable}
+                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                          !selectable
+                            ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                            : selectedDates.has(date)
+                              ? 'bg-indigo-600 border-indigo-600 text-white cursor-pointer'
+                              : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 cursor-pointer'
+                        }`}
+                      >
+                        {date}
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -364,24 +492,11 @@ export default function PickSeriesWeeklyData() {
 
       {/* 하단 고정 바 */}
       {loginToken && hasAnyLoggedIn && (
-        <div className='sticky bottom-0 bg-white border-t border-gray-200 -mx-0 px-6 py-3 flex items-center justify-end z-10'>
-          <div className='flex items-center gap-2'>
-            <button
-              onClick={handleReset}
-              className='px-4 py-2 rounded-lg border border-rose-300 text-rose-500 text-sm font-medium hover:bg-rose-50 transition-colors cursor-pointer'
-            >
-              X 초기화
-            </button>
-            <Button
-              disabled={activeSelectedDates.length === 0}
-              onClick={() => {
-                // TODO: 데이터 추출 구현
-              }}
-            >
-              데이터 추출 &gt;
-            </Button>
-          </div>
-        </div>
+        <BottomBar
+          handleReset={handleReset}
+          activeSelectedDates={activeSelectedDates}
+          onClick={handleExtract}
+        />
       )}
     </div>
   );

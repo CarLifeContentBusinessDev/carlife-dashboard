@@ -16,6 +16,10 @@ export interface OEMSheetData {
   oems: OEMGroup[];
   allItems: string[];
   existingData: Record<string, Record<string, Set<string>>>;
+  // oemName → itemName → 0-based column index (from 'A')
+  oemItemColMap: Record<string, Record<string, number>>;
+  // normalized date → actual 1-based sheet row number
+  dateRowMap: Record<string, number>;
 }
 
 function isDateLike(value: string): boolean {
@@ -103,7 +107,7 @@ export async function fetchPickSeriesOEMSheet(
   );
 
   if (values.length < 2) {
-    return { dates: [], oems: [], allItems: [], existingData: {} };
+    return { dates: [], oems: [], allItems: [], existingData: {}, oemItemColMap: {}, dateRowMap: {} };
   }
 
   // Row 0 = 시트 4행: D열(index 3)부터 OEM명
@@ -127,13 +131,16 @@ export async function fetchPickSeriesOEMSheet(
   console.log('[OEMSheet] 감지된 OEM:', oemStarts);
 
   // OEM 그룹 빌드: 다음 OEM 시작 전까지의 열이 해당 OEM의 항목
+  const oemItemColMap: Record<string, Record<string, number>> = {};
   const oems: OEMGroup[] = oemStarts.map(({ name, colIndex }, idx) => {
     const nextColIndex = oemStarts[idx + 1]?.colIndex ?? itemRow.length;
     const items: string[] = [];
+    oemItemColMap[name] = {};
     for (let c = colIndex; c < nextColIndex; c++) {
       const item = itemRow[c]?.trim();
       if (item && !excludedSet.has(item)) {
         items.push(item);
+        oemItemColMap[name][item] = c;
       }
     }
     return { name, items };
@@ -151,6 +158,12 @@ export async function fetchPickSeriesOEMSheet(
     }
   }
   console.log('[OEMSheet] 감지된 날짜:', dateRows.map((d) => d.date));
+
+  // dateRowMap: 날짜 → 실제 시트 행 번호 (1-based, range가 A4부터 시작하므로 4 + rowIndex)
+  const dateRowMap: Record<string, number> = {};
+  for (const { date, rowIndex } of dateRows) {
+    dateRowMap[date] = 4 + rowIndex;
+  }
 
   // existingData: 날짜 → OEM명 → Set<항목명>
   const existingData: Record<string, Record<string, Set<string>>> = {};
@@ -177,5 +190,7 @@ export async function fetchPickSeriesOEMSheet(
     oems,
     allItems,
     existingData,
+    oemItemColMap,
+    dateRowMap,
   };
 }

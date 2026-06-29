@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import Button from '@/components/common/Button';
 import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import { usePickSeriesServerStore } from '@/store/usePickSeriesServerStore';
@@ -7,6 +8,7 @@ import {
   type OEMSheetData,
 } from '@/utils/googleSheets/fetchPickSeriesOEMSheet';
 import OEMCard from '@/components/card/OEMCard';
+import { BottomBar } from '@/components/bottomBar/BottomBar';
 
 interface ProductGroup {
   id: string;
@@ -291,7 +293,10 @@ export default function PickSeriesOEMData() {
   );
 
   const activeSelectedDates = useMemo(
-    () => incompleteDates.filter((d) => isDateSelectable(d) && selectedDates.has(d)),
+    () =>
+      incompleteDates.filter(
+        (d) => isDateSelectable(d) && selectedDates.has(d)
+      ),
     [incompleteDates, selectedDates]
   );
 
@@ -321,12 +326,12 @@ export default function PickSeriesOEMData() {
             </span>
           </div>
           <Button
-            onClick={() =>
+            onClick={() => {
               window.open(
                 `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_PICKSERIES_SPREADSHEET_ID}/edit`,
                 '_blank'
-              )
-            }
+              );
+            }}
           >
             스프레드 시트 바로가기
           </Button>
@@ -452,40 +457,12 @@ export default function PickSeriesOEMData() {
 
       {/* 하단 고정 바 */}
       {loginToken && hasAnyLoggedIn && (
-        <div className='sticky bottom-0 bg-white border-t border-gray-200 -mx-0 px-6 py-3 flex items-center justify-between z-10'>
-          <div className='flex items-center gap-4'>
-            {loggedInProducts.map((product) => (
-              <div
-                key={product.id}
-                className='flex items-center gap-2 text-sm text-gray-600'
-              >
-                <span className='w-2 h-2 rounded-full bg-green-500 shrink-0' />
-                <span>
-                  {product.label} -{' '}
-                  {activeSelectedDates.length > 0
-                    ? `${activeSelectedDates.length}개 주차 선택됨`
-                    : '주차 미선택'}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className='flex items-center gap-2'>
-            <button
-              onClick={handleReset}
-              className='px-4 py-2 rounded-lg border border-rose-300 text-rose-500 text-sm font-medium hover:bg-rose-50 transition-colors cursor-pointer'
-            >
-              X 초기화
-            </button>
-            <Button
-              disabled={activeSelectedDates.length === 0}
-              onClick={() => {
-                // TODO: 데이터 추출 구현
-              }}
-            >
-              데이터 추출 &gt;
-            </Button>
-          </div>
-        </div>
+        <BottomBar
+          handleReset={handleReset}
+          activeSelectedDates={activeSelectedDates}
+          extractDisabled={false}
+          onClick={() => {}}
+        />
       )}
     </div>
   );
