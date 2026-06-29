@@ -1,31 +1,33 @@
-interface CardProps {
+interface WeeklyCardProps {
   productId: string;
   isConnected: boolean;
   label: string;
   items: string[];
   selected: Set<string>;
   selectedCount?: number;
+  selectedDateCount: number;
   state: {
     loading: boolean;
     error: string | null;
   };
   onClick: (productId: string) => void;
-  isItemExisting: (productId: string, item: string) => boolean;
+  getItemExistingDates: (productId: string, item: string) => string[];
   toggleItem: (productId: string, item: string) => void;
 }
 
-const Card = ({
+const WeeklyCard = ({
   productId,
   isConnected,
   label,
   items,
   selected,
   selectedCount,
+  selectedDateCount,
   state,
   onClick,
-  isItemExisting,
+  getItemExistingDates,
   toggleItem,
-}: CardProps) => {
+}: WeeklyCardProps) => {
   const serviceColor =
     label === '픽클'
       ? 'bg-green-500'
@@ -33,10 +35,7 @@ const Card = ({
         ? 'bg-orange-500'
         : 'bg-purple-500';
   return (
-    <div
-      key={productId}
-      className='rounded-xl border border-gray-200 bg-white overflow-hidden'
-    >
+    <div className='rounded-xl border border-gray-200 bg-white overflow-hidden'>
       {/* 카드 헤더 */}
       <div className='flex items-center justify-between px-4 py-3 border-b border-gray-100'>
         <div className='flex items-center gap-2'>
@@ -56,7 +55,7 @@ const Card = ({
       </div>
 
       {/* 카드 바디 */}
-      <div className='overflow-y-auto max-h-[420px]'>
+      <div className='overflow-y-auto max-h-[420px] scrollbar-hide'>
         {!isConnected ? (
           <div className='px-4 py-8 text-center text-sm text-gray-400'>
             서버 미연결
@@ -76,7 +75,8 @@ const Card = ({
         ) : (
           items.map((item) => {
             const isSelected = selected.has(item);
-            const exists = isItemExisting(productId, item);
+            const existingDates = getItemExistingDates(productId, item);
+            const existCount = existingDates.length;
             return (
               <label
                 key={item}
@@ -97,11 +97,21 @@ const Card = ({
                 >
                   {item}
                 </span>
-                {exists && (
-                  <span className='text-xs px-1.5 py-0.5 rounded bg-rose-100 text-rose-500 font-medium shrink-0'>
-                    존재
-                  </span>
-                )}
+                {existCount > 0 &&
+                  (existCount === selectedDateCount ? (
+                    <span className='text-xs px-1.5 py-0.5 rounded bg-rose-100 text-rose-500 font-medium shrink-0'>
+                      존재
+                    </span>
+                  ) : (
+                    <span className='text-xs px-1.5 py-0.5 rounded bg-rose-100 text-rose-500 font-medium shrink-0'>
+                      {existingDates.length <= 2
+                        ? existingDates
+                            .map((d) => d.split('.').slice(1).join('.'))
+                            .join(', ')
+                        : `${existingDates[0].split('.').slice(1).join('.')} 외 ${existingDates.length - 1}건`}{' '}
+                      존재
+                    </span>
+                  ))}
               </label>
             );
           })
@@ -111,4 +121,4 @@ const Card = ({
   );
 };
 
-export default Card;
+export default WeeklyCard;

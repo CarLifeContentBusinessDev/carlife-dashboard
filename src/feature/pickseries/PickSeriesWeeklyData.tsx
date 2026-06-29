@@ -6,7 +6,7 @@ import {
   fetchPickSeriesWeeklySheet,
   type WeeklySheetData,
 } from '@/utils/googleSheets/fetchPickSeriesWeeklySheet';
-import Card from '@/components/card/Card';
+import WeeklyCard from '@/components/card/WeeklyCard';
 
 interface ProductGroup {
   id: string;
@@ -91,6 +91,11 @@ export default function PickSeriesWeeklyData() {
               ...prev,
               [product.id]: new Set(data.items),
             }));
+            setSelectedDates((prev) => {
+              const next = new Set(prev);
+              data.dates.forEach((d) => next.add(d));
+              return next;
+            });
           }
 
           fetchingProducts.current.delete(product.id);
@@ -155,6 +160,22 @@ export default function PickSeriesWeeklyData() {
     [productStates]
   );
 
+  const isDateFullyFilled = useCallback(
+    (date: string): boolean =>
+      loggedInProducts.length > 0 &&
+      loggedInProducts.every((pg) => {
+        const data = productStates[pg.id]?.data;
+        if (!data || data.items.length === 0) return false;
+        return data.items.every((item) => data.existingData[date]?.has(item));
+      }),
+    [loggedInProducts, productStates]
+  );
+
+  const incompleteDates = useMemo(
+    () => allDates.filter((d) => !isDateFullyFilled(d)),
+    [allDates, isDateFullyFilled]
+  );
+
   const allItems = useMemo(() => {
     const result: { productId: string; item: string }[] = [];
     loggedInProducts.forEach((pg) => {
@@ -170,8 +191,10 @@ export default function PickSeriesWeeklyData() {
       allItems.length > 0 &&
       allItems.every(({ productId, item }) =>
         selectedItemsByProduct[productId]?.has(item)
-      ),
-    [allItems, selectedItemsByProduct]
+      ) &&
+      incompleteDates.length > 0 &&
+      incompleteDates.every((d) => selectedDates.has(d)),
+    [allItems, selectedItemsByProduct, incompleteDates, selectedDates]
   );
 
   const toggleGlobalAll = useCallback(() => {
@@ -183,54 +206,35 @@ export default function PickSeriesWeeklyData() {
       });
       return next;
     });
-  }, [allSelected, productStates]);
+    setSelectedDates(allSelected ? new Set() : new Set(incompleteDates));
+  }, [allSelected, productStates, incompleteDates]);
 
   const handleReset = useCallback(() => {
     setSelectedDates(new Set());
     setSelectedItemsByProduct((prev) => {
       const next = { ...prev };
       PRODUCT_GROUPS.forEach((pg) => {
-        const items = productStates[pg.id]?.data?.items ?? [];
-        next[pg.id] = new Set(items);
+        next[pg.id] = new Set();
       });
       return next;
     });
-  }, [productStates]);
+  }, []);
 
-  const isItemExisting = useCallback(
-    (productId: string, item: string): boolean => {
-      if (selectedDates.size === 0) return false;
+  const activeSelectedDates = useMemo(
+    () => incompleteDates.filter((d) => selectedDates.has(d)),
+    [incompleteDates, selectedDates]
+  );
+
+  const getItemExistingDates = useCallback(
+    (productId: string, item: string): string[] => {
+      if (activeSelectedDates.length === 0) return [];
       const data = productStates[productId]?.data;
-      if (!data) return false;
-      return Array.from(selectedDates).some((date) =>
+      if (!data) return [];
+      return activeSelectedDates.filter((date) =>
         data.existingData[date]?.has(item)
       );
     },
-    [productStates, selectedDates]
-  );
-
-  const [hideCompleted, setHideCompleted] = useState(true);
-
-  const isDateFullyFilled = useCallback(
-    (date: string): boolean =>
-      loggedInProducts.length > 0 &&
-      loggedInProducts.every((pg) => {
-        const data = productStates[pg.id]?.data;
-        if (!data || data.items.length === 0) return false;
-        return data.items.every((item) => data.existingData[date]?.has(item));
-      }),
-    [loggedInProducts, productStates]
-  );
-
-  const visibleDates = useMemo(
-    () =>
-      hideCompleted ? allDates.filter((d) => !isDateFullyFilled(d)) : allDates,
-    [allDates, hideCompleted, isDateFullyFilled]
-  );
-
-  const completedCount = useMemo(
-    () => allDates.filter((d) => isDateFullyFilled(d)).length,
-    [allDates, isDateFullyFilled]
+    [productStates, activeSelectedDates]
   );
 
   const hasAnyLoggedIn = loggedInProducts.length > 0;
@@ -272,15 +276,6 @@ export default function PickSeriesWeeklyData() {
                 <span className='text-sm font-medium text-gray-500 shrink-0'>
                   주차 선택
                 </span>
-                {completedCount > 0 && (
-                  <button
-                    onClick={() => setHideCompleted((prev) => !prev)}
-                    className='flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                  >
-                    <span className='w-1.5 h-1.5 rounded-full bg-gray-500' />
-                    완료 {completedCount}건 {hideCompleted ? '보기' : '숨기기'}
-                  </button>
-                )}
                 {allDates.length > 0 && (
                   <label className='ml-auto flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer shrink-0'>
                     <input
@@ -309,44 +304,24 @@ export default function PickSeriesWeeklyData() {
                     시트에서 날짜를 찾지 못했습니다. 브라우저 콘솔을
                     확인해주세요.
                   </span>
-                ) : visibleDates.length === 0 ? (
+                ) : incompleteDates.length === 0 ? (
                   <span className='text-sm text-gray-400'>
                     모든 주차가 완료되었습니다.
                   </span>
                 ) : (
-                  visibleDates.map((date) => {
-                    const filled = isDateFullyFilled(date);
-                    return (
-                      <button
-                        key={date}
-                        onClick={() => toggleDate(date)}
-                        className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
-                          selectedDates.has(date)
-                            ? filled
-                              ? 'bg-gray-400 border-gray-300 text-white hover:border-gray-400'
-                              : 'bg-indigo-600 border-indigo-600 text-white'
-                            : filled
-                              ? 'bg-white border-gray-300 text-gray-400 hover:border-gray-400'
-                              : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400'
-                        }`}
-                      >
-                        {filled && (
-                          <svg
-                            className={`w-3.5 h-3.5 shrink-0 ${selectedDates.has(date) ? 'text-white' : 'text-gray-500'}`}
-                            viewBox='0 0 20 20'
-                            fill='currentColor'
-                          >
-                            <path
-                              fillRule='evenodd'
-                              d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                              clipRule='evenodd'
-                            />
-                          </svg>
-                        )}
-                        {date}
-                      </button>
-                    );
-                  })
+                  incompleteDates.map((date) => (
+                    <button
+                      key={date}
+                      onClick={() => toggleDate(date)}
+                      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
+                        selectedDates.has(date)
+                          ? 'bg-indigo-600 border-indigo-600 text-white'
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400'
+                      }`}
+                    >
+                      {date}
+                    </button>
+                  ))
                 )}
               </div>
             </div>
@@ -366,16 +341,18 @@ export default function PickSeriesWeeklyData() {
                 ).length;
 
                 return (
-                  <Card
+                  <WeeklyCard
+                    key={product.id}
                     productId={product.id}
                     label={product.label}
                     isConnected={isConnected}
                     items={items}
                     selected={selected}
                     selectedCount={selectedCount}
+                    selectedDateCount={activeSelectedDates.length}
                     state={state ?? { data: null, loading: false, error: null }}
                     onClick={toggleProductAll}
-                    isItemExisting={isItemExisting}
+                    getItemExistingDates={getItemExistingDates}
                     toggleItem={toggleItem}
                   />
                 );
@@ -387,23 +364,7 @@ export default function PickSeriesWeeklyData() {
 
       {/* 하단 고정 바 */}
       {loginToken && hasAnyLoggedIn && (
-        <div className='sticky bottom-0 bg-white border-t border-gray-200 -mx-0 px-6 py-3 flex items-center justify-between z-10'>
-          <div className='flex items-center gap-4'>
-            {loggedInProducts.map((product) => (
-              <div
-                key={product.id}
-                className='flex items-center gap-2 text-sm text-gray-600'
-              >
-                <span className='w-2 h-2 rounded-full bg-green-500 shrink-0' />
-                <span>
-                  {product.label} -{' '}
-                  {selectedDates.size > 0
-                    ? `${selectedDates.size}개 주차 선택됨`
-                    : '주차 미선택'}
-                </span>
-              </div>
-            ))}
-          </div>
+        <div className='sticky bottom-0 bg-white border-t border-gray-200 -mx-0 px-6 py-3 flex items-center justify-end z-10'>
           <div className='flex items-center gap-2'>
             <button
               onClick={handleReset}
@@ -412,7 +373,7 @@ export default function PickSeriesWeeklyData() {
               X 초기화
             </button>
             <Button
-              disabled={selectedDates.size === 0}
+              disabled={activeSelectedDates.length === 0}
               onClick={() => {
                 // TODO: 데이터 추출 구현
               }}
