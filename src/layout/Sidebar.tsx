@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import Button from '@/components/common/Button';
+import Button from '@/shared/components/common/Button';
 import {
   PICKLE_MENU_GROUPS,
   PICKNOW_MENU_GROUPS,
@@ -8,7 +8,7 @@ import {
 } from '@/constants/sidebarMenus';
 import MenuGroupItem from './components/MenuGroupItem';
 import MenuButton from './components/MenuButton';
-import { useServiceStore } from '@/store/useServiceStore';
+import { useServiceStore } from '@/shared/store/useServiceStore';
 
 const Sidebar = () => {
   const { pathname } = useLocation();

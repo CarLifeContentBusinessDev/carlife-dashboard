@@ -1,103 +1,103 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
-import AuthGuard from './components/common/AuthGuard';
+import AuthGuard from './shared/components/common/AuthGuard';
 import Layout from './layout/Layout';
 import { supabase } from './lib/supabase';
-import { useAccessTokenStore } from './store/useAccessTokenStore';
+import { useAccessTokenStore } from './shared/store/useAccessTokenStore';
 
 const ServiceEntryPage = lazy(
   () => import('./feature/service-entry/ServiceEntryPage')
 );
 const Configuration = lazy(() => import('./feature/picknow/Configuration'));
 const ChannelLayout = lazy(
-  () => import('./feature/pickle/production/channel-book/ChannelLayout')
+  () => import('./feature/pickle-prod/channel-book/ChannelLayout')
 );
 const CurationLayout = lazy(
-  () => import('./feature/pickle/production/curation/CurationLayout')
+  () => import('./feature/pickle-prod/curation/CurationLayout')
 );
 const DemoCategoryLayout = lazy(
-  () => import('./feature/pickle/demo/category/DemoCategoryLayout')
+  () => import('./feature/pickle-demo/category/DemoCategoryLayout')
 );
 const DemoCategoryEdit = lazy(
-  () => import('./feature/pickle/demo/category/DemoCategoryEdit')
+  () => import('./feature/pickle-demo/category/DemoCategoryEdit')
 );
 const DemoBroadcastingLayout = lazy(
-  () => import('./feature/pickle/demo/broadcasting/DemoBroadcastingLayout')
+  () => import('./feature/pickle-demo/broadcasting/DemoBroadcastingLayout')
 );
 const DemoBroadcastingEdit = lazy(
-  () => import('./feature/pickle/demo/broadcasting/DemoBroadcastingEdit')
+  () => import('./feature/pickle-demo/broadcasting/DemoBroadcastingEdit')
 );
 const DemoCategoryAdd = lazy(
-  () => import('./feature/pickle/demo/category/DemoCategoryAdd')
+  () => import('./feature/pickle-demo/category/DemoCategoryAdd')
 );
 const DemoBroadcastingAdd = lazy(
-  () => import('./feature/pickle/demo/broadcasting/DemoBroadcastingAdd')
+  () => import('./feature/pickle-demo/broadcasting/DemoBroadcastingAdd')
 );
 const EpisodeLayout = lazy(
-  () => import('./feature/pickle/production/episode/EpisodeLayout')
+  () => import('./feature/pickle-prod/episode/EpisodeLayout')
 );
 const ProdEpisodeDetail = lazy(
-  () => import('./feature/pickle/production/episode/ProdEpisodeDetail')
+  () => import('./feature/pickle-prod/episode/ProdEpisodeDetail')
 );
 const ProdChannelDetail = lazy(
-  () => import('./feature/pickle/production/channel-book/ProdChannelDetail')
+  () => import('./feature/pickle-prod/channel-book/ProdChannelDetail')
 );
 const ProdCurationDetail = lazy(
-  () => import('./feature/pickle/production/curation/ProdCurationDetail')
+  () => import('./feature/pickle-prod/curation/ProdCurationDetail')
 );
 const DemoProgramLayout = lazy(
-  () => import('./feature/pickle/demo/program/DemoProgramLayout')
+  () => import('./feature/pickle-demo/program/DemoProgramLayout')
 );
 const DemoProgramEdit = lazy(
-  () => import('./feature/pickle/demo/program/DemoProgramEdit')
+  () => import('./feature/pickle-demo/program/DemoProgramEdit')
 );
 const DemoProgramAdd = lazy(
-  () => import('./feature/pickle/demo/program/DemoProgramAdd')
+  () => import('./feature/pickle-demo/program/DemoProgramAdd')
 );
 const DemoProgramDetail = lazy(
-  () => import('./feature/pickle/demo/program/DemoProgramDetail')
+  () => import('./feature/pickle-demo/program/DemoProgramDetail')
 );
 const DemoEpisodeLayout = lazy(
-  () => import('./feature/pickle/demo/episode/DemoEpisodeLayout')
+  () => import('./feature/pickle-demo/episode/DemoEpisodeLayout')
 );
 const DemoEpisodeEdit = lazy(
-  () => import('./feature/pickle/demo/episode/DemoEpisodeEdit')
+  () => import('./feature/pickle-demo/episode/DemoEpisodeEdit')
 );
 const DemoEpisodeAdd = lazy(
-  () => import('./feature/pickle/demo/episode/DemoEpisodeAdd')
+  () => import('./feature/pickle-demo/episode/DemoEpisodeAdd')
 );
 const DemoEpisodeDetail = lazy(
-  () => import('./feature/pickle/demo/episode/DemoEpisodeDetail')
+  () => import('./feature/pickle-demo/episode/DemoEpisodeDetail')
 );
 const DemoSeriesLayout = lazy(
-  () => import('./feature/pickle/demo/series/DemoSeriesLayout')
+  () => import('./feature/pickle-demo/series/DemoSeriesLayout')
 );
 const DemoSeriesEdit = lazy(
-  () => import('./feature/pickle/demo/series/DemoSeriesEdit')
+  () => import('./feature/pickle-demo/series/DemoSeriesEdit')
 );
 const DemoSeriesAdd = lazy(
-  () => import('./feature/pickle/demo/series/DemoSeriesAdd')
+  () => import('./feature/pickle-demo/series/DemoSeriesAdd')
 );
 const DemoSeriesDetail = lazy(
-  () => import('./feature/pickle/demo/series/DemoSeriesDetail')
+  () => import('./feature/pickle-demo/series/DemoSeriesDetail')
 );
 const DemoThemeLayout = lazy(
-  () => import('./feature/pickle/demo/theme/DemoThemeLayout')
+  () => import('./feature/pickle-demo/theme/DemoThemeLayout')
 );
 const DemoThemeEdit = lazy(
-  () => import('./feature/pickle/demo/theme/DemoThemeEdit')
+  () => import('./feature/pickle-demo/theme/DemoThemeEdit')
 );
 const DemoThemeAdd = lazy(
-  () => import('./feature/pickle/demo/theme/DemoThemeAdd')
+  () => import('./feature/pickle-demo/theme/DemoThemeAdd')
 );
 const DemoThemeDetail = lazy(
-  () => import('./feature/pickle/demo/theme/DemoThemeDetail')
+  () => import('./feature/pickle-demo/theme/DemoThemeDetail')
 );
 const DemoCategoryDetail = lazy(
-  () => import('./feature/pickle/demo/category/DemoCategoryDetail')
+  () => import('./feature/pickle-demo/category/DemoCategoryDetail')
 );
 const DemoBroadcastingDetail = lazy(
-  () => import('./feature/pickle/demo/broadcasting/DemoBroadcastingDetail')
+  () => import('./feature/pickle-demo/broadcasting/DemoBroadcastingDetail')
 );
 const PickSeriesWeeklyData = lazy(
   () => import('./feature/pickseries/PickSeriesWeeklyData')

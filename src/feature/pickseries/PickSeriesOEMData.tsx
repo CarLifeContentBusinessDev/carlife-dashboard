@@ -1,85 +1,43 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'react-toastify';
-import Button from '@/components/common/Button';
-import { useLoginTokenStore } from '@/store/useLoginTokenStore';
-import { usePickSeriesServerStore } from '@/store/usePickSeriesServerStore';
+import { BottomBar } from '@/feature/pickseries/components/BottomBar';
+import OEMCard from '@/feature/pickseries/components/OEMCard';
+import ExtractionOverlay from '@/feature/pickseries/components/ExtractionOverlay';
+import { DatePickerSection } from '@/feature/pickseries/components/DatePickerSection';
+import PickSeriesPageHeader from '@/feature/pickseries/components/PickSeriesPageHeader';
+import type {
+  ExtractionStatus,
+  OEMSelection,
+  ProductGroup,
+  ProductState,
+} from '@/feature/pickseries/types/pickSeriesTypes';
+import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
 import {
   fetchPickSeriesOEMSheet,
   type OEMSheetData,
-} from '@/utils/googleSheets/fetchPickSeriesOEMSheet';
-import OEMCard from '@/components/card/OEMCard';
-import { BottomBar } from '@/components/bottomBar/BottomBar';
-import ExtractionOverlay from '@/components/overlay/ExtractionOverlay';
-import { extractPickjoyOEMData, type ExtractionProgress } from '@/utils/pickseries/extractPickjoyOEMData';
-import { writePickSeriesOEMSheet } from '@/utils/googleSheets/writePickSeriesOEMSheet';
-
-interface ProductGroup {
-  id: string;
-  label: string;
-  tabName: string;
-  serverIds: string[];
-  excludedItems: string[];
-}
-
-const PRODUCT_GROUPS: ProductGroup[] = [
-  {
-    id: 'pickle',
-    label: '픽클',
-    tabName: '픽클_OEM지표',
-    serverIds: ['pickle-prod'],
-    excludedItems: ['표준 편차', '재방문 비율'],
-  },
-  {
-    id: 'picknow',
-    label: '픽나우',
-    tabName: '픽나우_OEM지표',
-    serverIds: ['picknow-kr-prod-kia', 'picknow-kr-prod', 'picknow-us-prod'],
-    excludedItems: ['표준 편차', '재방문 비율'],
-  },
-  {
-    id: 'pickjoy',
-    label: '픽조이',
-    tabName: '픽조이_OEM지표',
-    serverIds: ['pickjoy'],
-    excludedItems: ['표준 편차'],
-  },
-];
-
-// productId → oemName → Set<itemName>
-type OEMSelection = Record<string, Record<string, Set<string>>>;
-
-// 주차 종료일(시작+6일)이 오늘보다 이전인 경우만 선택 가능
-function isDateSelectable(date: string): boolean {
-  const parts = date.split('.');
-  if (parts.length < 3) return false;
-  const [year, month, day] = parts.map(Number);
-  if (!year || !month || !day) return false;
-  const weekEnd = new Date(year, month - 1, day + 6);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return weekEnd < today;
-}
-
-interface ProductState {
-  data: OEMSheetData | null;
-  loading: boolean;
-  error: string | null;
-}
+} from '@/shared/utils/googleSheets/fetchPickSeriesOEMSheet';
+import { writePickSeriesOEMSheet } from '@/shared/utils/googleSheets/writePickSeriesOEMSheet';
+import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
+import {
+  extractPickjoyOEMData,
+  type ExtractionProgress,
+} from '@/feature/pickseries/utils/extractPickjoyOEMData';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
+import { OEM_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
 
 export default function PickSeriesOEMData() {
   const { loginToken } = useLoginTokenStore();
   const { serverTokens } = usePickSeriesServerStore();
 
   const [productStates, setProductStates] = useState<
-    Record<string, ProductState>
+    Record<string, ProductState<OEMSheetData>>
   >({});
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedItemsByProduct, setSelectedItemsByProduct] =
     useState<OEMSelection>({});
 
-  const [extractionStatus, setExtractionStatus] = useState<
-    'idle' | 'running' | 'done' | 'error'
-  >('idle');
+  const [extractionStatus, setExtractionStatus] =
+    useState<ExtractionStatus>('idle');
   const [extractionProgress, setExtractionProgress] =
     useState<ExtractionProgress | null>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
@@ -89,7 +47,7 @@ export default function PickSeriesOEMData() {
 
   const loggedInProducts = useMemo(
     () =>
-      PRODUCT_GROUPS.filter((pg) =>
+      OEM_PRODUCT_GROUPS.filter((pg) =>
         pg.serverIds.some((sid) => !!serverTokens[sid])
       ),
     [serverTokens]
@@ -239,49 +197,6 @@ export default function PickSeriesOEMData() {
     return result;
   }, [loggedInProducts, productStates]);
 
-  const selectableDates = useMemo(
-    () => allDates.filter((d) => isDateSelectable(d)),
-    [allDates, isDateSelectable]
-  );
-
-  const allSelected = useMemo(
-    () =>
-      allSelectableItems.length > 0 &&
-      allSelectableItems.every(({ productId, oemName, item }) =>
-        selectedItemsByProduct[productId]?.[oemName]?.has(item)
-      ) &&
-      selectableDates.length > 0 &&
-      selectableDates.every((d) => selectedDates.has(d)),
-    [allSelectableItems, selectedItemsByProduct, selectableDates, selectedDates]
-  );
-
-  const toggleGlobalAll = useCallback(() => {
-    setSelectedItemsByProduct((prev) => {
-      const next = { ...prev };
-      PRODUCT_GROUPS.forEach((pg) => {
-        const oems = productStates[pg.id]?.data?.oems ?? [];
-        const oemMap: Record<string, Set<string>> = {};
-        oems.forEach((oem) => {
-          oemMap[oem.name] = allSelected ? new Set() : new Set(oem.items);
-        });
-        next[pg.id] = oemMap;
-      });
-      return next;
-    });
-    setSelectedDates(allSelected ? new Set() : new Set(selectableDates));
-  }, [allSelected, productStates, selectableDates]);
-
-  const handleReset = useCallback(() => {
-    setSelectedDates(new Set());
-    setSelectedItemsByProduct((prev) => {
-      const next = { ...prev };
-      PRODUCT_GROUPS.forEach((pg) => {
-        next[pg.id] = {};
-      });
-      return next;
-    });
-  }, []);
-
   const isDateFullyFilled = useCallback(
     (date: string): boolean =>
       loggedInProducts.length > 0 &&
@@ -302,6 +217,49 @@ export default function PickSeriesOEMData() {
     [allDates, isDateFullyFilled]
   );
 
+  const selectableDates = useMemo(
+    () => incompleteDates.filter(isDateSelectable),
+    [incompleteDates]
+  );
+
+  const allSelected = useMemo(
+    () =>
+      allSelectableItems.length > 0 &&
+      allSelectableItems.every(({ productId, oemName, item }) =>
+        selectedItemsByProduct[productId]?.[oemName]?.has(item)
+      ) &&
+      selectableDates.length > 0 &&
+      selectableDates.every((d) => selectedDates.has(d)),
+    [allSelectableItems, selectedItemsByProduct, selectableDates, selectedDates]
+  );
+
+  const toggleGlobalAll = useCallback(() => {
+    setSelectedItemsByProduct((prev) => {
+      const next = { ...prev };
+      OEM_PRODUCT_GROUPS.forEach((pg) => {
+        const oems = productStates[pg.id]?.data?.oems ?? [];
+        const oemMap: Record<string, Set<string>> = {};
+        oems.forEach((oem) => {
+          oemMap[oem.name] = allSelected ? new Set() : new Set(oem.items);
+        });
+        next[pg.id] = oemMap;
+      });
+      return next;
+    });
+    setSelectedDates(allSelected ? new Set() : new Set(selectableDates));
+  }, [allSelected, productStates, selectableDates]);
+
+  const handleReset = useCallback(() => {
+    setSelectedDates(new Set());
+    setSelectedItemsByProduct((prev) => {
+      const next = { ...prev };
+      OEM_PRODUCT_GROUPS.forEach((pg) => {
+        next[pg.id] = {};
+      });
+      return next;
+    });
+  }, []);
+
   const activeSelectedDates = useMemo(
     () =>
       incompleteDates.filter(
@@ -319,7 +277,11 @@ export default function PickSeriesOEMData() {
   const refreshProduct = useCallback((product: ProductGroup) => {
     setProductStates((prev) => ({
       ...prev,
-      [product.id]: { data: prev[product.id]?.data ?? null, loading: true, error: null },
+      [product.id]: {
+        data: prev[product.id]?.data ?? null,
+        loading: true,
+        error: null,
+      },
     }));
     fetchPickSeriesOEMSheet(product.tabName, product.excludedItems)
       .then((data) => {
@@ -348,11 +310,15 @@ export default function PickSeriesOEMData() {
     const pickjoyToken = serverTokens['pickjoy'];
 
     if (!pickjoyProduct) {
-      toast.error('픽조이 서버가 연결되지 않았습니다. 서버 연결 후 다시 시도해주세요.');
+      toast.error(
+        '픽조이 서버가 연결되지 않았습니다. 서버 연결 후 다시 시도해주세요.'
+      );
       return;
     }
     if (!pickjoyData || !pickjoyToken) {
-      toast.error('픽조이 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      toast.error(
+        '픽조이 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.'
+      );
       return;
     }
 
@@ -370,7 +336,11 @@ export default function PickSeriesOEMData() {
         dates: activeSelectedDates,
         onProgress: setExtractionProgress,
       });
-      await writePickSeriesOEMSheet(pickjoyProduct.tabName, pickjoyData, results);
+      await writePickSeriesOEMSheet(
+        pickjoyProduct.tabName,
+        pickjoyData,
+        results
+      );
       refreshProduct(pickjoyProduct);
       setExtractionStatus('done');
     } catch (err) {
@@ -414,24 +384,10 @@ export default function PickSeriesOEMData() {
       )}
       <div className='flex-1 p-6'>
         {/* 헤더 */}
-        <div className='flex justify-between mb-5'>
-          <div className='flex items-end gap-3'>
-            <h1 className='text-2xl font-black text-[#1B1E2F]'>OEM 지표</h1>
-            <span className='text-sm text-slate-400 pb-0.5'>
-              시트의 빈 주차를 자동으로 감지하고 데이터를 채웁니다. (월-일 기준)
-            </span>
-          </div>
-          <Button
-            onClick={() => {
-              window.open(
-                `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_PICKSERIES_SPREADSHEET_ID}/edit`,
-                '_blank'
-              );
-            }}
-          >
-            스프레드 시트 바로가기
-          </Button>
-        </div>
+        <PickSeriesPageHeader
+          title='OEM 지표'
+          description='시트의 빈 주차를 자동으로 감지하고 데이터를 채웁니다. (월-일 기준)'
+        />
 
         {!loginToken ? (
           <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5'>
@@ -442,70 +398,22 @@ export default function PickSeriesOEMData() {
         ) : (
           <>
             {/* 주차 선택 */}
-            <div className='flex flex-col gap-2 mb-5'>
-              <div className='flex items-center gap-3'>
-                <span className='text-sm font-medium text-gray-500 shrink-0'>
-                  주차 선택
-                </span>
-                {allDates.length > 0 && (
-                  <label className='ml-auto flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer shrink-0'>
-                    <input
-                      type='checkbox'
-                      checked={allSelected}
-                      onChange={toggleGlobalAll}
-                      className='w-4 h-4 accent-indigo-600'
-                    />
-                    전체 선택
-                  </label>
-                )}
-              </div>
-              <div className='flex gap-2 flex-wrap'>
-                {!hasAnyLoggedIn ? (
-                  <span className='text-sm text-gray-400'>
-                    서버 연결 후 사용 가능합니다.
-                  </span>
-                ) : loggedInProducts.some(
-                    (pg) => productStates[pg.id]?.loading
-                  ) ? (
-                  <span className='text-sm text-gray-400'>
-                    날짜를 불러오는 중...
-                  </span>
-                ) : allDates.length === 0 ? (
-                  <span className='text-sm text-gray-400'>
-                    시트에서 날짜를 찾지 못했습니다. 브라우저 콘솔을
-                    확인해주세요.
-                  </span>
-                ) : incompleteDates.length === 0 ? (
-                  <span className='text-sm text-gray-400'>
-                    모든 주차가 완료되었습니다.
-                  </span>
-                ) : (
-                  incompleteDates.map((date) => {
-                    const selectable = isDateSelectable(date);
-                    return (
-                      <button
-                        key={date}
-                        onClick={() => toggleDate(date)}
-                        disabled={!selectable}
-                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                          !selectable
-                            ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
-                            : selectedDates.has(date)
-                              ? 'bg-indigo-600 border-indigo-600 text-white cursor-pointer'
-                              : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 cursor-pointer'
-                        }`}
-                      >
-                        {date}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+            <DatePickerSection
+              allDates={allDates}
+              selectedDates={selectedDates}
+              toggleDate={toggleDate}
+              allSelected={allSelected}
+              toggleGlobalAll={toggleGlobalAll}
+              hasAnyLoggedIn={hasAnyLoggedIn}
+              loggedInProducts={loggedInProducts}
+              productStates={productStates}
+              incompleteDates={incompleteDates}
+              isDateSelectable={isDateSelectable}
+            />
 
             {/* 서비스 카드 그리드 */}
             <div className='grid grid-cols-3 gap-4'>
-              {PRODUCT_GROUPS.map((product) => {
+              {OEM_PRODUCT_GROUPS.map((product) => {
                 const isConnected = loggedInProducts.some(
                   (p) => p.id === product.id
                 );

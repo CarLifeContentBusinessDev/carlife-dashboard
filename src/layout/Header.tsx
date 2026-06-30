@@ -5,14 +5,17 @@ import {
   getGoogleToken,
   initializeGoogleAPI,
   initializeGIS,
-} from '@/utils/auth/auth';
-import Button from '@/components/common/Button';
-import ServerLoginModal from '@/components/common/ServerLoginModal';
-import PickleLoginModal from '@/components/common/PickleLoginModal';
-import { useLoginTokenStore } from '@/store/useLoginTokenStore';
-import { useServiceStore, clearServiceToken } from '@/store/useServiceStore';
-import { usePicknowServerStore } from '@/store/usePicknowServerStore';
-import { usePickleServerStore } from '@/store/usePickleServerStore';
+} from '@/shared/utils/auth/auth';
+import Button from '@/shared/components/common/Button';
+import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
+import PickleLoginModal from '@/shared/components/common/PickleLoginModal';
+import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import {
+  useServiceStore,
+  clearServiceToken,
+} from '@/shared/store/useServiceStore';
+import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
+import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
 import { PICKNOW_SERVERS, PICKSERIES_SERVERS } from '@/constants/servers';
 import { PICKLE_SERVERS } from '@/constants/servers';
 import type {
@@ -20,11 +23,11 @@ import type {
   PickleServer,
   PickSeriesServer,
 } from '@/constants/servers';
-import { setTestMode } from '@/utils/api/api';
+import { setTestMode } from '@/shared/utils/api/api';
 import { supabase } from '@/lib/supabase';
-import { useAccessTokenStore } from '@/store/useAccessTokenStore';
-import type { ServiceType } from '@/store/useServiceStore';
-import { usePickSeriesServerStore } from '@/store/usePickSeriesServerStore';
+import { useAccessTokenStore } from '@/shared/store/useAccessTokenStore';
+import type { ServiceType } from '@/shared/store/useServiceStore';
+import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
 
 const SERVICE_LABELS: Record<string, string> = {
   pickle: 'Pickle 대시보드',

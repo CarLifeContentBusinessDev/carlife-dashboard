@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useServiceStore } from '@/store/useServiceStore';
-import type { ServiceType } from '@/store/useServiceStore';
+import { useServiceStore } from '@/shared/store/useServiceStore';
+import type { ServiceType } from '@/shared/store/useServiceStore';
 
 const SERVICE_HOME: Record<ServiceType, string> = {
   pickle: '/pickle/episodes',

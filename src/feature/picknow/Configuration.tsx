@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { useLoginTokenStore } from '@/store/useLoginTokenStore';
-import { usePicknowServerStore } from '@/store/usePicknowServerStore';
+import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
 import { PICKNOW_SERVERS } from '@/constants/servers';
 import type { PicknowServer } from '@/constants/servers';
-import type { SettingRow } from '@/utils/googleSheets/fetchSettingData';
-import { fetchSettingData } from '@/utils/googleSheets/fetchSettingData';
-import { syncPicknowConfigurationSheet } from '@/utils/googleSheets/syncPicknowConfigurationSheet';
-import { getPicknowServerApi } from '@/utils/api/api';
-import Button from '@/components/common/Button';
-import ServerLoginModal from '@/components/common/ServerLoginModal';
+import type { SettingRow } from '@/shared/utils/googleSheets/fetchSettingData';
+import { fetchSettingData } from '@/shared/utils/googleSheets/fetchSettingData';
+import { syncPicknowConfigurationSheet } from '@/shared/utils/googleSheets/syncPicknowConfigurationSheet';
+import { getPicknowServerApi } from '@/shared/utils/api/api';
+import Button from '@/shared/components/common/Button';
+import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();
@@ -470,12 +470,12 @@ export default function Configuration() {
             const s = loggedInServers[0];
             return (
               <Button
-                onClick={() =>
+                onClick={() => {
                   window.open(
                     `https://docs.google.com/spreadsheets/d/${s.spreadsheetId}/edit`,
                     '_blank'
-                  )
-                }
+                  );
+                }}
               >
                 스프레드 시트 바로가기
               </Button>
