@@ -3,6 +3,7 @@ import picknowLogo from '@/assets/picknow_logo.svg';
 import pickseriesLogo from '@/assets/pickseries_logo.svg';
 import type { PicknowServer, PickSeriesServer } from '@/constants/servers';
 import { getPicknowServerApi } from '@/shared/utils/api/api';
+import axios from 'axios';
 import JSEncrypt from 'jsencrypt';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -95,10 +96,14 @@ export default function ServerLoginModal({
         toast.success(`${server.label} 로그인에 성공하였습니다.`);
         onClose();
       } else {
-        setError('로그인에 실패했습니다. 다시 시도해주세요.');
+        setError(res.data.resultMessage);
       }
-    } catch {
-      setError('서버와 연결할 수 없습니다.');
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.resultMessage) {
+        setError(err.response.data.resultMessage);
+      } else {
+        setError('서버에 연결할 수 없습니다.');
+      }
     } finally {
       setLoading(false);
     }

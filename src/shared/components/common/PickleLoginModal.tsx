@@ -101,7 +101,7 @@ export default function PickleLoginModal({ server, onClose }: Props) {
       );
 
       if (res.data.resultCode !== 'SUCCESS') {
-        setError('로그인에 실패했습니다. 다시 시도해주세요.');
+        setError(res.data.resultMessage);
         return;
       }
 
@@ -125,8 +125,11 @@ export default function PickleLoginModal({ server, onClose }: Props) {
       toast.success(`Pickle ${server.label} 로그인에 성공하였습니다.`);
       onClose();
     } catch (err) {
-      console.error(err);
-      setError('서버와 연결할 수 없습니다.');
+      if (axios.isAxiosError(err) && err.response?.data?.resultMessage) {
+        setError(err.response.data.resultMessage);
+      } else {
+        setError('서버에 연결할 수 없습니다.');
+      }
     } finally {
       setLoading(false);
     }
