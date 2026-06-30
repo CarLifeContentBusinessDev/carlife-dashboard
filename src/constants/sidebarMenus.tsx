@@ -34,9 +34,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
   {
     id: 'data-management',
     label: '상용 콘텐츠 관리',
-    icon: (
-      <img src={radioSvg} width={24} height={24} alt='상용 콘텐츠 관리' />
-    ),
+    icon: <img src={radioSvg} width={24} height={24} alt='상용 콘텐츠 관리' />,
     children: [
       {
         id: 'episodes',
@@ -60,7 +58,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
       },
       {
         id: 'stg_channels',
-        to: '/pickle/ stg/channels',
+        to: '/pickle/stg/channels',
         label: '채널·도서 관리 (stg)',
       },
       {
@@ -74,12 +72,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     id: 'demo-data-management',
     label: '데모 콘텐츠 관리',
     icon: (
-      <img
-        src={radioFillSvg}
-        width={24}
-        height={24}
-        alt='데모 콘텐츠 관리'
-      />
+      <img src={radioFillSvg} width={24} height={24} alt='데모 콘텐츠 관리' />
     ),
     children: [
       { id: 'programs', to: '/pickle/demo/programs', label: '프로그램 관리' },

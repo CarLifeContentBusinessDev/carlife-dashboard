@@ -70,16 +70,13 @@ export default function ServerLoginModal({
         passwordToSend = encryptedPassword;
       }
 
-      let loginData = server.label.startsWith('Pickle')
+      let loginData = server.id.startsWith('pickle')
         ? { adminId: id, password: passwordToSend }
-        : server.label.startsWith('Picknow')
-          ? { email: id, password: passwordToSend }
-          : { email: id, password: passwordToSend };
+        : { email: id, password: passwordToSend };
 
       const serverApi = getPicknowServerApi(server);
-      const loginUrl = server.label.startsWith('Pickjoy')
-        ? '/api/admin/v1/login'
-        : '/admin/login';
+      const loginUrl =
+        server.id === 'pickjoy' ? '/api/admin/v1/login' : '/admin/login';
 
       const res = await serverApi.post<PicknowLoginResponse>(
         loginUrl,

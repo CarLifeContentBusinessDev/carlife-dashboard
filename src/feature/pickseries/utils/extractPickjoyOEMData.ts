@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { OEMGroup } from '@/shared/utils/googleSheets/fetchPickSeriesOEMSheet';
+import { executeWithConcurrencyLimit } from '@/shared/utils/api/requestPool';
 import {
   fetchManufacturers,
   fetchDevicesByManufacturer,
@@ -150,37 +151,57 @@ export async function extractPickjoyOEMData(params: {
     const { startDate, endDate } = sheetDateToApiDates(sheetDate);
 
     if (individualOEMs.length > 0) {
+      type TaskResult = {
+        oemName: string;
+        registeredVin: number;
+        activeUsers: number;
+      };
+
+      const tasks = individualOEMs.flatMap((oem) => {
+        const { manufacturerSeq, deviceSeq, companySeqs } =
+          oemParamsMap[oem.name]!;
+        return companySeqs.map(
+          (companySeq) => async (): Promise<TaskResult> => {
+            const stats = await fetchServiceStatsFromExport(
+              apiInstance,
+              { startDate, endDate },
+              { manufacturerSeq, deviceSeq, companySeq }
+            );
+            completed++;
+            onProgress({
+              completed,
+              total,
+              currentLabel: `${sheetDate} — 서비스 통계 (${oem.name})`,
+            });
+            return {
+              oemName: oem.name,
+              registeredVin: stats.registeredVin,
+              activeUsers: stats.activeUsers,
+            };
+          }
+        );
+      });
+
+      const settledResults = await executeWithConcurrencyLimit(tasks, {
+        concurrency: 5,
+      });
+
       const oemStats: Record<
         string,
         { registeredVin: number; activeUsers: number }
-      > = {};
+      > = Object.fromEntries(
+        individualOEMs.map((oem) => [
+          oem.name,
+          { registeredVin: 0, activeUsers: 0 },
+        ])
+      );
 
-      for (const oem of individualOEMs) {
-        const { manufacturerSeq, deviceSeq, companySeqs } =
-          oemParamsMap[oem.name]!;
-        let totalRegisteredVin = 0;
-        let totalActiveUsers = 0;
-
-        for (const companySeq of companySeqs) {
-          onProgress({
-            completed,
-            total,
-            currentLabel: `${sheetDate} — 서비스 통계 (${oem.name})`,
-          });
-          const stats = await fetchServiceStatsFromExport(
-            apiInstance,
-            { startDate, endDate },
-            { manufacturerSeq, deviceSeq, companySeq }
-          );
-          totalRegisteredVin += stats.registeredVin;
-          totalActiveUsers += stats.activeUsers;
-          completed++;
+      for (const result of settledResults) {
+        if (result.status === 'fulfilled') {
+          const { oemName, registeredVin, activeUsers } = result.value;
+          oemStats[oemName].registeredVin += registeredVin;
+          oemStats[oemName].activeUsers += activeUsers;
         }
-
-        oemStats[oem.name] = {
-          registeredVin: totalRegisteredVin,
-          activeUsers: totalActiveUsers,
-        };
       }
 
       oems.forEach((oem) => {

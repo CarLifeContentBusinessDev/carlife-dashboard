@@ -23,26 +23,35 @@ interface CompanyItem {
   companyName: string;
 }
 
-export async function fetchManufacturers(api: AxiosInstance): Promise<ManufacturerItem[]> {
-  const res = await api.get<{ data: { list: ManufacturerItem[] } }>('/api/admin/v1/manufacturer');
-  return res.data.data.list;
+export async function fetchManufacturers(
+  api: AxiosInstance
+): Promise<ManufacturerItem[]> {
+  const res = await api.get<{ data: { list: ManufacturerItem[] } }>(
+    '/api/admin/v1/manufacturer'
+  );
+  return res.data?.data?.list ?? [];
 }
 
 export async function fetchDevicesByManufacturer(
   api: AxiosInstance,
   manufacturerName: string
 ): Promise<DeviceItem[]> {
-  const res = await api.get<{ data: { list: DeviceItem[] } }>('/api/admin/v1/device', {
-    params: { manufacturerName, isActive: true },
-  });
-  return res.data.data.list;
+  const res = await api.get<{ data: { list: DeviceItem[] } }>(
+    '/api/admin/v1/device',
+    {
+      params: { manufacturerName, isActive: true },
+    }
+  );
+  return res.data?.data?.list ?? [];
 }
 
-export async function fetchCompanies(api: AxiosInstance): Promise<CompanyItem[]> {
+export async function fetchCompanies(
+  api: AxiosInstance
+): Promise<CompanyItem[]> {
   const res = await api.get<{ data: { list: CompanyItem[] } }>(
     '/api/admin/v1/common/company-info'
   );
-  return res.data.data.list;
+  return res.data?.data?.list ?? [];
 }
 
 type DateRange = { startDate: string; endDate: string };
@@ -61,7 +70,10 @@ export async function fetchRegisteredVinCount(
   }>('/api/admin/v1/statistics/user-status', {
     params: { statisticsSearchType: 'DAILY', ...range },
   });
-  return sumDaily(res.data.data.dailyWeeklyMonthlyStatistics, 'registeredVinCount');
+  return sumDaily(
+    res.data?.data?.dailyWeeklyMonthlyStatistics ?? [],
+    'registeredVinCount'
+  );
 }
 
 export async function fetchServiceStats(
@@ -73,7 +85,7 @@ export async function fetchServiceStats(
   }>('/api/admin/v1/statistics/service-status', {
     params: { statisticsSearchType: 'DAILY', ...range },
   });
-  const stats = res.data.data.dailyWeeklyMonthlyStatistics;
+  const stats = res.data?.data?.dailyWeeklyMonthlyStatistics ?? [];
   return {
     wau: sumDaily(stats, 'firstRunCount'),
     totalClicks: sumDaily(stats, 'gameListPageAccessCount'),
@@ -89,7 +101,7 @@ export async function fetchContentsStats(
   }>('/api/admin/v1/statistics/contents-status', {
     params: { statisticsSearchType: 'DAILY', ...range },
   });
-  const stats = res.data.data.dailyWeeklyMonthlyStatistics;
+  const stats = res.data?.data?.dailyWeeklyMonthlyStatistics ?? [];
   return {
     contentClicks: sumDaily(stats, 'gameRunCount'),
     contentPlayTime: sumDaily(stats, 'totalGamePlayTime'),
@@ -97,7 +109,10 @@ export async function fetchContentsStats(
 }
 
 // OEM 지표용: 단일 OEM '서비스 통계' 탭 → 누적 사용자 수 + 활성 사용자 수
-function parseServiceStats(buffer: ArrayBuffer): { registeredVin: number; activeUsers: number } {
+function parseServiceStats(buffer: ArrayBuffer): {
+  registeredVin: number;
+  activeUsers: number;
+} {
   const workbook = XLSX.read(buffer, { type: 'array' });
   const sheet = workbook.Sheets['서비스 통계'];
   if (!sheet) {
@@ -105,15 +120,61 @@ function parseServiceStats(buffer: ArrayBuffer): { registeredVin: number; active
     return { registeredVin: 0, activeUsers: 0 };
   }
 
-  const aoa = XLSX.utils.sheet_to_json<(string | number | undefined)[]>(sheet, { header: 1 });
+  const aoa = XLSX.utils.sheet_to_json<(string | number | undefined)[]>(sheet, {
+    header: 1,
+  });
 
-  // 7행(index 6) = 헤더, 8행(index 7)부터 일별 데이터
-  // G열(index 6) = 가입VIN → 누적 사용자 수
-  // X열(index 23) = 활성 사용자수(DAU/WAU/MAU) → 활성 사용자 수
-  const REGISTERED_VIN_COL = 6;
-  const ACTIVE_USERS_COL = 23;
-  const DATA_START_ROW = 7;
+  const REGISTERED_VIN_HEADER = '가입VIN';
+  const ACTIVE_USERS_HEADER = '활성 사용자수';
 
+  let headerRowIndex = -1;
+  for (let i = 0; i < Math.min(aoa.length, 20); i++) {
+    const row = aoa[i] ?? [];
+    const hasVin = row.some((cell) =>
+      String(cell ?? '')
+        .trim()
+        .includes(REGISTERED_VIN_HEADER)
+    );
+    const hasActive = row.some((cell) =>
+      String(cell ?? '')
+        .trim()
+        .includes(ACTIVE_USERS_HEADER)
+    );
+    if (hasVin && hasActive) {
+      headerRowIndex = i;
+      break;
+    }
+  }
+
+  if (headerRowIndex === -1) {
+    console.warn(
+      `[parseServiceStats] "${REGISTERED_VIN_HEADER}" / "${ACTIVE_USERS_HEADER}" 헤더 행을 찾을 수 없습니다. 첫 10행:`,
+      aoa.slice(0, 10)
+    );
+    return { registeredVin: 0, activeUsers: 0 };
+  }
+
+  const headerRow = aoa[headerRowIndex] ?? [];
+  const REGISTERED_VIN_COL = headerRow.findIndex((cell) =>
+    String(cell ?? '')
+      .trim()
+      .includes(REGISTERED_VIN_HEADER)
+  );
+  const ACTIVE_USERS_COL = headerRow.findIndex((cell) =>
+    String(cell ?? '')
+      .trim()
+      .includes(ACTIVE_USERS_HEADER)
+  );
+
+  if (REGISTERED_VIN_COL === -1 || ACTIVE_USERS_COL === -1) {
+    console.warn(
+      '[parseServiceStats] 헤더 행에서 컬럼 인덱스를 찾지 못했습니다. 헤더 행:',
+      headerRow
+    );
+    return { registeredVin: 0, activeUsers: 0 };
+  }
+
+  const DATA_START_ROW = headerRowIndex + 1;
   let registeredVin = 0;
   let activeUsers = 0;
 
@@ -197,26 +258,42 @@ function parseGameCounts(buffer: ArrayBuffer): Map<string, number> {
     return new Map();
   }
 
-  const aoa = XLSX.utils.sheet_to_json<(string | number | undefined)[]>(sheet, { header: 1 });
+  const aoa = XLSX.utils.sheet_to_json<(string | number | undefined)[]>(sheet, {
+    header: 1,
+  });
 
   // ' - 실행 수' 접미사 컬럼이 있는 행을 동적으로 탐색
   let headerRowIndex = -1;
   for (let i = 0; i < Math.min(aoa.length, 20); i++) {
     const row = aoa[i] ?? [];
-    if (row.some((cell) => String(cell ?? '').trim().endsWith(' - 실행 수'))) {
+    if (
+      row.some((cell) =>
+        String(cell ?? '')
+          .trim()
+          .endsWith(' - 실행 수')
+      )
+    ) {
       headerRowIndex = i;
       break;
     }
   }
 
   if (headerRowIndex === -1) {
-    console.warn('[parseGameCounts] "- 실행 수" 헤더 행을 찾을 수 없습니다. 첫 10행:', aoa.slice(0, 10));
+    console.warn(
+      '[parseGameCounts] "- 실행 수" 헤더 행을 찾을 수 없습니다. 첫 10행:',
+      aoa.slice(0, 10)
+    );
     return new Map();
   }
 
   const headerRow = aoa[headerRowIndex] ?? [];
   const dataRows = aoa.slice(headerRowIndex + 1);
-  console.log('[parseGameCounts] 헤더 행 index:', headerRowIndex, '내용:', headerRow);
+  console.log(
+    '[parseGameCounts] 헤더 행 index:',
+    headerRowIndex,
+    '내용:',
+    headerRow
+  );
 
   const counts = new Map<string, number>();
   for (let i = 0; i < headerRow.length; i++) {
@@ -231,7 +308,10 @@ function parseGameCounts(buffer: ArrayBuffer): Map<string, number> {
   }
 
   if (counts.size === 0) {
-    console.warn('[parseGameCounts] "- 실행 수" 컬럼 없음. 헤더 행:', headerRow);
+    console.warn(
+      '[parseGameCounts] "- 실행 수" 컬럼 없음. 헤더 행:',
+      headerRow
+    );
   }
 
   return counts;
