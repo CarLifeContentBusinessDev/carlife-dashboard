@@ -91,7 +91,7 @@ const ProdChannelList: React.FC<ProdChannelListProps> = ({
   const location = useLocation();
 
   const handleRowClick = (channel: usingChannelProps) => {
-    const basePath = isStaging ? '/stg/channels/detail' : '/channels/detail';
+    const basePath = isStaging ? '/pickle/stg/channels/detail' : '/pickle/channels/detail';
     const latestDispDtime =
       latestEpisodeUploadByChannelId[channel.channelId] ?? channel.dispDtime;
 

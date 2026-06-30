@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import JSEncrypt from 'jsencrypt';
-import { picknowApi } from '@/shared/utils/api/api';
+import picknowLogo from '@/assets/picknow_logo.svg';
 import { useAccessTokenStore } from '@/shared/store/useAccessTokenStore';
 import { setServiceToken } from '@/shared/store/useServiceStore';
+import { picknowApi } from '@/shared/utils/api/api';
+import JSEncrypt from 'jsencrypt';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const PICKNOW_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY_STG}\n-----END PUBLIC KEY-----`;
 const TEST_ID = import.meta.env.VITE_TEST_ID ?? 'dev';
@@ -110,7 +111,7 @@ export default function LoginPage() {
       <div className='bg-white rounded-2xl shadow-lg p-10 w-96 flex flex-col gap-6'>
         <div className='text-center'>
           <img
-            src='/picknow_logo.svg'
+            src={picknowLogo}
             alt='로고'
             width={48}
             height={48}

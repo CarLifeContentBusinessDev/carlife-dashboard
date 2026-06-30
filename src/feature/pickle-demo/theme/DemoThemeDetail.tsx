@@ -34,8 +34,8 @@ const THEME_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '프로그램 목록',
     tableName: 'programs',
-    detailPath: '/demo/programs/detail',
-    editPath: '/demo/programs/edit',
+    detailPath: '/pickle/demo/programs/detail',
+    editPath: '/pickle/demo/programs/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
@@ -65,8 +65,8 @@ const DemoThemeDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='테마 상세'
       tableName='themes'
-      listPath='/demo/themes'
-      editPath='/demo/themes/edit'
+      listPath='/pickle/demo/themes'
+      editPath='/pickle/demo/themes/edit'
       select='*, sections(title)'
       fieldLabels={THEME_FIELD_LABELS}
       fieldOrder={THEME_FIELD_ORDER}

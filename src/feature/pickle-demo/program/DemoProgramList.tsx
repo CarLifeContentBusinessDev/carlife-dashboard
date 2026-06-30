@@ -31,8 +31,8 @@ const DemoProgramList: React.FC<DemoProgramListProps> = ({
       selectedLang={selectedLang}
       onDeleted={onDeleted}
       tableName='programs'
-      detailPath='/demo/programs/detail'
-      editPath='/demo/programs/edit'
+      detailPath='/pickle/demo/programs/detail'
+      editPath='/pickle/demo/programs/edit'
       columnDefs={columnDefs}
     />
   );

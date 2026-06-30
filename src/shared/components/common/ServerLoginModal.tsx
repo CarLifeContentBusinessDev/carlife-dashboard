@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
-import JSEncrypt from 'jsencrypt';
-import { toast } from 'react-toastify';
-import { getPicknowServerApi } from '@/shared/utils/api/api';
+import pickleLogo from '@/assets/pickle_logo.svg';
+import picknowLogo from '@/assets/picknow_logo.svg';
+import pickseriesLogo from '@/assets/pickseries_logo.svg';
 import type { PicknowServer, PickSeriesServer } from '@/constants/servers';
+import { getPicknowServerApi } from '@/shared/utils/api/api';
+import JSEncrypt from 'jsencrypt';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 
 interface Props {
   server: PicknowServer | PickSeriesServer;
@@ -30,11 +33,13 @@ export default function ServerLoginModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  console.log('ServerLoginModal rendered with server:', server);
+
   const logoSrc = server.id.startsWith('pickle')
-    ? '/pickle_logo.svg'
+    ? pickleLogo
     : server.id.startsWith('picknow')
-      ? '/picknow_logo.svg'
-      : '/pickseries_logo.svg';
+      ? picknowLogo
+      : pickseriesLogo;
 
   useEffect(() => {
     const savedId = localStorage.getItem(`rememberId_${server.id}`);

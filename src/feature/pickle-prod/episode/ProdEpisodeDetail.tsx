@@ -49,7 +49,7 @@ const ProdEpisodeDetail = () => {
     setAudioDuration(null);
   }, [id]);
 
-  const isStaging = location.pathname.startsWith('/stg/');
+  const isStaging = location.pathname.includes('/stg/');
 
   useEffect(() => {
     if (stateEpisode || !id) return;

@@ -10,17 +10,17 @@ export const pickleRefreshKey = (id: string) => `pickle_refresh_${id}`;
 
 export const PICKLE_SERVERS: PickleServer[] = [
   {
-    id: 'prod',
+    id: 'pickle-prod',
     label: '상용',
     apiUrl: import.meta.env.VITE_PROD_API_URL as string,
   },
   {
-    id: 'stg',
+    id: 'pickle-stg',
     label: 'STG',
     apiUrl: import.meta.env.VITE_STG_API_URL as string,
   },
   {
-    id: 'web-demo',
+    id: 'pickle-web-demo',
     label: '웹데모',
     apiUrl: '',
   },
@@ -40,14 +40,14 @@ export const picknowRefreshKey = (id: string) => `picknow_refresh_${id}`;
 
 export const PICKNOW_SERVERS: PicknowServer[] = [
   {
-    id: 'stg',
+    id: 'picknow-stg',
     label: 'STG',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_STG as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_STG as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
-    id: 'kr-demo',
+    id: 'picknow-kr-demo',
     label: 'KR Demo',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_DEMO as string,
     spreadsheetId: import.meta.env
@@ -55,7 +55,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
-    id: 'kr-prod-kia',
+    id: 'picknow-kr-prod-kia',
     label: '상용 한국 - KIA',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD_KIA as string,
     spreadsheetId: import.meta.env
@@ -63,7 +63,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
-    id: 'kr-prod',
+    id: 'picknow-kr-prod',
     label: '상용 한국 - MOTREX, KGM',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD as string,
     spreadsheetId: import.meta.env
@@ -71,7 +71,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
-    id: 'us-prod',
+    id: 'picknow-us-prod',
     label: '상용 북미 - MOTREX',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_US as string,
     spreadsheetId: import.meta.env

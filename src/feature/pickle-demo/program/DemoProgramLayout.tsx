@@ -103,7 +103,7 @@ const DemoProgramLayout = () => {
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='프로그램명을 입력하세요.'
       addLabel='프로그램 추가'
-      onAdd={() => navigate('/demo/programs/new')}
+      onAdd={() => navigate('/pickle/demo/programs/new')}
     >
       <LoadingOverlay loading={loading}>
         프로그램 목록을 불러오는 중입니다.

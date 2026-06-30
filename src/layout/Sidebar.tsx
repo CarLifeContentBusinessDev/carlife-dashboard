@@ -9,6 +9,8 @@ import {
 import MenuGroupItem from './components/MenuGroupItem';
 import MenuButton from './components/MenuButton';
 import { useServiceStore } from '@/shared/store/useServiceStore';
+import closeIcon from '@/assets/close.svg';
+import openIcon from '@/assets/open.svg';
 
 const Sidebar = () => {
   const { pathname } = useLocation();
@@ -34,7 +36,7 @@ const Sidebar = () => {
           onClick={() => setIsOpen((prev) => !prev)}
         >
           <img
-            src={isOpen ? '/close.svg' : '/open.svg'}
+            src={isOpen ? closeIcon : openIcon}
             alt={isOpen ? '닫기' : '열기'}
             width={24}
             height={24}

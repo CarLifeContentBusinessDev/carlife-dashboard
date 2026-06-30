@@ -112,7 +112,7 @@ const DemoSeriesLayout = () => {
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='시리즈명을 입력하세요.'
       addLabel='시리즈 추가'
-      onAdd={() => navigate('/demo/series/new')}
+      onAdd={() => navigate('/pickle/demo/series/new')}
     >
       <LoadingOverlay loading={loading}>
         시리즈 목록을 불러오는 중입니다.

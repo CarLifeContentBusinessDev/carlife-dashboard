@@ -146,7 +146,7 @@ const ProdChannelDetail = () => {
     location.state as { channel?: usingChannelProps; from?: string }
   )?.channel;
   const from = (location.state as { from?: string })?.from ?? '/channels';
-  const isStaging = location.pathname.startsWith('/stg');
+  const isStaging = location.pathname.includes('/stg/');
 
   const [episodes, setEpisodes] = useState<usingDataProps[]>([]);
   const [loading, setLoading] = useState(false);
@@ -308,8 +308,8 @@ const ProdChannelDetail = () => {
                     className='flex items-center border-b border-gray-200 py-3 w-full cursor-pointer hover:bg-gray-50'
                     onClick={() =>
                       isStaging
-                        ? navigate(`/stg/episodes/detail/${episode.episodeId}`)
-                        : navigate(`/episodes/detail/${episode.episodeId}`)
+                        ? navigate(`/pickle/stg/episodes/detail/${episode.episodeId}`)
+                        : navigate(`/pickle/episodes/detail/${episode.episodeId}`)
                     }
                   >
                     {EPISODE_COLUMNS.map((col) => (

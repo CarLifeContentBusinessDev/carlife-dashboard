@@ -61,8 +61,8 @@ const DemoEpisodeDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='에피소드 상세'
       tableName='episodes'
-      listPath='/demo/episodes'
-      editPath='/demo/episodes/edit'
+      listPath='/pickle/demo/episodes'
+      editPath='/pickle/demo/episodes/edit'
       select='*, programs(title)'
       fieldLabels={EPISODE_FIELD_LABELS}
       fieldOrder={EPISODE_FIELD_ORDER}

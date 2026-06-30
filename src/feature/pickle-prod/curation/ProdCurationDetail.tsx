@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
 import Pagination from '@/shared/components/common/Pagination';
 import type {
   curationDetailEpisodeProps,
@@ -10,7 +9,8 @@ import { api, stgApi } from '@/shared/utils/api/api';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { normalizeUsageYn } from '@/shared/utils/format/normalizeUsageYn';
 import { mapCurationStatus } from '@/shared/utils/format/statusMapper';
-import { GREEN_BADGE_STYLE, RED_BADGE_STYLE } from '@/constants/badgeStyles';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const EPISODE_PAGE_SIZE = 10;
 
@@ -152,7 +152,7 @@ const ProdCurationDetail = () => {
     location.state as { curation?: CurationSummaryState; from?: string }
   )?.curation;
   const from = (location.state as { from?: string })?.from ?? '/curation-list';
-  const isStaging = location.pathname.startsWith('/stg');
+  const isStaging = location.pathname.includes('/stg/');
 
   const [detail, setDetail] = useState<curationDetailProps | null>(null);
   const [loading, setLoading] = useState(false);
@@ -334,8 +334,8 @@ const ProdCurationDetail = () => {
                     className={`flex items-center border-b border-gray-200 py-3 hover:bg-gray-50 cursor-pointer `}
                     onClick={() =>
                       isStaging
-                        ? navigate(`/stg/episodes/detail/${episode.episodeId}`)
-                        : navigate(`/episodes/detail/${episode.episodeId}`)
+                        ? navigate(`/pickle/stg/episodes/detail/${episode.episodeId}`)
+                        : navigate(`/pickle/episodes/detail/${episode.episodeId}`)
                     }
                   >
                     {EPISODE_COLUMNS.map((col) => (

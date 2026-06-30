@@ -32,8 +32,8 @@ const BROADCASTING_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '프로그램 목록',
     tableName: 'programs',
-    detailPath: '/demo/programs/detail',
-    editPath: '/demo/programs/edit',
+    detailPath: '/pickle/demo/programs/detail',
+    editPath: '/pickle/demo/programs/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
@@ -61,8 +61,8 @@ const DemoBroadcastingDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='방송사 상세'
       tableName='broadcastings'
-      listPath='/demo/broadcastings'
-      editPath='/demo/broadcastings/edit'
+      listPath='/pickle/demo/broadcastings'
+      editPath='/pickle/demo/broadcastings/edit'
       select='*'
       fieldLabels={BROADCASTING_FIELD_LABELS}
       fieldOrder={BROADCASTING_FIELD_ORDER}

@@ -110,7 +110,7 @@ const DemoThemeLayout = () => {
       onSearchQueryChange={setSearchQuery}
       searchPlaceholder='테마명을 입력하세요.'
       addLabel='테마 추가'
-      onAdd={() => navigate('/demo/themes/new')}
+      onAdd={() => navigate('/pickle/demo/themes/new')}
     >
       <LoadingOverlay loading={loading}>
         테마 목록을 불러오는 중입니다.

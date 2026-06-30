@@ -66,7 +66,7 @@ const ProdEpisodeList: React.FC<ProdEpisodeListProps> = ({
   const location = useLocation();
 
   const handleRowClick = (ep: usingDataProps) => {
-    const basePath = isStaging ? '/stg/episodes/detail' : '/episodes/detail';
+    const basePath = isStaging ? '/pickle/stg/episodes/detail' : '/pickle/episodes/detail';
     navigate(`${basePath}/${ep.episodeId}`, {
       state: { episode: ep, from: location.pathname },
     });

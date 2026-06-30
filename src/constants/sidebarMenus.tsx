@@ -1,3 +1,9 @@
+import radioSvg from '@/assets/radio.svg';
+import radioFillSvg from '@/assets/radio-fill.svg';
+import adminLineSvg from '@/assets/admin-line.svg';
+import adminFillSvg from '@/assets/admin-fill.svg';
+import excelSvg from '@/assets/excel.svg';
+
 export interface MenuChild {
   id: string;
   to: string;
@@ -29,7 +35,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     id: 'data-management',
     label: '상용 콘텐츠 관리',
     icon: (
-      <img src='/radio.svg' width={24} height={24} alt='상용 콘텐츠 관리' />
+      <img src={radioSvg} width={24} height={24} alt='상용 콘텐츠 관리' />
     ),
     children: [
       {
@@ -69,7 +75,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     label: '데모 콘텐츠 관리',
     icon: (
       <img
-        src='/radio-fill.svg'
+        src={radioFillSvg}
         width={24}
         height={24}
         alt='데모 콘텐츠 관리'
@@ -97,7 +103,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     label: '상용 어드민 바로가기',
     icon: (
       <img
-        src='/admin-line.svg'
+        src={adminLineSvg}
         width={24}
         height={24}
         alt='상용 어드민 바로가기'
@@ -111,7 +117,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     label: '검증 어드민 바로가기',
     icon: (
       <img
-        src='/admin-fill.svg'
+        src={adminFillSvg}
         width={24}
         height={24}
         alt='검증 어드민 바로가기'
@@ -126,14 +132,14 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
   {
     id: 'excel-sync',
     label: 'Configuration 데이터 추출',
-    icon: <img src='/excel.svg' width={24} height={24} alt='엑셀' />,
+    icon: <img src={excelSvg} width={24} height={24} alt='엑셀' />,
     to: '/picknow/excel-sync',
   },
   {
     id: 'picknow-admin-router',
     label: '어드민 바로가기',
     icon: (
-      <img src='/admin-fill.svg' width={24} height={24} alt='어드민 바로가기' />
+      <img src={adminFillSvg} width={24} height={24} alt='어드민 바로가기' />
     ),
     children: (() => {
       const ensureAdminLoginPath = (base?: string) => {
@@ -193,7 +199,7 @@ export const PICKSERIES_MENU_GROUPS: MenuGroup[] = [
   {
     id: 'picksereis-operation-data',
     label: '운영 데이터 추출',
-    icon: <img src='/excel.svg' width={24} height={24} alt='엑셀' />,
+    icon: <img src={excelSvg} width={24} height={24} alt='엑셀' />,
     children: [
       {
         id: 'pickseries-weekly-data',

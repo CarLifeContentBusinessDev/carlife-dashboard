@@ -28,8 +28,8 @@ const DemoCategoryList: React.FC<DemoCategoryListProps> = ({
       selectedLang={selectedLang}
       onDeleted={onDeleted}
       tableName='categories'
-      detailPath='/demo/categories/detail'
-      editPath='/demo/categories/edit'
+      detailPath='/pickle/demo/categories/detail'
+      editPath='/pickle/demo/categories/edit'
       columnDefs={columnDefs}
     />
   );

@@ -1,33 +1,39 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import {
-  getGoogleToken,
-  initializeGoogleAPI,
-  initializeGIS,
-} from '@/shared/utils/auth/auth';
-import Button from '@/shared/components/common/Button';
-import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
-import PickleLoginModal from '@/shared/components/common/PickleLoginModal';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
-import {
-  useServiceStore,
-  clearServiceToken,
-} from '@/shared/store/useServiceStore';
-import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
-import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
-import { PICKNOW_SERVERS, PICKSERIES_SERVERS } from '@/constants/servers';
-import { PICKLE_SERVERS } from '@/constants/servers';
+import pickleLogo from '@/assets/pickle_logo.svg';
+import picknowLogo from '@/assets/picknow_logo.svg';
+import pickseriesLogo from '@/assets/pickseries_logo.svg';
 import type {
-  PicknowServer,
   PickleServer,
+  PicknowServer,
   PickSeriesServer,
 } from '@/constants/servers';
-import { setTestMode } from '@/shared/utils/api/api';
-import { supabase } from '@/lib/supabase';
-import { useAccessTokenStore } from '@/shared/store/useAccessTokenStore';
-import type { ServiceType } from '@/shared/store/useServiceStore';
+import {
+  PICKLE_SERVERS,
+  PICKNOW_SERVERS,
+  PICKSERIES_SERVERS,
+} from '@/constants/servers';
 import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
+import { supabase } from '@/lib/supabase';
+import Button from '@/shared/components/common/Button';
+import PickleLoginModal from '@/shared/components/common/PickleLoginModal';
+import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
+import { useAccessTokenStore } from '@/shared/store/useAccessTokenStore';
+import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
+import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
+import type { ServiceType } from '@/shared/store/useServiceStore';
+import {
+  clearServiceToken,
+  useServiceStore,
+} from '@/shared/store/useServiceStore';
+import { setTestMode } from '@/shared/utils/api/api';
+import {
+  getGoogleToken,
+  initializeGIS,
+  initializeGoogleAPI,
+} from '@/shared/utils/auth/auth';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const SERVICE_LABELS: Record<string, string> = {
   pickle: 'Pickle 대시보드',
@@ -204,10 +210,10 @@ const Header = () => {
         <img
           src={
             selectedService === 'pickle'
-              ? '/pickle_logo.svg'
+              ? pickleLogo
               : selectedService === 'picknow'
-                ? '/picknow_logo.svg'
-                : '/pickseries_logo.svg'
+                ? picknowLogo
+                : pickseriesLogo
           }
           alt='로고'
           width={40}

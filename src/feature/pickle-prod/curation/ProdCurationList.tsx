@@ -134,7 +134,7 @@ const ProdCurationList: React.FC<ProdCurationListProps> = ({
   const location = useLocation();
 
   const handleRowClick = (row: ProdCurationRow) => {
-    const basePath = isStaging ? '/stg/curations/detail' : '/curations/detail';
+    const basePath = isStaging ? '/pickle/stg/curations/detail' : '/pickle/curations/detail';
 
     navigate(`${basePath}/${row.curationId}`, {
       state: { curation: row, from: location.pathname },

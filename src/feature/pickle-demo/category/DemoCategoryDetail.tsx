@@ -40,8 +40,8 @@ const CATEGORY_RELATED_LIST: RelatedListConfig[] = [
   {
     title: '프로그램 목록',
     tableName: 'programs',
-    detailPath: '/demo/programs/detail',
-    editPath: '/demo/programs/edit',
+    detailPath: '/pickle/demo/programs/detail',
+    editPath: '/pickle/demo/programs/edit',
     columnDefs: [
       { key: 'id', label: 'ID', width: 'minmax(40px,0.5fr)' },
       { key: 'img_url', label: '썸네일', width: 'minmax(80px,1fr)' },
@@ -70,8 +70,8 @@ const DemoCategoryDetail = () => {
       parentMenu='데모 콘텐츠 관리'
       childMenu='카테고리 상세'
       tableName='categories'
-      listPath='/demo/categories'
-      editPath='/demo/categories/edit'
+      listPath='/pickle/demo/categories'
+      editPath='/pickle/demo/categories/edit'
       select='*'
       fieldLabels={CATEGORY_FIELD_LABELS}
       fieldOrder={CATEGORY_FIELD_ORDER}

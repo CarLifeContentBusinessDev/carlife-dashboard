@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import { supabase } from '@/lib/supabase';
-import { setTestMode } from '@/shared/utils/api/api';
-import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import pickleLogo from '@/assets/pickle_logo.svg';
 import type { PickleServer } from '@/constants/servers';
-
+import { supabase } from '@/lib/supabase';
+import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
+import { setTestMode } from '@/shared/utils/api/api';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 interface LoginApiResponse {
   resultCode: string;
   resultMessage: string;
@@ -147,7 +147,7 @@ export default function PickleLoginModal({ server, onClose }: Props) {
       <div className='bg-white rounded-2xl shadow-xl p-8 w-96 flex flex-col gap-5'>
         <div className='text-center'>
           <img
-            src='/pickle_logo.svg'
+            src={pickleLogo}
             alt='로고'
             width={40}
             height={40}
