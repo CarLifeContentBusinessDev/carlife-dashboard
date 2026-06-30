@@ -124,8 +124,8 @@ function parseServiceStats(buffer: ArrayBuffer): {
     header: 1,
   });
 
-  const REGISTERED_VIN_HEADER = '가입VIN';
-  const ACTIVE_USERS_HEADER = '활성 사용자수';
+  const REGISTERED_VIN_HEADER = '가입 VIN';
+  const ACTIVE_USERS_HEADER = '활성 사용자수(DAU/WAU/MAU)';
 
   let headerRowIndex = -1;
   for (let i = 0; i < Math.min(aoa.length, 20); i++) {
