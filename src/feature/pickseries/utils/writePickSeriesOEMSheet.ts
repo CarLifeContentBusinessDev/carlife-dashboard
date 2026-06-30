@@ -1,8 +1,8 @@
+import type { OEMExtractionResult } from '@/feature/pickseries/utils/extractPickjoyOEMData';
+import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { getSheetsClient, initializeGoogleAPI } from '@/shared/utils/auth/auth';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
-import type { OEMSheetData } from '@/shared/utils/googleSheets/fetchPickSeriesOEMSheet';
-import type { OEMExtractionResult } from '@/feature/pickseries/utils/extractPickjoyOEMData';
+import type { OEMSheetData } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
 
 function colIndexToLetter(index: number): string {
   let letter = '';

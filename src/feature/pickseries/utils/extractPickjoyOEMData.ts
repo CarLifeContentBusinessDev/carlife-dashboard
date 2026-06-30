@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { OEMGroup } from '@/shared/utils/googleSheets/fetchPickSeriesOEMSheet';
+import type { OEMGroup } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
 import { executeWithConcurrencyLimit } from '@/shared/utils/api/requestPool';
 import {
   fetchManufacturers,

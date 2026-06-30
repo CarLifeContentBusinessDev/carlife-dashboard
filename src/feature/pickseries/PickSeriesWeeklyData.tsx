@@ -13,8 +13,8 @@ import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeri
 import {
   fetchPickSeriesWeeklySheet,
   type WeeklySheetData,
-} from '@/shared/utils/googleSheets/fetchPickSeriesWeeklySheet';
-import { writePickSeriesWeeklySheet } from '@/shared/utils/googleSheets/writePickSeriesWeeklySheet';
+} from '@/feature/pickseries/utils/fetchPickSeriesWeeklySheet';
+import { writePickSeriesWeeklySheet } from '@/feature/pickseries/utils/writePickSeriesWeeklySheet';
 import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
 import type { ExtractionProgress } from '@/feature/pickseries/utils/extractPickjoyOEMData';
 import { extractPickjoyWeeklyData } from '@/feature/pickseries/utils/extractPickjoyWeeklyData';
@@ -55,6 +55,7 @@ export default function PickSeriesWeeklyData() {
     if (!loginToken) return;
 
     loggedInProducts.forEach((product) => {
+      if (initializedProducts.current.has(product.id)) return;
       if (fetchingProducts.current.has(product.id)) return;
 
       fetchingProducts.current.add(product.id);

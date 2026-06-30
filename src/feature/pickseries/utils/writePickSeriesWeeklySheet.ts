@@ -1,7 +1,8 @@
-import { getSheetsClient } from '@/shared/utils/auth/auth';
-import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
-import type { WeeklySheetData } from '@/shared/utils/googleSheets/fetchPickSeriesWeeklySheet';
 import type { WeeklyExtractionResult } from '@/feature/pickseries/utils/extractPickjoyWeeklyData';
+import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import { getSheetsClient, initializeGoogleAPI } from '@/shared/utils/auth/auth';
+import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
+import type { WeeklySheetData } from '@/feature/pickseries/utils/fetchPickSeriesWeeklySheet';
 
 function colIndexToLetter(index: number): string {
   let letter = '';
@@ -20,6 +21,12 @@ export async function writePickSeriesWeeklySheet(
 ): Promise<void> {
   const spreadsheetId = import.meta.env
     .VITE_PICKSERIES_SPREADSHEET_ID as string;
+
+  await initializeGoogleAPI();
+  const token = useLoginTokenStore.getState().loginToken;
+  if (!token) throw new Error('Google 인증 토큰이 없습니다.');
+  gapi.client.setToken({ access_token: token });
+
   const sheets = getSheetsClient();
 
   const data: Array<{ range: string; values: (string | number)[][] }> = [];

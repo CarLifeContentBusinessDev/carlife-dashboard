@@ -14,8 +14,8 @@ import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeri
 import {
   fetchPickSeriesOEMSheet,
   type OEMSheetData,
-} from '@/shared/utils/googleSheets/fetchPickSeriesOEMSheet';
-import { writePickSeriesOEMSheet } from '@/shared/utils/googleSheets/writePickSeriesOEMSheet';
+} from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
+import { writePickSeriesOEMSheet } from '@/feature/pickseries/utils/writePickSeriesOEMSheet';
 import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
 import {
   extractPickjoyOEMData,
@@ -57,6 +57,7 @@ export default function PickSeriesOEMData() {
     if (!loginToken) return;
 
     loggedInProducts.forEach((product) => {
+      if (initializedProducts.current.has(product.id)) return;
       if (fetchingProducts.current.has(product.id)) return;
 
       fetchingProducts.current.add(product.id);

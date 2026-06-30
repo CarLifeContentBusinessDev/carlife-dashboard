@@ -23,7 +23,7 @@ export const CardHeader = ({
         />
         <span className='font-semibold text-gray-800'>{label}</span>
       </div>
-      {isConnected && totalCount && (
+      {isConnected && !!totalCount && (
         <button
           onClick={() => onClick()}
           className='text-xs text-gray-400 hover:text-indigo-600 transition-colors cursor-pointer'

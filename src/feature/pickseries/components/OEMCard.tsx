@@ -2,7 +2,7 @@ import { ChevronIcon } from '@/assets/ChevronIcon';
 import CardBodyStatus from '@/feature/pickseries/components/CardBodyStatus';
 import { CardHeader } from '@/feature/pickseries/components/CardHeader';
 import ExistingDatesBadge from '@/feature/pickseries/components/ExistingDatesBadge';
-import type { OEMGroup } from '@/shared/utils/googleSheets/fetchPickSeriesOEMSheet';
+import type { OEMGroup } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
 import { useState } from 'react';
 
 interface OEMCardProps {
@@ -40,9 +40,13 @@ const OEMCard = ({
   selectedDateCount,
   getItemExistingDates,
 }: OEMCardProps) => {
-  const [expandedOEMs, setExpandedOEMs] = useState<Set<string>>(
-    () => new Set(oems.slice(0, 1).map((o) => o.name))
-  );
+  const [expandedOEMs, setExpandedOEMs] = useState<Set<string>>(new Set());
+  const [hasInitializedExpand, setHasInitializedExpand] = useState(false);
+
+  if (oems.length > 0 && !hasInitializedExpand) {
+    setExpandedOEMs(new Set(oems.slice(0, 1).map((o) => o.name)));
+    setHasInitializedExpand(true);
+  }
 
   const toggleOEMExpand = (oemName: string) => {
     setExpandedOEMs((prev) => {
