@@ -45,6 +45,15 @@ body::-webkit-scrollbar {
   background: transparent; /* Chrome/Safari */
 }
 
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 .episode-table-scroll {
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;

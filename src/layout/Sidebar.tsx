@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import Button from '@/components/common/Button';
+import Button from '@/shared/components/common/Button';
 import {
   PICKLE_MENU_GROUPS,
   PICKNOW_MENU_GROUPS,
+  PICKSERIES_MENU_GROUPS,
 } from '@/constants/sidebarMenus';
 import MenuGroupItem from './components/MenuGroupItem';
 import MenuButton from './components/MenuButton';
-import { useServiceStore } from '@/store/useServiceStore';
+import { useServiceStore } from '@/shared/store/useServiceStore';
+import closeIcon from '@/assets/close.svg';
+import openIcon from '@/assets/open.svg';
 
 const Sidebar = () => {
   const { pathname } = useLocation();
@@ -15,7 +18,11 @@ const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
 
   const menuGroups =
-    selectedService === 'picknow' ? PICKNOW_MENU_GROUPS : PICKLE_MENU_GROUPS;
+    selectedService === 'picknow'
+      ? PICKNOW_MENU_GROUPS
+      : selectedService === 'pickseries'
+        ? PICKSERIES_MENU_GROUPS
+        : PICKLE_MENU_GROUPS;
 
   return (
     <aside
@@ -29,7 +36,7 @@ const Sidebar = () => {
           onClick={() => setIsOpen((prev) => !prev)}
         >
           <img
-            src={isOpen ? '/close.svg' : '/open.svg'}
+            src={isOpen ? closeIcon : openIcon}
             alt={isOpen ? '닫기' : '열기'}
             width={24}
             height={24}

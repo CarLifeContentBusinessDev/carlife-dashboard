@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { LoginResponseData } from '@/types/type';
-import { api } from '@/utils/api/api';
+import type { LoginResponseData } from '@/shared/types/type';
+import { api } from '@/shared/utils/api/api';
+import { useEffect, useState } from 'react';
 
 interface LoginPopupProps {
   onClose: () => void;

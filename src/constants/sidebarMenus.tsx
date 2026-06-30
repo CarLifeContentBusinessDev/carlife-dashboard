@@ -1,3 +1,9 @@
+import radioSvg from '@/assets/radio.svg';
+import radioFillSvg from '@/assets/radio-fill.svg';
+import adminLineSvg from '@/assets/admin-line.svg';
+import adminFillSvg from '@/assets/admin-fill.svg';
+import excelSvg from '@/assets/excel.svg';
+
 export interface MenuChild {
   id: string;
   to: string;
@@ -28,38 +34,36 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
   {
     id: 'data-management',
     label: '상용 콘텐츠 관리',
-    icon: (
-      <img src='/radio.svg' width={24} height={24} alt='상용 콘텐츠 관리' />
-    ),
+    icon: <img src={radioSvg} width={24} height={24} alt='상용 콘텐츠 관리' />,
     children: [
       {
         id: 'episodes',
-        to: '/episodes',
+        to: '/pickle/episodes',
         label: '에피소드 관리',
       },
       {
         id: 'channels',
-        to: '/channels',
+        to: '/pickle/channels',
         label: '채널·도서 관리',
       },
       {
         id: 'curations',
-        to: '/curations',
+        to: '/pickle/curations',
         label: '큐레이션 관리',
       },
       {
         id: 'stg_episodes',
-        to: '/stg/episodes',
+        to: '/pickle/stg/episodes',
         label: '에피소드 관리 (stg)',
       },
       {
         id: 'stg_channels',
-        to: '/stg/channels',
+        to: '/pickle/stg/channels',
         label: '채널·도서 관리 (stg)',
       },
       {
         id: 'stg_curations',
-        to: '/stg/curations',
+        to: '/pickle/stg/curations',
         label: '큐레이션 관리 (stg)',
       },
     ],
@@ -68,22 +72,21 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     id: 'demo-data-management',
     label: '데모 콘텐츠 관리',
     icon: (
-      <img
-        src='/radio-fill.svg'
-        width={24}
-        height={24}
-        alt='데모 콘텐츠 관리'
-      />
+      <img src={radioFillSvg} width={24} height={24} alt='데모 콘텐츠 관리' />
     ),
     children: [
-      { id: 'programs', to: '/demo/programs', label: '프로그램 관리' },
-      { id: 'episodes', to: '/demo/episodes', label: '에피소드 관리' },
-      { id: 'series', to: '/demo/series', label: '시리즈 관리' },
-      { id: 'themes', to: '/demo/themes', label: '테마 관리' },
-      { id: 'categories', to: '/demo/categories', label: '카테고리 관리' },
+      { id: 'programs', to: '/pickle/demo/programs', label: '프로그램 관리' },
+      { id: 'episodes', to: '/pickle/demo/episodes', label: '에피소드 관리' },
+      { id: 'series', to: '/pickle/demo/series', label: '시리즈 관리' },
+      { id: 'themes', to: '/pickle/demo/themes', label: '테마 관리' },
+      {
+        id: 'categories',
+        to: '/pickle/demo/categories',
+        label: '카테고리 관리',
+      },
       {
         id: 'broadcastings',
-        to: '/demo/broadcastings',
+        to: '/pickle/demo/broadcastings',
         label: '방송사 관리',
       },
     ],
@@ -93,7 +96,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     label: '상용 어드민 바로가기',
     icon: (
       <img
-        src='/admin-line.svg'
+        src={adminLineSvg}
         width={24}
         height={24}
         alt='상용 어드민 바로가기'
@@ -107,7 +110,7 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     label: '검증 어드민 바로가기',
     icon: (
       <img
-        src='/admin-fill.svg'
+        src={adminFillSvg}
         width={24}
         height={24}
         alt='검증 어드민 바로가기'
@@ -122,14 +125,14 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
   {
     id: 'excel-sync',
     label: 'Configuration 데이터 추출',
-    icon: <img src='/excel.svg' width={24} height={24} alt='엑셀' />,
+    icon: <img src={excelSvg} width={24} height={24} alt='엑셀' />,
     to: '/picknow/excel-sync',
   },
   {
     id: 'picknow-admin-router',
     label: '어드민 바로가기',
     icon: (
-      <img src='/admin-fill.svg' width={24} height={24} alt='어드민 바로가기' />
+      <img src={adminFillSvg} width={24} height={24} alt='어드민 바로가기' />
     ),
     children: (() => {
       const ensureAdminLoginPath = (base?: string) => {
@@ -182,5 +185,25 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
         },
       ];
     })(),
+  },
+];
+
+export const PICKSERIES_MENU_GROUPS: MenuGroup[] = [
+  {
+    id: 'picksereis-operation-data',
+    label: '운영 데이터 추출',
+    icon: <img src={excelSvg} width={24} height={24} alt='엑셀' />,
+    children: [
+      {
+        id: 'pickseries-weekly-data',
+        to: '/pickseries/operation/weekly',
+        label: '주간지표',
+      },
+      {
+        id: 'pickseries-operation-data',
+        to: '/pickseries/operation/oem',
+        label: 'OEM지표',
+      },
+    ],
   },
 ];
