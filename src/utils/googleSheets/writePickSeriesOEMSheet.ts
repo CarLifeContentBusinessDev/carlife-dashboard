@@ -1,5 +1,6 @@
-import { getSheetsClient } from '@/utils/auth/auth';
+import { getSheetsClient, initializeGoogleAPI } from '@/utils/auth/auth';
 import { buildSheetRange } from '@/utils/excel/sheetRange';
+import { useLoginTokenStore } from '@/store/useLoginTokenStore';
 import type { OEMSheetData } from '@/utils/googleSheets/fetchPickSeriesOEMSheet';
 import type { OEMExtractionResult } from '@/utils/pickseries/extractPickjoyOEMData';
 
@@ -19,6 +20,12 @@ export async function writePickSeriesOEMSheet(
   results: OEMExtractionResult
 ): Promise<void> {
   const spreadsheetId = import.meta.env.VITE_PICKSERIES_SPREADSHEET_ID as string;
+
+  await initializeGoogleAPI();
+  const token = useLoginTokenStore.getState().loginToken;
+  if (!token) throw new Error('Google 인증 토큰이 없습니다.');
+  gapi.client.setToken({ access_token: token });
+
   const sheets = getSheetsClient();
 
   const data: Array<{ range: string; values: (string | number)[][] }> = [];

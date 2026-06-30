@@ -1,7 +1,7 @@
 // 픽조이 주간지표 시트의 항목명 → API 매핑 설정
 // 실제 시트 C열의 항목명과 다르면 이 파일의 값을 수정하세요
 
-import type { PickjoyOEMParams } from './pickjoyOEMConfig';
+import type { PickjoyOEMParams } from './pickjoyItemApis';
 
 export interface WeeklyTopContentConfig {
   itemName: string;

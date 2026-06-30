@@ -1,11 +1,10 @@
 import axios from 'axios';
 import type { OEMGroup } from '@/utils/googleSheets/fetchPickSeriesOEMSheet';
-import { PICKJOY_OEM_PARAMS } from './pickjoyOEMConfig';
 import {
-  fetchRegisteredVinCount,
-  fetchServiceStats,
-  fetchContentsStats,
-  fetchTopContent,
+  fetchManufacturers,
+  fetchDevicesByManufacturer,
+  fetchCompanies,
+  fetchServiceStatsFromExport,
 } from './pickjoyItemApis';
 
 export type ExtractionProgress = {
@@ -19,6 +18,12 @@ export type OEMExtractionResult = Record<
   string,
   Record<string, Record<string, string | number>>
 >;
+
+interface OEMApiParams {
+  manufacturerSeq: number;
+  deviceSeq: number;
+  companySeqs: number[];
+}
 
 function sheetDateToApiDates(sheetDate: string): { startDate: string; endDate: string } {
   const parts = sheetDate.split('.');
@@ -35,6 +40,55 @@ function sheetDateToApiDates(sheetDate: string): { startDate: string; endDate: s
   };
 }
 
+// 시트 OEM명 파싱: "AR1(Renault)" → { deviceName: "AR1", manufacturerName: "Renault" }
+function parseOEMName(name: string): { deviceName: string; manufacturerName: string } | null {
+  const match = name.match(/^(.+)\((.+)\)$/);
+  if (!match) return null;
+  return { deviceName: match[1].trim(), manufacturerName: match[2].trim() };
+}
+
+// API에서 manufacturer/device/company를 조회해 OEM별 params 빌드
+async function buildOEMParamsMap(
+  api: ReturnType<typeof axios.create>,
+  oems: OEMGroup[]
+): Promise<Record<string, OEMApiParams>> {
+  const [manufacturers, companies] = await Promise.all([
+    fetchManufacturers(api),
+    fetchCompanies(api),
+  ]);
+
+  const deviceLists = await Promise.all(
+    manufacturers.map((m) => fetchDevicesByManufacturer(api, m.manufacturerName))
+  );
+  const allDevices = deviceLists.flat();
+
+  const companySeqs = companies.map((c) => c.companySeq);
+  const paramsMap: Record<string, OEMApiParams> = {};
+
+  for (const oem of oems) {
+    const parsed = parseOEMName(oem.name);
+    if (!parsed) continue;
+
+    const manufacturer = manufacturers.find(
+      (m) => m.manufacturerName === parsed.manufacturerName
+    );
+    if (!manufacturer) continue;
+
+    const device = allDevices.find(
+      (d) => d.deviceName === parsed.deviceName && d.manufacturerSeq === manufacturer.manufacturerSeq
+    );
+    if (!device) continue;
+
+    paramsMap[oem.name] = {
+      manufacturerSeq: manufacturer.manufacturerSeq,
+      deviceSeq: device.deviceSeq,
+      companySeqs,
+    };
+  }
+
+  return paramsMap;
+}
+
 export async function extractPickjoyOEMData(params: {
   token: string;
   oems: OEMGroup[];
@@ -49,26 +103,28 @@ export async function extractPickjoyOEMData(params: {
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  const REGISTERED_VIN_KEY = '누적 사용자 수';
+  const ACTIVE_USERS_KEY = '활성 사용자 수';
+
   const allSelectedItems = new Set<string>();
   oems.forEach((oem) => {
     selectedItemsByOEM[oem.name]?.forEach((item) => allSelectedItems.add(item));
   });
 
-  const needsUserStatus = allSelectedItems.has('누적 사용자 수');
-  const needsServiceStatus = allSelectedItems.has('WAU') || allSelectedItems.has('총 클릭 수');
-  const needsContentsStatus =
-    allSelectedItems.has('총 콘텐츠 클릭수') || allSelectedItems.has('총 콘텐츠 사용시간');
-  const exportOEMs = allSelectedItems.has('주간 인기 콘텐츠')
-    ? oems.filter((oem) => selectedItemsByOEM[oem.name]?.has('주간 인기 콘텐츠'))
+  const needsStats =
+    allSelectedItems.has(REGISTERED_VIN_KEY) || allSelectedItems.has(ACTIVE_USERS_KEY);
+
+  // API에서 동적으로 OEM params 빌드 (전체 제외)
+  const oemParamsMap = needsStats ? await buildOEMParamsMap(apiInstance, oems) : {};
+  const individualOEMs = needsStats
+    ? oems.filter((oem) => oem.name !== '전체' && !!oemParamsMap[oem.name])
     : [];
 
-  const callsPerDate =
-    (needsUserStatus ? 1 : 0) +
-    (needsServiceStatus ? 1 : 0) +
-    (needsContentsStatus ? 1 : 0) +
-    exportOEMs.length;
-
-  const total = dates.length * callsPerDate;
+  const companiesCount =
+    individualOEMs.length > 0
+      ? (oemParamsMap[individualOEMs[0].name]?.companySeqs.length ?? 0)
+      : 0;
+  const total = dates.length * individualOEMs.length * companiesCount;
   let completed = 0;
 
   const results: OEMExtractionResult = {};
@@ -81,60 +137,64 @@ export async function extractPickjoyOEMData(params: {
 
     const { startDate, endDate } = sheetDateToApiDates(sheetDate);
 
-    if (needsUserStatus) {
-      onProgress({ completed, total, currentLabel: `${sheetDate} — 누적 사용자 수` });
-      const value = await fetchRegisteredVinCount(apiInstance, { startDate, endDate });
-      oems.forEach((oem) => {
-        if (selectedItemsByOEM[oem.name]?.has('누적 사용자 수')) {
-          results[sheetDate][oem.name]['누적 사용자 수'] = value;
-        }
-      });
-      completed++;
-    }
+    if (individualOEMs.length > 0) {
+      const oemStats: Record<string, { registeredVin: number; activeUsers: number }> = {};
 
-    if (needsServiceStatus) {
-      onProgress({ completed, total, currentLabel: `${sheetDate} — WAU / 총 클릭 수` });
-      const { wau, totalClicks } = await fetchServiceStats(apiInstance, { startDate, endDate });
-      oems.forEach((oem) => {
-        if (selectedItemsByOEM[oem.name]?.has('WAU')) {
-          results[sheetDate][oem.name]['WAU'] = wau;
-        }
-        if (selectedItemsByOEM[oem.name]?.has('총 클릭 수')) {
-          results[sheetDate][oem.name]['총 클릭 수'] = totalClicks;
-        }
-      });
-      completed++;
-    }
+      for (const oem of individualOEMs) {
+        const { manufacturerSeq, deviceSeq, companySeqs } = oemParamsMap[oem.name]!;
+        let totalRegisteredVin = 0;
+        let totalActiveUsers = 0;
 
-    if (needsContentsStatus) {
-      onProgress({ completed, total, currentLabel: `${sheetDate} — 콘텐츠 통계` });
-      const { contentClicks, contentPlayTime } = await fetchContentsStats(apiInstance, {
-        startDate,
-        endDate,
-      });
-      oems.forEach((oem) => {
-        if (selectedItemsByOEM[oem.name]?.has('총 콘텐츠 클릭수')) {
-          results[sheetDate][oem.name]['총 콘텐츠 클릭수'] = contentClicks;
+        for (const companySeq of companySeqs) {
+          onProgress({
+            completed,
+            total,
+            currentLabel: `${sheetDate} — 서비스 통계 (${oem.name})`,
+          });
+          const stats = await fetchServiceStatsFromExport(
+            apiInstance,
+            { startDate, endDate },
+            { manufacturerSeq, deviceSeq, companySeq }
+          );
+          totalRegisteredVin += stats.registeredVin;
+          totalActiveUsers += stats.activeUsers;
+          completed++;
         }
-        if (selectedItemsByOEM[oem.name]?.has('총 콘텐츠 사용시간')) {
-          results[sheetDate][oem.name]['총 콘텐츠 사용시간'] = contentPlayTime;
-        }
-      });
-      completed++;
-    }
 
-    for (const oem of exportOEMs) {
-      onProgress({
-        completed,
-        total,
-        currentLabel: `${sheetDate} — 주간 인기 콘텐츠 (${oem.name})`,
-      });
-      const oemParams = PICKJOY_OEM_PARAMS[oem.name];
-      if (oemParams) {
-        const topContent = await fetchTopContent(apiInstance, { startDate, endDate }, oemParams);
-        results[sheetDate][oem.name]['주간 인기 콘텐츠'] = topContent;
+        oemStats[oem.name] = {
+          registeredVin: totalRegisteredVin,
+          activeUsers: totalActiveUsers,
+        };
       }
-      completed++;
+
+      oems.forEach((oem) => {
+        if (oem.name === '전체') {
+          const totalRegistered = Object.values(oemStats).reduce(
+            (s, v) => s + v.registeredVin,
+            0
+          );
+          const totalActive = Object.values(oemStats).reduce(
+            (s, v) => s + v.activeUsers,
+            0
+          );
+          if (selectedItemsByOEM['전체']?.has(REGISTERED_VIN_KEY)) {
+            results[sheetDate]['전체'][REGISTERED_VIN_KEY] = totalRegistered;
+          }
+          if (selectedItemsByOEM['전체']?.has(ACTIVE_USERS_KEY)) {
+            results[sheetDate]['전체'][ACTIVE_USERS_KEY] = totalActive;
+          }
+        } else {
+          const stats = oemStats[oem.name];
+          if (stats) {
+            if (selectedItemsByOEM[oem.name]?.has(REGISTERED_VIN_KEY)) {
+              results[sheetDate][oem.name][REGISTERED_VIN_KEY] = stats.registeredVin;
+            }
+            if (selectedItemsByOEM[oem.name]?.has(ACTIVE_USERS_KEY)) {
+              results[sheetDate][oem.name][ACTIVE_USERS_KEY] = stats.activeUsers;
+            }
+          }
+        }
+      });
     }
   }
 

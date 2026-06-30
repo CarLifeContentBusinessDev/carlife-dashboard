@@ -8,6 +8,7 @@ import { buildSheetRange } from '@/utils/excel/sheetRange';
 
 export interface OEMGroup {
   name: string;
+  colIndex: number; // 시트에서 OEM 헤더가 위치한 0-based 열 인덱스
   items: string[];
 }
 
@@ -143,7 +144,7 @@ export async function fetchPickSeriesOEMSheet(
         oemItemColMap[name][item] = c;
       }
     }
-    return { name, items };
+    return { name, colIndex, items };
   });
 
   const allItems = oems[0]?.items ?? [];

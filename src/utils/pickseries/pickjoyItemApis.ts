@@ -1,6 +1,49 @@
 import type { AxiosInstance } from 'axios';
 import * as XLSX from 'xlsx';
-import type { PickjoyOEMParams } from './pickjoyOEMConfig';
+
+export interface PickjoyOEMParams {
+  manufacturerSeq: number;
+  deviceSeq: number;
+  companySeq: number;
+}
+
+interface ManufacturerItem {
+  manufacturerSeq: number;
+  manufacturerName: string;
+}
+
+interface DeviceItem {
+  deviceSeq: number;
+  deviceName: string;
+  manufacturerSeq: number;
+}
+
+interface CompanyItem {
+  companySeq: number;
+  companyName: string;
+}
+
+export async function fetchManufacturers(api: AxiosInstance): Promise<ManufacturerItem[]> {
+  const res = await api.get<{ data: { list: ManufacturerItem[] } }>('/api/admin/v1/manufacturer');
+  return res.data.data.list;
+}
+
+export async function fetchDevicesByManufacturer(
+  api: AxiosInstance,
+  manufacturerName: string
+): Promise<DeviceItem[]> {
+  const res = await api.get<{ data: { list: DeviceItem[] } }>('/api/admin/v1/device', {
+    params: { manufacturerName, isActive: true },
+  });
+  return res.data.data.list;
+}
+
+export async function fetchCompanies(api: AxiosInstance): Promise<CompanyItem[]> {
+  const res = await api.get<{ data: { list: CompanyItem[] } }>(
+    '/api/admin/v1/common/company-info'
+  );
+  return res.data.data.list;
+}
 
 type DateRange = { startDate: string; endDate: string };
 type DailyStat = Record<string, number>;
@@ -51,6 +94,50 @@ export async function fetchContentsStats(
     contentClicks: sumDaily(stats, 'gameRunCount'),
     contentPlayTime: sumDaily(stats, 'totalGamePlayTime'),
   };
+}
+
+// OEM 지표용: 단일 OEM '서비스 통계' 탭 → 누적 사용자 수 + 활성 사용자 수
+function parseServiceStats(buffer: ArrayBuffer): { registeredVin: number; activeUsers: number } {
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const sheet = workbook.Sheets['서비스 통계'];
+  if (!sheet) {
+    console.warn('[parseServiceStats] "서비스 통계" 시트를 찾을 수 없습니다.');
+    return { registeredVin: 0, activeUsers: 0 };
+  }
+
+  const aoa = XLSX.utils.sheet_to_json<(string | number | undefined)[]>(sheet, { header: 1 });
+
+  // 7행(index 6) = 헤더, 8행(index 7)부터 일별 데이터
+  // G열(index 6) = 가입VIN → 누적 사용자 수
+  // X열(index 23) = 활성 사용자수(DAU/WAU/MAU) → 활성 사용자 수
+  const REGISTERED_VIN_COL = 6;
+  const ACTIVE_USERS_COL = 23;
+  const DATA_START_ROW = 7;
+
+  let registeredVin = 0;
+  let activeUsers = 0;
+
+  for (let r = DATA_START_ROW; r < DATA_START_ROW + 7 && r < aoa.length; r++) {
+    const row = aoa[r] ?? [];
+    const vin = row[REGISTERED_VIN_COL];
+    const active = row[ACTIVE_USERS_COL];
+    registeredVin += typeof vin === 'number' ? vin : 0;
+    activeUsers += typeof active === 'number' ? active : 0;
+  }
+
+  return { registeredVin, activeUsers };
+}
+
+export async function fetchServiceStatsFromExport(
+  api: AxiosInstance,
+  range: DateRange,
+  oemParams: PickjoyOEMParams
+): Promise<{ registeredVin: number; activeUsers: number }> {
+  const res = await api.get('/api/admin/v1/statistics/export', {
+    params: { statisticsSearchType: 'DAILY', ...range, ...oemParams },
+    responseType: 'arraybuffer',
+  });
+  return parseServiceStats(res.data as ArrayBuffer);
 }
 
 // OEM 지표용: 단일 OEM 기준 인기 콘텐츠

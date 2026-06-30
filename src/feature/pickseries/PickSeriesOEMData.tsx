@@ -9,6 +9,9 @@ import {
 } from '@/utils/googleSheets/fetchPickSeriesOEMSheet';
 import OEMCard from '@/components/card/OEMCard';
 import { BottomBar } from '@/components/bottomBar/BottomBar';
+import ExtractionOverlay from '@/components/overlay/ExtractionOverlay';
+import { extractPickjoyOEMData, type ExtractionProgress } from '@/utils/pickseries/extractPickjoyOEMData';
+import { writePickSeriesOEMSheet } from '@/utils/googleSheets/writePickSeriesOEMSheet';
 
 interface ProductGroup {
   id: string;
@@ -73,6 +76,13 @@ export default function PickSeriesOEMData() {
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedItemsByProduct, setSelectedItemsByProduct] =
     useState<OEMSelection>({});
+
+  const [extractionStatus, setExtractionStatus] = useState<
+    'idle' | 'running' | 'done' | 'error'
+  >('idle');
+  const [extractionProgress, setExtractionProgress] =
+    useState<ExtractionProgress | null>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
 
   const fetchingProducts = useRef<Set<string>>(new Set());
   const initializedProducts = useRef<Set<string>>(new Set());
@@ -300,6 +310,84 @@ export default function PickSeriesOEMData() {
     [incompleteDates, selectedDates]
   );
 
+  const handleExtractionReset = useCallback(() => {
+    setExtractionStatus('idle');
+    setExtractionProgress(null);
+    setExtractionError(null);
+  }, []);
+
+  const refreshProduct = useCallback((product: ProductGroup) => {
+    setProductStates((prev) => ({
+      ...prev,
+      [product.id]: { data: prev[product.id]?.data ?? null, loading: true, error: null },
+    }));
+    fetchPickSeriesOEMSheet(product.tabName, product.excludedItems)
+      .then((data) => {
+        setProductStates((prev) => ({
+          ...prev,
+          [product.id]: { data, loading: false, error: null },
+        }));
+      })
+      .catch((err: unknown) => {
+        const message =
+          (err instanceof Error ? err.message : null) ?? '알 수 없는 오류';
+        setProductStates((prev) => ({
+          ...prev,
+          [product.id]: {
+            data: prev[product.id]?.data ?? null,
+            loading: false,
+            error: message,
+          },
+        }));
+      });
+  }, []);
+
+  const handleExtract = useCallback(async () => {
+    const pickjoyProduct = loggedInProducts.find((p) => p.id === 'pickjoy');
+    const pickjoyData = productStates['pickjoy']?.data;
+    const pickjoyToken = serverTokens['pickjoy'];
+
+    if (!pickjoyProduct) {
+      toast.error('픽조이 서버가 연결되지 않았습니다. 서버 연결 후 다시 시도해주세요.');
+      return;
+    }
+    if (!pickjoyData || !pickjoyToken) {
+      toast.error('픽조이 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    const selectedItemsByOEM = selectedItemsByProduct['pickjoy'] ?? {};
+
+    setExtractionStatus('running');
+    setExtractionProgress(null);
+    setExtractionError(null);
+
+    try {
+      const results = await extractPickjoyOEMData({
+        token: pickjoyToken,
+        oems: pickjoyData.oems,
+        selectedItemsByOEM,
+        dates: activeSelectedDates,
+        onProgress: setExtractionProgress,
+      });
+      await writePickSeriesOEMSheet(pickjoyProduct.tabName, pickjoyData, results);
+      refreshProduct(pickjoyProduct);
+      setExtractionStatus('done');
+    } catch (err) {
+      setExtractionError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
+      setExtractionStatus('error');
+    }
+  }, [
+    loggedInProducts,
+    productStates,
+    serverTokens,
+    selectedItemsByProduct,
+    activeSelectedDates,
+    refreshProduct,
+  ]);
+
   const getItemExistingDates = useCallback(
     (productId: string, oemName: string, item: string): string[] => {
       if (activeSelectedDates.length === 0) return [];
@@ -315,7 +403,15 @@ export default function PickSeriesOEMData() {
   const hasAnyLoggedIn = loggedInProducts.length > 0;
 
   return (
-    <div className='flex flex-col min-h-full'>
+    <div className='relative flex flex-col min-h-full'>
+      {extractionStatus !== 'idle' && (
+        <ExtractionOverlay
+          status={extractionStatus}
+          progress={extractionProgress}
+          errorMessage={extractionError}
+          onReset={handleExtractionReset}
+        />
+      )}
       <div className='flex-1 p-6'>
         {/* 헤더 */}
         <div className='flex justify-between mb-5'>
@@ -460,8 +556,7 @@ export default function PickSeriesOEMData() {
         <BottomBar
           handleReset={handleReset}
           activeSelectedDates={activeSelectedDates}
-          extractDisabled={false}
-          onClick={() => {}}
+          onClick={handleExtract}
         />
       )}
     </div>
