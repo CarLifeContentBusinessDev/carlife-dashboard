@@ -1,12 +1,13 @@
-import axios from 'axios';
 import type { OEMGroup } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
 import { executeWithConcurrencyLimit } from '@/shared/utils/api/requestPool';
 import {
-  fetchManufacturers,
-  fetchDevicesByManufacturer,
-  fetchCompanies,
+  createPickjoyApi,
   fetchServiceStatsFromExport,
+  fetchCombinedRegisteredVinCount,
+  type PickjoyOEMParams,
 } from './pickjoyItemApis';
+import { buildOEMParamsMap } from './resolveOEMParams';
+import { PICKJOY_WEEKLY_OEMS } from './pickjoyWeeklyConfig';
 
 export type ExtractionProgress = {
   completed: number;
@@ -20,11 +21,8 @@ export type OEMExtractionResult = Record<
   Record<string, Record<string, string | number>>
 >;
 
-interface OEMApiParams {
-  manufacturerSeq: number;
-  deviceSeq: number;
-  companySeqs: number[];
-}
+const REGISTERED_VIN_KEY = '누적 사용자 수';
+const ACTIVE_USERS_KEY = '활성 사용자 수';
 
 function sheetDateToApiDates(sheetDate: string): {
   startDate: string;
@@ -44,59 +42,16 @@ function sheetDateToApiDates(sheetDate: string): {
   };
 }
 
-// 시트 OEM명 파싱: "AR1(Renault)" → { deviceName: "AR1", manufacturerName: "Renault" }
-function parseOEMName(
-  name: string
-): { deviceName: string; manufacturerName: string } | null {
-  const match = name.match(/^(.+)\((.+)\)$/);
-  if (!match) return null;
-  return { deviceName: match[1].trim(), manufacturerName: match[2].trim() };
+// 'YYYY-MM-DD' → 같은 달의 1일
+function toMonthStart(apiDate: string): string {
+  return `${apiDate.slice(0, 7)}-01`;
 }
 
-// API에서 manufacturer/device/company를 조회해 OEM별 params 빌드
-async function buildOEMParamsMap(
-  api: ReturnType<typeof axios.create>,
-  oems: OEMGroup[]
-): Promise<Record<string, OEMApiParams>> {
-  const [manufacturers, companies] = await Promise.all([
-    fetchManufacturers(api),
-    fetchCompanies(api),
-  ]);
-
-  const deviceLists = await Promise.all(
-    manufacturers.map((m) =>
-      fetchDevicesByManufacturer(api, m.manufacturerName)
-    )
-  );
-  const allDevices = deviceLists.flat();
-
-  const companySeqs = companies.map((c) => c.companySeq);
-  const paramsMap: Record<string, OEMApiParams> = {};
-
-  for (const oem of oems) {
-    const parsed = parseOEMName(oem.name);
-    if (!parsed) continue;
-
-    const manufacturer = manufacturers.find(
-      (m) => m.manufacturerName === parsed.manufacturerName
-    );
-    if (!manufacturer) continue;
-
-    const device = allDevices.find(
-      (d) =>
-        d.deviceName === parsed.deviceName &&
-        d.manufacturerSeq === manufacturer.manufacturerSeq
-    );
-    if (!device) continue;
-
-    paramsMap[oem.name] = {
-      manufacturerSeq: manufacturer.manufacturerSeq,
-      deviceSeq: device.deviceSeq,
-      companySeqs,
-    };
-  }
-
-  return paramsMap;
+// 'YYYY-MM-DD'에 일수를 더함 (음수 가능)
+function addDays(apiDate: string, days: number): string {
+  const d = new Date(apiDate);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export async function extractPickjoyOEMData(params: {
@@ -108,26 +63,23 @@ export async function extractPickjoyOEMData(params: {
 }): Promise<OEMExtractionResult> {
   const { token, oems, selectedItemsByOEM, dates, onProgress } = params;
 
-  const apiInstance = axios.create({
-    baseURL: import.meta.env.VITE_PICKJOY_API_URL as string,
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  const REGISTERED_VIN_KEY = '누적 사용자 수';
-  const ACTIVE_USERS_KEY = '활성 사용자 수';
+  const apiInstance = createPickjoyApi(token);
 
   const allSelectedItems = new Set<string>();
   oems.forEach((oem) => {
     selectedItemsByOEM[oem.name]?.forEach((item) => allSelectedItems.add(item));
   });
 
-  const needsStats =
-    allSelectedItems.has(REGISTERED_VIN_KEY) ||
-    allSelectedItems.has(ACTIVE_USERS_KEY);
+  const needsRegisteredVin = allSelectedItems.has(REGISTERED_VIN_KEY);
+  const needsActiveUsers = allSelectedItems.has(ACTIVE_USERS_KEY);
+  const needsStats = needsRegisteredVin || needsActiveUsers;
 
   // API에서 동적으로 OEM params 빌드 (전체 제외)
   const oemParamsMap = needsStats
-    ? await buildOEMParamsMap(apiInstance, oems)
+    ? await buildOEMParamsMap(
+        apiInstance,
+        oems.map((oem) => oem.name)
+      )
     : {};
   const individualOEMs = needsStats
     ? oems.filter((oem) => oem.name !== '전체' && !!oemParamsMap[oem.name])
@@ -137,25 +89,30 @@ export async function extractPickjoyOEMData(params: {
     individualOEMs.length > 0
       ? (oemParamsMap[individualOEMs[0].name]?.companySeqs.length ?? 0)
       : 0;
-  const total = dates.length * individualOEMs.length * companiesCount;
+
+  const activeUsersTotal = needsActiveUsers
+    ? dates.length * individualOEMs.length * companiesCount
+    : 0;
+  // 누적 사용자 수는 주차당 1단위로 단순화해서 progress 계산 (다른 항목들과 동일한 스타일)
+  const registeredVinTotal = needsRegisteredVin
+    ? dates.length * individualOEMs.length
+    : 0;
+  const total = activeUsersTotal + registeredVinTotal;
   let completed = 0;
 
   const results: OEMExtractionResult = {};
-
-  for (const sheetDate of dates) {
+  dates.forEach((sheetDate) => {
     results[sheetDate] = {};
     oems.forEach((oem) => {
       results[sheetDate][oem.name] = {};
     });
+  });
 
-    const { startDate, endDate } = sheetDateToApiDates(sheetDate);
+  if (needsActiveUsers && individualOEMs.length > 0) {
+    for (const sheetDate of dates) {
+      const { startDate, endDate } = sheetDateToApiDates(sheetDate);
 
-    if (individualOEMs.length > 0) {
-      type TaskResult = {
-        oemName: string;
-        registeredVin: number;
-        activeUsers: number;
-      };
+      type TaskResult = { oemName: string; activeUsers: number };
 
       const tasks = individualOEMs.flatMap((oem) => {
         const { manufacturerSeq, deviceSeq, companySeqs } =
@@ -171,13 +128,9 @@ export async function extractPickjoyOEMData(params: {
             onProgress({
               completed,
               total,
-              currentLabel: `${sheetDate} — 서비스 통계 (${oem.name})`,
+              currentLabel: `${sheetDate} — 활성 사용자 수 (${oem.name})`,
             });
-            return {
-              oemName: oem.name,
-              registeredVin: stats.registeredVin,
-              activeUsers: stats.activeUsers,
-            };
+            return { oemName: oem.name, activeUsers: stats.activeUsers };
           }
         );
       });
@@ -186,52 +139,159 @@ export async function extractPickjoyOEMData(params: {
         concurrency: 5,
       });
 
-      const oemStats: Record<
-        string,
-        { registeredVin: number; activeUsers: number }
-      > = Object.fromEntries(
-        individualOEMs.map((oem) => [
-          oem.name,
-          { registeredVin: 0, activeUsers: 0 },
-        ])
+      const activeByOEM: Record<string, number> = Object.fromEntries(
+        individualOEMs.map((oem) => [oem.name, 0])
       );
-
       for (const result of settledResults) {
         if (result.status === 'fulfilled') {
-          const { oemName, registeredVin, activeUsers } = result.value;
-          oemStats[oemName].registeredVin += registeredVin;
-          oemStats[oemName].activeUsers += activeUsers;
+          activeByOEM[result.value.oemName] += result.value.activeUsers;
         }
       }
 
       oems.forEach((oem) => {
         if (oem.name === '전체') {
-          const totalRegistered = Object.values(oemStats).reduce(
-            (s, v) => s + v.registeredVin,
-            0
-          );
-          const totalActive = Object.values(oemStats).reduce(
-            (s, v) => s + v.activeUsers,
-            0
-          );
-          if (selectedItemsByOEM['전체']?.has(REGISTERED_VIN_KEY)) {
-            results[sheetDate]['전체'][REGISTERED_VIN_KEY] = totalRegistered;
-          }
           if (selectedItemsByOEM['전체']?.has(ACTIVE_USERS_KEY)) {
-            results[sheetDate]['전체'][ACTIVE_USERS_KEY] = totalActive;
+            results[sheetDate]['전체'][ACTIVE_USERS_KEY] = Object.values(
+              activeByOEM
+            ).reduce((s, v) => s + v, 0);
           }
-        } else {
-          const stats = oemStats[oem.name];
-          if (stats) {
-            if (selectedItemsByOEM[oem.name]?.has(REGISTERED_VIN_KEY)) {
-              results[sheetDate][oem.name][REGISTERED_VIN_KEY] =
-                stats.registeredVin;
-            }
-            if (selectedItemsByOEM[oem.name]?.has(ACTIVE_USERS_KEY)) {
-              results[sheetDate][oem.name][ACTIVE_USERS_KEY] =
-                stats.activeUsers;
-            }
-          }
+        } else if (selectedItemsByOEM[oem.name]?.has(ACTIVE_USERS_KEY)) {
+          results[sheetDate][oem.name][ACTIVE_USERS_KEY] =
+            activeByOEM[oem.name] ?? 0;
+        }
+      });
+    }
+  }
+
+  if (needsRegisteredVin && individualOEMs.length > 0 && dates.length > 0) {
+    const sortedDates = [...dates].sort();
+    const perOEMResults: Record<string, Record<string, number>> = {};
+
+    async function fetchWeeklyNewVin(
+      sheetDate: string,
+      oemParamsList: PickjoyOEMParams[]
+    ): Promise<number> {
+      const { startDate, endDate } = sheetDateToApiDates(sheetDate);
+      return fetchCombinedRegisteredVinCount(
+        apiInstance,
+        { startDate, endDate },
+        oemParamsList,
+        'DAILY'
+      );
+    }
+
+    async function computeAbsoluteRegisteredVin(
+      sheetDate: string,
+      oemParamsList: PickjoyOEMParams[],
+      availableFrom: string
+    ): Promise<number> {
+      const { endDate: weekEnd } = sheetDateToApiDates(sheetDate);
+      const monthStart = toMonthStart(weekEnd);
+      const historyStart = `${availableFrom.replace('.', '-')}-01`;
+      const historyEnd = addDays(monthStart, -1);
+
+      let total = 0;
+      if (historyStart <= historyEnd) {
+        total += await fetchCombinedRegisteredVinCount(
+          apiInstance,
+          { startDate: historyStart, endDate: historyEnd },
+          oemParamsList,
+          'MONTHLY'
+        );
+      }
+      total += await fetchCombinedRegisteredVinCount(
+        apiInstance,
+        { startDate: monthStart, endDate: weekEnd },
+        oemParamsList,
+        'DAILY'
+      );
+      return total;
+    }
+
+    async function processOEM(oem: OEMGroup): Promise<void> {
+      const resolved = oemParamsMap[oem.name];
+      if (!resolved) return;
+      const oemParamsList = resolved.companySeqs.map((companySeq) => ({
+        manufacturerSeq: resolved.manufacturerSeq,
+        deviceSeq: resolved.deviceSeq,
+        companySeq,
+      }));
+      const weeklyOemInfo = PICKJOY_WEEKLY_OEMS.find(
+        (w) => w.name === oem.name
+      );
+      if (!weeklyOemInfo) {
+        console.warn(
+          `[extractPickjoyOEMData] "${oem.name}"의 데이터 시작 시점(availableFrom) 정보가 없어 누적 사용자 수 계산을 건너뜁니다.`
+        );
+        return;
+      }
+
+      perOEMResults[oem.name] = {};
+      let runningTotal = 0;
+
+      for (let i = 0; i < sortedDates.length; i++) {
+        const date = sortedDates[i];
+        onProgress({
+          completed,
+          total,
+          currentLabel: `${date} — ${REGISTERED_VIN_KEY} (${oem.name})`,
+        });
+
+        runningTotal =
+          i === 0
+            ? await computeAbsoluteRegisteredVin(
+                date,
+                oemParamsList,
+                weeklyOemInfo.availableFrom
+              )
+            : runningTotal + (await fetchWeeklyNewVin(date, oemParamsList));
+
+        perOEMResults[oem.name][date] = runningTotal;
+        completed++;
+      }
+    }
+
+    const settledOEMResults = await executeWithConcurrencyLimit(
+      individualOEMs.map((oem) => () => processOEM(oem)),
+      { concurrency: 5 }
+    );
+    settledOEMResults.forEach((result, idx) => {
+      if (result.status === 'rejected') {
+        console.error(
+          `[extractPickjoyOEMData] "${individualOEMs[idx].name}" 누적 사용자 수 계산 실패:`,
+          result.reason
+        );
+      }
+    });
+    if (settledOEMResults.every((result) => result.status === 'rejected')) {
+      throw new Error(
+        '누적 사용자 수 계산에 모두 실패했습니다. 콘솔 로그를 확인해주세요.'
+      );
+    }
+
+    for (const sheetDate of dates) {
+      const valuesForDate: Record<string, number> = {};
+      individualOEMs.forEach((oem) => {
+        const value = perOEMResults[oem.name]?.[sheetDate];
+        if (value !== undefined) valuesForDate[oem.name] = value;
+      });
+
+      if (
+        selectedItemsByOEM['전체']?.has(REGISTERED_VIN_KEY) &&
+        Object.keys(valuesForDate).length > 0
+      ) {
+        results[sheetDate]['전체'][REGISTERED_VIN_KEY] = Object.values(
+          valuesForDate
+        ).reduce((s, v) => s + v, 0);
+      }
+
+      individualOEMs.forEach((oem) => {
+        if (
+          selectedItemsByOEM[oem.name]?.has(REGISTERED_VIN_KEY) &&
+          valuesForDate[oem.name] !== undefined
+        ) {
+          results[sheetDate][oem.name][REGISTERED_VIN_KEY] =
+            valuesForDate[oem.name];
         }
       });
     }

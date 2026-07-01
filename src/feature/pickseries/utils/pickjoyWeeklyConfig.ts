@@ -1,11 +1,5 @@
-// 픽조이 주간지표 시트의 항목명 → API 매핑 설정
-// 실제 시트 C열의 항목명과 다르면 이 파일의 값을 수정하세요
-
-import type { PickjoyOEMParams } from './pickjoyItemApis';
-
 export interface WeeklyTopContentConfig {
   itemName: string;
-  oemParamsList: PickjoyOEMParams[];
 }
 
 // 집계 항목: 항목명 → API 응답 필드
@@ -17,13 +11,24 @@ export const PICKJOY_WEEKLY_ITEM_KEYS = {
   contentPlayTime: '총 콘텐츠 사용시간(분)',
 } as const;
 
-// 주간 인기 콘텐츠: 시트 항목명 → OEM 파라미터 목록 (합산 후 1위)
+// 주간 인기 콘텐츠: 시트 항목명
 export const PICKJOY_WEEKLY_TOP_CONTENT: WeeklyTopContentConfig[] = [
-  {
-    itemName: '주간 인기 콘텐츠',
-    oemParamsList: [
-      { manufacturerSeq: 1, deviceSeq: 1, companySeq: 1 }, // Aurora 1 (Renault)
-      { manufacturerSeq: 1, deviceSeq: 8, companySeq: 1 }, // Aurora 2 (Renault)
-    ],
-  },
+  { itemName: '주간 인기 콘텐츠' },
 ];
+
+export interface WeeklyOEMInfo {
+name: string;
+  availableFrom: string;
+}
+
+// 주간지표(전체 합산) 대상 OEM. seq는 하드코딩하지 않고 API에서 이름 기반으로 조회한다.
+export const PICKJOY_WEEKLY_OEMS: WeeklyOEMInfo[] = [
+  { name: 'AR1(Renault)', availableFrom: '2025.09' },
+  { name: 'AR2(Renault)', availableFrom: '2026.01' },
+];
+
+// 주차 날짜(YYYY.MM.DD) 기준으로 데이터가 존재하는 OEM만 반환
+export function getActiveWeeklyOEMs(sheetDate: string): WeeklyOEMInfo[] {
+  const yearMonth = sheetDate.slice(0, 7); // 'YYYY.MM'
+  return PICKJOY_WEEKLY_OEMS.filter((oem) => oem.availableFrom <= yearMonth);
+}
