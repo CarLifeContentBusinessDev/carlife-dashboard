@@ -321,7 +321,7 @@ const ProdCurationDetail = () => {
                   {EPISODE_COLUMNS.map((col) => (
                     <p
                       key={col.key}
-                      className={`px-2 ${col.width} flex-shrink-0 text-sm`}
+                      className={`px-2 ${col.width} shrink-0 text-sm`}
                     >
                       {col.label}
                     </p>
@@ -334,14 +334,18 @@ const ProdCurationDetail = () => {
                     className={`flex items-center border-b border-gray-200 py-3 hover:bg-gray-50 cursor-pointer `}
                     onClick={() =>
                       isStaging
-                        ? navigate(`/pickle/stg/episodes/detail/${episode.episodeId}`)
-                        : navigate(`/pickle/episodes/detail/${episode.episodeId}`)
+                        ? navigate(
+                            `/pickle/stg/episodes/detail/${episode.episodeId}`
+                          )
+                        : navigate(
+                            `/pickle/episodes/detail/${episode.episodeId}`
+                          )
                     }
                   >
                     {EPISODE_COLUMNS.map((col) => (
                       <div
                         key={col.key}
-                        className={`px-2 ${col.width} flex-shrink-0 text-sm truncate`}
+                        className={`px-2 ${col.width} shrink-0 text-sm truncate`}
                       >
                         {col.render
                           ? col.render(episode)

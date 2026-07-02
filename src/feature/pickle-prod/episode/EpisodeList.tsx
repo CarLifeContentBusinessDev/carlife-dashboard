@@ -11,7 +11,7 @@ interface HeaderColumnProps {
 
 const HeaderColumn = ({ label, width }: HeaderColumnProps) => {
   return (
-    <p className='px-2 flex-shrink-0' style={{ width: width }}>
+    <p className='px-2 shrink-0' style={{ width: width }}>
       {label}
     </p>
   );
@@ -49,84 +49,84 @@ const EpisodeList = ({ data }: { data: usingDataProps[] }) => {
       label: '에피소드ID',
       width: '120px',
       noDataWidth: '100px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'usageYn',
       label: '활성 상태',
       width: '80px',
       noDataWidth: '80px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'channelName',
       label: '채널명',
       width: '180px',
       noDataWidth: '120px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
     {
       key: 'episodeName',
       label: '에피소드명',
       width: '400px',
       noDataWidth: '120px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
     {
       key: 'dispDtime',
       label: '게시일',
       width: '180px',
       noDataWidth: '100px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
     },
     {
       key: 'createdAt',
       label: '등록일',
       width: '180px',
       noDataWidth: '100px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
     },
     {
       key: 'playTime',
       label: '에피소드 시간',
       width: '120px',
       noDataWidth: '120px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'likeCnt',
       label: '좋아요수',
       width: '90px',
       noDataWidth: '90px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'listenCnt',
       label: '청취수',
       width: '90px',
       noDataWidth: '90px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'thumbnailUrl',
       label: '썸네일 URL',
       width: '180px',
       noDataWidth: '100px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'audioUrl',
       label: '오디오 URL',
       width: '180px',
       noDataWidth: '120px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'channelId',
       label: '채널ID',
       width: '120px',
       noDataWidth: '120px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
   ];
 

@@ -111,7 +111,7 @@ const DemoCategoryEdit = () => {
   return (
     <FormLayout title='카테고리 편집' id={category.id}>
       {/* 탭 + 버튼 행 */}
-      <div className='flex justify-between items-center flex-shrink-0 mb-6'>
+      <div className='flex justify-between items-center shrink-0 mb-6'>
         <FormTabs
           tabs={[
             { key: 'basic', label: '기본 정보 (한국)' },

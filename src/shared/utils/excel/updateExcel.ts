@@ -19,7 +19,7 @@ const resolveSheetName = (
 ) => {
   if (sheetName) return sheetName;
 
-  const isStaging = window.location.pathname.startsWith('/stg');
+  const isStaging = window.location.pathname.startsWith('/pickle/stg');
   const storageKey = isStaging
     ? `sheetName:${category}:stg`
     : `sheetName:${category}:prod`;

@@ -6,7 +6,7 @@ interface TabHeaderProps {
 }
 
 const TabHeader = ({ activeTab, onChange }: TabHeaderProps) => (
-  <div className='flex border-b border-gray-200 flex-shrink-0'>
+  <div className='flex border-b border-gray-200 shrink-0'>
     <button
       onClick={() => onChange('data')}
       className={`px-6 py-4 text-sm font-semibold transition cursor-pointer ${

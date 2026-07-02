@@ -22,11 +22,7 @@ const ExistingDatesBadge = ({
       ? existingDates.map((d) => d.split('.').slice(1).join('.')).join(', ')
       : `${existingDates[0].split('.').slice(1).join('.')} 외 ${existingDates.length - 1}건`;
 
-  return (
-    <span className={className}>
-      {dateStr} 존재
-    </span>
-  );
+  return <span className={className}>{dateStr} 존재</span>;
 };
 
 export default ExistingDatesBadge;

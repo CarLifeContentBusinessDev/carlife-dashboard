@@ -289,7 +289,7 @@ const ProdChannelDetail = () => {
                     <p
                       key={col.key}
                       className={`px-2 text-sm ${
-                        col.isFlex ? 'flex-1 min-w-[280px]' : 'flex-shrink-0'
+                        col.isFlex ? 'flex-1 min-w-[280px]' : 'shrink-0'
                       }`}
                       style={
                         col.isFlex
@@ -308,8 +308,12 @@ const ProdChannelDetail = () => {
                     className='flex items-center border-b border-gray-200 py-3 w-full cursor-pointer hover:bg-gray-50'
                     onClick={() =>
                       isStaging
-                        ? navigate(`/pickle/stg/episodes/detail/${episode.episodeId}`)
-                        : navigate(`/pickle/episodes/detail/${episode.episodeId}`)
+                        ? navigate(
+                            `/pickle/stg/episodes/detail/${episode.episodeId}`
+                          )
+                        : navigate(
+                            `/pickle/episodes/detail/${episode.episodeId}`
+                          )
                     }
                   >
                     {EPISODE_COLUMNS.map((col) => (
@@ -318,7 +322,7 @@ const ProdChannelDetail = () => {
                         className={`px-2 text-sm ${
                           col.isFlex
                             ? 'flex-1 min-w-[280px] truncate'
-                            : 'flex-shrink-0 truncate'
+                            : 'shrink-0 truncate'
                         }`}
                         style={
                           col.isFlex

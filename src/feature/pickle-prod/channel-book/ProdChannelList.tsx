@@ -91,7 +91,9 @@ const ProdChannelList: React.FC<ProdChannelListProps> = ({
   const location = useLocation();
 
   const handleRowClick = (channel: usingChannelProps) => {
-    const basePath = isStaging ? '/pickle/stg/channels/detail' : '/pickle/channels/detail';
+    const basePath = isStaging
+      ? '/pickle/stg/channels/detail'
+      : '/pickle/channels/detail';
     const latestDispDtime =
       latestEpisodeUploadByChannelId[channel.channelId] ?? channel.dispDtime;
 
@@ -112,7 +114,7 @@ const ProdChannelList: React.FC<ProdChannelListProps> = ({
         {COLUMNS.map((col) => (
           <p
             key={col.key}
-            className='px-2 flex-shrink-0 text-sm'
+            className='px-2 shrink-0 text-sm'
             style={{ width: col.width }}
           >
             {col.label}
@@ -134,7 +136,7 @@ const ProdChannelList: React.FC<ProdChannelListProps> = ({
             {COLUMNS.map((col) => (
               <div
                 key={col.key}
-                className='px-2 flex-shrink-0 text-sm truncate'
+                className='px-2 shrink-0 text-sm truncate'
                 style={{ width: col.width }}
               >
                 {getCellContent(

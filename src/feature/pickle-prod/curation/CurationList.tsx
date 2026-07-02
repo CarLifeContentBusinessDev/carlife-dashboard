@@ -10,7 +10,7 @@ interface HeaderColumnProps {
 
 const HeaderColumn = ({ label, width }: HeaderColumnProps) => {
   return (
-    <p className='px-2 flex-shrink-0' style={{ width: width }}>
+    <p className='px-2 shrink-0' style={{ width: width }}>
       {label}
     </p>
   );
@@ -48,35 +48,35 @@ const CurationList = ({ data }: { data: usingCurationExcelProps[] }) => {
       label: '큐레이션 타입',
       width: '120px',
       noDataWidth: '120px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
     },
     {
       key: 'usageYn',
       label: '사용 여부',
       width: '80px',
       noDataWidth: '80px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
     },
     {
       key: 'curationName',
       label: '큐레이션명',
       width: '200px',
       noDataWidth: '200px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
     {
       key: 'curationDesc',
       label: '큐레이션 설명',
       width: '200px',
       noDataWidth: '200px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
     {
       key: 'dispPeriod',
       label: '게시 기간',
       width: '320px',
       noDataWidth: '200px',
-      className: 'px-2 text-sm truncate flex-shrink-0',
+      className: 'px-2 text-sm truncate shrink-0',
       render: (curation: usingCurationExcelProps) =>
         `${formatDateString(curation.dispStartDtime)} ~ ${formatDateString(curation.dispEndDtime)}`,
     },
@@ -85,7 +85,7 @@ const CurationList = ({ data }: { data: usingCurationExcelProps[] }) => {
       label: '등록일',
       width: '180px',
       noDataWidth: '120px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
       render: (curation: usingCurationExcelProps) =>
         formatDateString(curation.curationCreatedAt),
     },
@@ -94,14 +94,14 @@ const CurationList = ({ data }: { data: usingCurationExcelProps[] }) => {
       label: '채널명',
       width: '180px',
       noDataWidth: '120px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
     {
       key: 'episodeName',
       label: '에피소드명',
       width: '320px',
       noDataWidth: '120px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
   ];
 

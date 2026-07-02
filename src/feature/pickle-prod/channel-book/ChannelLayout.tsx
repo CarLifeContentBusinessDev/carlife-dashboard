@@ -31,11 +31,7 @@ import ProdChannelList from './ProdChannelList.tsx';
 const CATEGORY = 'channel';
 
 type ChannelSortKey =
-  | 'createdAt'
-  | 'channelName'
-  | 'dispDtime'
-  | 'likeCnt'
-  | 'listenCnt';
+  'createdAt' | 'channelName' | 'dispDtime' | 'likeCnt' | 'listenCnt';
 
 const CHANNEL_SORT_OPTIONS: Array<{ value: ChannelSortKey; label: string }> = [
   { value: 'createdAt', label: '등록일' },
@@ -63,8 +59,11 @@ const ChannelLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
   const { getServerToken, isServerLoggedIn } = usePickleServerStore();
-  const accessToken = getServerToken(isStaging ? 'stg' : 'prod') ?? '';
-  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
+  const accessToken =
+    getServerToken(isStaging ? 'pickle-stg' : 'pickle-prod') ?? '';
+  const isPickleLoggedIn = isServerLoggedIn(
+    isStaging ? 'pickle-stg' : 'pickle-prod'
+  );
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
   // ── 데이터 탭 ──────────────────────────────────────────────────────────────
@@ -331,11 +330,11 @@ const ChannelLayout = () => {
   return (
     <div className='flex flex-col h-[90vh]'>
       <PickleLoginBanner
-        serverId={isStaging ? 'stg' : 'prod'}
+        serverId={isStaging ? 'pickle-stg' : 'pickle-prod'}
         serverLabel={isStaging ? 'STG' : '상용'}
       />
       <div className='p-10 flex flex-col h-full'>
-        <h1 className='text-3xl font-bold mb-4 indent-1'>
+        <h1 className='text-xl font-bold mb-4 indent-1'>
           채널·도서 관리{isStaging ? ' (스테이징)' : ''}
         </h1>
         <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
@@ -343,7 +342,7 @@ const ChannelLayout = () => {
 
           {activeTab === 'data' && (
             <div className='flex-1 p-8 flex flex-col min-h-0'>
-              <div className='flex justify-between items-center flex-shrink-0 mb-4'>
+              <div className='flex justify-between items-center shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   채널·도서 총{' '}
                   <span className='font-extrabold'>
@@ -442,7 +441,7 @@ const ChannelLayout = () => {
                 progress={progress}
                 syncPreviewMode={syncPreviewMode}
               />
-              <div className='flex justify-between items-center flex-shrink-0'>
+              <div className='flex justify-between items-center shrink-0'>
                 <SyncCountHeader
                   syncPreviewMode={syncPreviewMode}
                   newCount={newChannels?.length ?? 0}

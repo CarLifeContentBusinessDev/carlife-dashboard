@@ -66,7 +66,9 @@ const ProdEpisodeList: React.FC<ProdEpisodeListProps> = ({
   const location = useLocation();
 
   const handleRowClick = (ep: usingDataProps) => {
-    const basePath = isStaging ? '/pickle/stg/episodes/detail' : '/pickle/episodes/detail';
+    const basePath = isStaging
+      ? '/pickle/stg/episodes/detail'
+      : '/pickle/episodes/detail';
     navigate(`${basePath}/${ep.episodeId}`, {
       state: { episode: ep, from: location.pathname },
     });
@@ -78,7 +80,7 @@ const ProdEpisodeList: React.FC<ProdEpisodeListProps> = ({
         {COLUMNS.map((col) => (
           <p
             key={col.key}
-            className='px-2 flex-shrink-0 text-sm'
+            className='px-2 shrink-0 text-sm'
             style={{ width: col.width }}
           >
             {col.label}
@@ -100,7 +102,7 @@ const ProdEpisodeList: React.FC<ProdEpisodeListProps> = ({
             {COLUMNS.map((col) => (
               <div
                 key={col.key}
-                className='px-2 flex-shrink-0 text-sm truncate'
+                className='px-2 shrink-0 text-sm truncate'
                 style={{ width: col.width }}
               >
                 {getCellContent(ep, col.key)}

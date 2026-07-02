@@ -57,7 +57,9 @@ const EpisodeLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
   const { isServerLoggedIn } = usePickleServerStore();
-  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
+  const isPickleLoggedIn = isServerLoggedIn(
+    isStaging ? 'pickle-stg' : 'pickle-prod'
+  );
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
   // ── 데이터 탭 ──────────────────────────────────────────────────────────────
@@ -326,11 +328,11 @@ const EpisodeLayout = () => {
   return (
     <div className='flex flex-col h-full'>
       <PickleLoginBanner
-        serverId={isStaging ? 'stg' : 'prod'}
+        serverId={isStaging ? 'pickle-stg' : 'pickle-prod'}
         serverLabel={isStaging ? 'STG' : '상용'}
       />
       <div className='p-10 flex flex-col h-full'>
-        <h1 className='text-3xl font-bold mb-4 indent-1'>
+        <h1 className='text-xl font-bold mb-4 indent-1'>
           에피소드 관리{isStaging ? ' (스테이징)' : ''}
         </h1>
         <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
@@ -338,7 +340,7 @@ const EpisodeLayout = () => {
 
           {activeTab === 'data' && (
             <div className='flex-1 p-8 flex flex-col min-h-0'>
-              <div className='flex justify-between items-center flex-shrink-0 mb-4'>
+              <div className='flex justify-between items-center shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   에피소드 총{' '}
                   <span className='font-extrabold'>{sortedEpiData.length}</span>
@@ -435,7 +437,7 @@ const EpisodeLayout = () => {
                 progress={progress}
                 syncPreviewMode={syncPreviewMode}
               />
-              <div className='flex justify-between items-center flex-shrink-0 mb-4'>
+              <div className='flex justify-between items-center shrink-0 mb-4'>
                 <SyncCountHeader
                   syncPreviewMode={syncPreviewMode}
                   newCount={newEpi.length}

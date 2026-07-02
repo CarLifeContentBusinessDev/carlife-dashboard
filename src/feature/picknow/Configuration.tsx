@@ -966,7 +966,7 @@ interface OemCheckboxProps {
 
 function OemCheckbox({ state }: OemCheckboxProps) {
   const base =
-    'w-[18px] h-[18px] flex-shrink-0 rounded-[5px] flex items-center justify-center border-2 transition-colors';
+    'w-[18px] h-[18px] shrink-0 rounded-[5px] flex items-center justify-center border-2 transition-colors';
 
   if (state === 'none') {
     return <div className={`${base} border-gray-300 bg-white`} />;
@@ -1011,7 +1011,7 @@ function DeviceChip({ label, selected, onToggle }: DeviceChipProps) {
         }`}
     >
       {selected && (
-        <span className='w-[14px] h-[14px] inline-flex items-center justify-center rounded-full bg-white/25 flex-shrink-0'>
+        <span className='w-[14px] h-[14px] inline-flex items-center justify-center rounded-full bg-white/25 shrink-0'>
           <svg
             className='w-2.5 h-2.5 text-white'
             fill='none'

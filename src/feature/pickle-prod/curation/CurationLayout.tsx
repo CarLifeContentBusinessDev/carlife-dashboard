@@ -34,11 +34,7 @@ import { toast } from 'react-toastify';
 import ProdCurationList from './ProdCurationList';
 
 type ExhibitionFilter =
-  | 'All'
-  | '게시 중'
-  | '게시 대기'
-  | '게시 종료'
-  | '게시 예약';
+  'All' | '게시 중' | '게시 대기' | '게시 종료' | '게시 예약';
 
 const EXHIBITION_OPTIONS = [
   'All',
@@ -49,10 +45,7 @@ const EXHIBITION_OPTIONS = [
 ] as const;
 
 type CurationSortKey =
-  | 'curationCreatedAt'
-  | 'curationName'
-  | 'dispStartDtime'
-  | 'dispEndDtime';
+  'curationCreatedAt' | 'curationName' | 'dispStartDtime' | 'dispEndDtime';
 
 const CURATION_SORT_OPTIONS: Array<{ value: CurationSortKey; label: string }> =
   [
@@ -130,7 +123,9 @@ const CurationLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
   const { isServerLoggedIn } = usePickleServerStore();
-  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
+  const isPickleLoggedIn = isServerLoggedIn(
+    isStaging ? 'pickle-stg' : 'pickle-prod'
+  );
   const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
   // ── 데이터 탭 ──────────────────────────────────────────────────────────────
@@ -396,11 +391,11 @@ const CurationLayout = () => {
   return (
     <div className='flex flex-col h-[90vh]'>
       <PickleLoginBanner
-        serverId={isStaging ? 'stg' : 'prod'}
+        serverId={isStaging ? 'pickle-stg' : 'pickle-prod'}
         serverLabel={isStaging ? 'STG' : '상용'}
       />
       <div className='p-10 flex flex-col h-full'>
-        <h1 className='text-3xl font-bold mb-4 indent-1'>
+        <h1 className='text-xl font-bold mb-4 indent-1'>
           큐레이션 관리{isStaging ? ' (스테이징)' : ''}
         </h1>
         <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
@@ -408,7 +403,7 @@ const CurationLayout = () => {
 
           {activeTab === 'data' && (
             <div className='flex-1 p-8 flex flex-col min-h-0'>
-              <div className='flex justify-between items-center flex-shrink-0 mb-4'>
+              <div className='flex justify-between items-center shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   큐레이션 총{' '}
                   <span className='font-extrabold'>
@@ -516,7 +511,7 @@ const CurationLayout = () => {
                 progress={progress}
                 syncPreviewMode={syncPreviewMode}
               />
-              <div className='flex justify-between items-center flex-shrink-0'>
+              <div className='flex justify-between items-center shrink-0'>
                 <SyncCountHeader
                   syncPreviewMode={syncPreviewMode}
                   newCount={newCurations.length}

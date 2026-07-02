@@ -31,7 +31,7 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
 }) => {
   const navigate = useNavigate();
   const { isServerLoggedIn } = usePickleServerStore();
-  const accessToken = isServerLoggedIn('web-demo');
+  const accessToken = isServerLoggedIn('pickle-web-demo');
   const { page, setPage, totalPages, pagedData } = usePagination(data);
 
   // 언어 변경 시 1페이지로 이동
