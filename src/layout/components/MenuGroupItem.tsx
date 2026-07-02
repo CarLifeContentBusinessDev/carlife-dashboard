@@ -19,7 +19,7 @@ const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
     fill='none'
     stroke='currentColor'
     strokeWidth={2}
-    className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+    className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-white' : 'rotate-0'}`}
   >
     <polyline points='6 9 12 15 18 9' />
   </svg>
@@ -68,7 +68,7 @@ const MenuGroupItem = ({
           {icon && icon}
           {isSidebarOpen && (
             <span
-              className={`text-md font-semibold ${isActive ? 'text-white' : ''}`}
+              className={`text-sm font-semibold ${isActive ? 'text-white' : ''}`}
             >
               {label}
             </span>
@@ -105,7 +105,7 @@ const MenuGroupItem = ({
         isHovered &&
         createPortal(
           <div
-            className='fixed w-48 bg-[#1B1E2F] z-[9999] rounded-r-md shadow-lg border border-gray-700 overflow-hidden'
+            className='fixed w-48 bg-[#1B1E2F] z-9999 rounded-r-md shadow-lg border border-gray-700 overflow-hidden'
             style={{
               top: `${floatingMenuPos.top}px`,
               left: `${floatingMenuPos.left}px`,
