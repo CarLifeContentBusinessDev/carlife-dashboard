@@ -22,8 +22,8 @@ export function createPickjoyApi(token: string): AxiosInstance {
     if (response.config.responseType === 'arraybuffer') {
       const buffer = response.data as ArrayBuffer;
       const bytes = new Uint8Array(buffer.slice(0, 2));
-      const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
-      if (isZip) {
+      const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b; // 'PK'
+      if (!isZip) {
         try {
           const text = new TextDecoder('utf-8').decode(buffer);
           const json = JSON.parse(text) as { resultCode?: string };
