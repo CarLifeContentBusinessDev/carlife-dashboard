@@ -193,9 +193,9 @@ export async function extractPickjoyOEMData(params: {
         tasks.push(
           fetchCombinedRegisteredVinCount(
             apiInstance,
-            { startDate: monthStart, endDate: weekEnd },
+            { startDate: historyStart, endDate: historyEnd },
             oemParamsList,
-            'DAILY'
+            'MONTHLY'
           )
         );
       }

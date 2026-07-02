@@ -17,11 +17,10 @@ export const PICKJOY_WEEKLY_TOP_CONTENT: WeeklyTopContentConfig[] = [
 ];
 
 export interface WeeklyOEMInfo {
-name: string;
+  name: string;
   availableFrom: string;
 }
 
-// 주간지표(전체 합산) 대상 OEM. seq는 하드코딩하지 않고 API에서 이름 기반으로 조회한다.
 export const PICKJOY_WEEKLY_OEMS: WeeklyOEMInfo[] = [
   { name: 'AR1(Renault)', availableFrom: '2025.09' },
   { name: 'AR2(Renault)', availableFrom: '2026.01' },
