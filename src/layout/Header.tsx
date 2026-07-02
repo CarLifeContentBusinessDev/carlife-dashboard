@@ -12,6 +12,7 @@ import {
   PICKSERIES_SERVERS,
 } from '@/constants/servers';
 import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
+import ServerConnectionDropdown from '@/layout/components/ServerConnectionDropdown';
 import { supabase } from '@/lib/supabase';
 import Button from '@/shared/components/common/Button';
 import PickleLoginModal from '@/shared/components/common/PickleLoginModal';
@@ -31,7 +32,7 @@ import {
   initializeGIS,
   initializeGoogleAPI,
 } from '@/shared/utils/auth/auth';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -64,18 +65,12 @@ const Header = () => {
     setServerToken: setPickSeriesServerToken,
   } = usePickSeriesServerStore();
   const [googleInitialized, setGoogleInitialized] = useState(false);
-  const [picknowDropdownOpen, setPicknowDropdownOpen] = useState(false);
-  const [pickleDropdownOpen, setPickleDropdownOpen] = useState(false);
-  const [pickSeriesDropdownOpen, setPickSeriesDropdownOpen] = useState(false);
   const [loginModalPicknowServer, setLoginModalPicknowServer] =
     useState<PicknowServer | null>(null);
   const [loginModalPickleServer, setLoginModalPickleServer] =
     useState<PickleServer | null>(null);
   const [loginModalPickSeriesServer, setLoginModalPickSeriesServer] =
     useState<PickSeriesServer | null>(null);
-  const picknowDropdownRef = useRef<HTMLDivElement>(null);
-  const pickleDropdownRef = useRef<HTMLDivElement>(null);
-  const pickSeriesDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!selectedService) return;
@@ -90,34 +85,6 @@ const Header = () => {
     };
     initGoogle();
   }, [selectedService]);
-
-  useEffect(() => {
-    if (!picknowDropdownOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        picknowDropdownRef.current &&
-        !picknowDropdownRef.current.contains(e.target as Node)
-      ) {
-        setPicknowDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [picknowDropdownOpen]);
-
-  useEffect(() => {
-    if (!pickleDropdownOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        pickleDropdownRef.current &&
-        !pickleDropdownRef.current.contains(e.target as Node)
-      ) {
-        setPickleDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [pickleDropdownOpen]);
 
   const handleGoogleLogin = async () => {
     const token = await getGoogleToken();
@@ -238,219 +205,38 @@ const Header = () => {
           서비스 변경
         </button>
 
-        {/* Pickle: 서버 연결 상태 드롭다운 */}
+        {/* 서버 연결 상태 드롭다운 */}
         {selectedService === 'pickle' && (
-          <div className='relative' ref={pickleDropdownRef}>
-            <button
-              onClick={() => setPickleDropdownOpen((prev) => !prev)}
-              className='shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
-            >
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${pickleConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
-              />
-              서버 연결 {pickleConnectedCount}/{PICKLE_SERVERS.length}
-              <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${pickleDropdownOpen ? 'rotate-180' : ''}`}
-                fill='none'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  d='M19 9l-7 7-7-7'
-                />
-              </svg>
-            </button>
-
-            {pickleDropdownOpen && (
-              <div className='absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50'>
-                {PICKLE_SERVERS.map((server) => {
-                  const connected = !!pickleTokens[server.id];
-                  return (
-                    <div
-                      key={server.id}
-                      className='flex items-center gap-3 px-4 py-3 hover:bg-gray-50'
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
-                      />
-                      <span className='flex-1 text-sm font-medium text-gray-700'>
-                        {server.label}
-                      </span>
-                      <span
-                        className={`text-xs ${connected ? 'text-green-600' : 'text-gray-400'}`}
-                      >
-                        {connected ? '연결됨' : '미연결'}
-                      </span>
-                      <button
-                        onClick={() => {
-                          if (connected) {
-                            clearPickleToken(server.id);
-                          } else {
-                            setPickleDropdownOpen(false);
-                            setLoginModalPickleServer(server);
-                          }
-                        }}
-                        className={`text-xs px-3 py-1 rounded-full border cursor-pointer transition-colors ${
-                          connected
-                            ? 'border-red-200 text-red-500 hover:bg-red-50'
-                            : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
-                        }`}
-                      >
-                        {connected ? '해제' : '연결'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <ServerConnectionDropdown
+            servers={PICKLE_SERVERS}
+            serverTokens={pickleTokens}
+            clearServerToken={clearPickleToken}
+            onRequestLogin={setLoginModalPickleServer}
+            menuWidthClassName='w-64'
+          />
         )}
 
-        {/* Picknow: 서버 연결 상태 드롭다운 */}
         {selectedService === 'picknow' && (
-          <div className='relative' ref={picknowDropdownRef}>
-            <button
-              onClick={() => setPicknowDropdownOpen((prev) => !prev)}
-              className='shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
-            >
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${picknowConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
-              />
-              서버 연결 {picknowConnectedCount}/{PICKNOW_SERVERS.length}
-              <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${picknowDropdownOpen ? 'rotate-180' : ''}`}
-                fill='none'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  d='M19 9l-7 7-7-7'
-                />
-              </svg>
-            </button>
-
-            {picknowDropdownOpen && (
-              <div className='absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50'>
-                {PICKNOW_SERVERS.map((server) => {
-                  const connected = !!picknowTokens[server.id];
-                  return (
-                    <div
-                      key={server.id}
-                      className='flex items-center gap-3 px-4 py-3 hover:bg-gray-50'
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
-                      />
-                      <span className='flex-1 text-sm font-medium text-gray-700'>
-                        {server.label}
-                      </span>
-                      <span
-                        className={`text-xs ${connected ? 'text-green-600' : 'text-gray-400'}`}
-                      >
-                        {connected ? '연결됨' : '미연결'}
-                      </span>
-                      <button
-                        onClick={() => {
-                          if (connected) {
-                            clearPicknowToken(server.id);
-                          } else {
-                            setPicknowDropdownOpen(false);
-                            setLoginModalPicknowServer(server);
-                          }
-                        }}
-                        className={`text-xs px-3 py-1 rounded-full border cursor-pointer transition-colors ${
-                          connected
-                            ? 'border-red-200 text-red-500 hover:bg-red-50'
-                            : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
-                        }`}
-                      >
-                        {connected ? '해제' : '연결'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <ServerConnectionDropdown
+            servers={PICKNOW_SERVERS}
+            serverTokens={picknowTokens}
+            clearServerToken={clearPicknowToken}
+            onRequestLogin={setLoginModalPicknowServer}
+          />
         )}
 
-        {/* PickSeries: 서버 연결 상태 드롭다운 */}
         {selectedService === 'pickseries' && (
-          <div className='relative' ref={pickSeriesDropdownRef}>
-            <button
-              onClick={() => setPickSeriesDropdownOpen((prev) => !prev)}
-              className='shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
-            >
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${pickSeriesConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
-              />
-              서버 연결 {pickSeriesConnectedCount}/{PICKSERIES_SERVERS.length}
-              <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${pickSeriesDropdownOpen ? 'rotate-180' : ''}`}
-                fill='none'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  d='M19 9l-7 7-7-7'
-                />
-              </svg>
-            </button>
-
-            {pickSeriesDropdownOpen && (
-              <div className='absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50'>
-                {PICKSERIES_SERVERS.map((server) => {
-                  const connected = !!pickSeriesTokens[server.id];
-                  return (
-                    <div
-                      key={server.id}
-                      className='flex items-center gap-3 px-4 py-3 hover:bg-gray-50'
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
-                      />
-                      <span className='flex-1 text-sm font-medium text-gray-700'>
-                        {server.label}
-                      </span>
-                      <span
-                        className={`text-xs ${connected ? 'text-green-600' : 'text-gray-400'}`}
-                      >
-                        {connected ? '연결됨' : '미연결'}
-                      </span>
-                      <button
-                        onClick={() => {
-                          if (connected) {
-                            clearPickSeriesToken(server.id);
-                          } else {
-                            setPickSeriesDropdownOpen(false);
-                            setLoginModalPickSeriesServer(server);
-                          }
-                        }}
-                        className={`text-xs px-3 py-1 rounded-full border cursor-pointer transition-colors ${
-                          connected
-                            ? 'border-red-200 text-red-500 hover:bg-red-50'
-                            : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
-                        }`}
-                      >
-                        {connected ? '해제' : '연결'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <ServerConnectionDropdown
+            servers={PICKSERIES_SERVERS}
+            serverTokens={pickSeriesTokens}
+            clearServerToken={clearPickSeriesToken}
+            onRequestLogin={setLoginModalPickSeriesServer}
+            connectedActionLabel='해제'
+            disconnectedActionLabel='연결'
+          />
         )}
 
+        {/* 구글 로그인 버튼 */}
         {googleInitialized && loginToken ? (
           <Button
             onClick={handleGoogleLogout}
@@ -468,6 +254,8 @@ const Header = () => {
             </Button>
           )
         )}
+
+        {/* 서비스별 로그아웃 버튼 */}
         {hasPicknowSession && (
           <Button
             onClick={() => handleServiceLogout('picknow')}
@@ -494,6 +282,7 @@ const Header = () => {
         )}
       </div>
 
+      {/* 서비스별 로그인 모달 */}
       {loginModalPicknowServer && (
         <ServerLoginModal
           server={loginModalPicknowServer}
