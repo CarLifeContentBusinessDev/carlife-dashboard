@@ -1,5 +1,55 @@
-import type { AxiosInstance } from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import * as XLSX from 'xlsx';
+
+const PICKJOY_TOKEN_EXPIRED_MESSAGE =
+  '픽조이 로그인이 만료되었습니다. 다시 로그인해주세요.';
+
+function logoutPickjoy(): void {
+  import('@/feature/pickseries/store/usePickSeriesServerStore').then(
+    ({ usePickSeriesServerStore }) => {
+      usePickSeriesServerStore.getState().clearServerToken('pickjoy');
+    }
+  );
+}
+
+export function createPickjoyApi(token: string): AxiosInstance {
+  const instance = axios.create({
+    baseURL: import.meta.env.VITE_PICKJOY_API_URL as string,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  instance.interceptors.response.use((response) => {
+    if (response.config.responseType === 'arraybuffer') {
+      const buffer = response.data as ArrayBuffer;
+      const bytes = new Uint8Array(buffer.slice(0, 2));
+      const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+      if (isZip) {
+        try {
+          const text = new TextDecoder('utf-8').decode(buffer);
+          const json = JSON.parse(text) as { resultCode?: string };
+          if (json.resultCode === 'E0123') {
+            logoutPickjoy();
+            return Promise.reject(new Error(PICKJOY_TOKEN_EXPIRED_MESSAGE));
+          }
+        } catch {}
+        return Promise.reject(
+          new Error('통계 export 응답이 올바른 엑셀 파일이 아닙니다.')
+        );
+      }
+      return response;
+    }
+
+    const resultCode = (response.data as { resultCode?: string })?.resultCode;
+    if (resultCode === 'E0123') {
+      logoutPickjoy();
+      return Promise.reject(new Error(PICKJOY_TOKEN_EXPIRED_MESSAGE));
+    }
+
+    return response;
+  });
+
+  return instance;
+}
 
 export interface PickjoyOEMParams {
   manufacturerSeq: number;
@@ -56,26 +106,56 @@ export async function fetchCompanies(
 
 type DateRange = { startDate: string; endDate: string };
 type DailyStat = Record<string, number>;
+export type StatisticsSearchType = 'DAILY' | 'MONTHLY';
 
 function sumDaily(stats: DailyStat[], key: string): number {
   return stats.reduce((sum, day) => sum + (Number(day[key]) || 0), 0);
 }
 
-export async function fetchRegisteredVinCount(
-  api: AxiosInstance,
-  range: DateRange
-): Promise<number> {
-  const res = await api.get<{
-    data: { dailyWeeklyMonthlyStatistics: DailyStat[] };
-  }>('/api/admin/v1/statistics/user-status', {
-    params: { statisticsSearchType: 'DAILY', ...range },
-  });
-  return sumDaily(
-    res.data?.data?.dailyWeeklyMonthlyStatistics ?? [],
-    'registeredVinCount'
-  );
+// searchType에 따라 export 응답에 실제로 담길 데이터 행 수를 계산 (DAILY || MONTHLY)
+function countExpectedRows(
+  range: DateRange,
+  searchType: StatisticsSearchType
+): number {
+  const start = new Date(range.startDate);
+  const end = new Date(range.endDate);
+
+  if (searchType === 'MONTHLY') {
+    return (
+      (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+      (end.getUTCMonth() - start.getUTCMonth()) +
+      1
+    );
+  }
+
+  return Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
 }
 
+// 주간지표 - 누적 사용자 수 ('서비스 통계' 탭의 '가입 VIN' 단일 컬럼 사용)
+export async function fetchCombinedRegisteredVinCount(
+  api: AxiosInstance,
+  range: DateRange,
+  oemParamsList: PickjoyOEMParams[],
+  searchType: StatisticsSearchType = 'DAILY'
+): Promise<number> {
+  const expectedRows = countExpectedRows(range, searchType);
+  const promises = oemParamsList.map(async (oemParams) => {
+    const res = await api.get('/api/admin/v1/statistics/export', {
+      params: { statisticsSearchType: searchType, ...range, ...oemParams },
+      responseType: 'arraybuffer',
+    });
+    const { registeredVin } = parseServiceStats(
+      res.data as ArrayBuffer,
+      expectedRows
+    );
+    return registeredVin;
+  });
+
+  const results = await Promise.all(promises);
+  return results.reduce((sum, val) => sum + val, 0);
+}
+
+// 주간지표 - WAU, 총 클릭 수
 export async function fetchServiceStats(
   api: AxiosInstance,
   range: DateRange
@@ -92,6 +172,7 @@ export async function fetchServiceStats(
   };
 }
 
+// 주간지표 - 총 콘텐츠 클릭 수, 사용시간
 export async function fetchContentsStats(
   api: AxiosInstance,
   range: DateRange
@@ -108,8 +189,11 @@ export async function fetchContentsStats(
   };
 }
 
-// OEM 지표용: 단일 OEM '서비스 통계' 탭 → 누적 사용자 수 + 활성 사용자 수
-function parseServiceStats(buffer: ArrayBuffer): {
+// OEM 지표 - 단일 OEM '서비스 통계' 탭 → 누적 사용자 수 + 활성 사용자 수
+function parseServiceStats(
+  buffer: ArrayBuffer,
+  expectedRows: number
+): {
   registeredVin: number;
   activeUsers: number;
 } {
@@ -178,7 +262,11 @@ function parseServiceStats(buffer: ArrayBuffer): {
   let registeredVin = 0;
   let activeUsers = 0;
 
-  for (let r = DATA_START_ROW; r < DATA_START_ROW + 7 && r < aoa.length; r++) {
+  for (
+    let r = DATA_START_ROW;
+    r < DATA_START_ROW + expectedRows && r < aoa.length;
+    r++
+  ) {
     const row = aoa[r] ?? [];
     const vin = row[REGISTERED_VIN_COL];
     const active = row[ACTIVE_USERS_COL];
@@ -198,7 +286,10 @@ export async function fetchServiceStatsFromExport(
     params: { statisticsSearchType: 'DAILY', ...range, ...oemParams },
     responseType: 'arraybuffer',
   });
-  return parseServiceStats(res.data as ArrayBuffer);
+  return parseServiceStats(
+    res.data as ArrayBuffer,
+    countExpectedRows(range, 'DAILY')
+  );
 }
 
 // OEM 지표용: 단일 OEM 기준 인기 콘텐츠
