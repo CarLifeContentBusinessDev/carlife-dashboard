@@ -203,10 +203,13 @@ const Header = () => {
   const serviceLabel = selectedService
     ? SERVICE_LABELS[selectedService]
     : 'CarLife Admin';
+  const [serviceLabelFirstWord, ...serviceLabelRestWords] =
+    serviceLabel.split(' ');
+  const serviceLabelRest = serviceLabelRestWords.join(' ');
 
   return (
-    <div className='w-full h-[10%] flex justify-between items-center mb-0 px-10 bg-white'>
-      <h1 className='text-3xl font-bold flex gap-4 items-center'>
+    <div className='w-full min-h-18 py-3 flex justify-between items-center mb-0 px-10 bg-white'>
+      <h1 className='text-xl font-bold flex gap-4 items-center'>
         <img
           src={
             selectedService === 'pickle'
@@ -219,13 +222,18 @@ const Header = () => {
           width={40}
           height={40}
         />
-        {serviceLabel}
+        <span className='whitespace-nowrap min-w-40'>
+          {serviceLabelFirstWord}
+          {serviceLabelRest && (
+            <span className='hidden md:inline'> {serviceLabelRest}</span>
+          )}
+        </span>
       </h1>
 
       <div className='flex gap-4 items-center'>
         <button
           onClick={handleChangeService}
-          className='px-5 py-2 rounded-md border border-indigo-300 text-indigo-600 bg-transparent hover:bg-indigo-50 text-sm font-medium transition-colors duration-100 cursor-pointer'
+          className='shrink-0 whitespace-nowrap px-5 py-2 rounded-md border border-indigo-300 text-indigo-600 bg-white hover:bg-indigo-50 text-sm font-medium transition-colors duration-100 cursor-pointer'
         >
           서비스 변경
         </button>
@@ -235,7 +243,7 @@ const Header = () => {
           <div className='relative' ref={pickleDropdownRef}>
             <button
               onClick={() => setPickleDropdownOpen((prev) => !prev)}
-              className='flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
+              className='shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
             >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${pickleConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
@@ -306,7 +314,7 @@ const Header = () => {
           <div className='relative' ref={picknowDropdownRef}>
             <button
               onClick={() => setPicknowDropdownOpen((prev) => !prev)}
-              className='flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
+              className='shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
             >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${picknowConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
@@ -377,7 +385,7 @@ const Header = () => {
           <div className='relative' ref={pickSeriesDropdownRef}>
             <button
               onClick={() => setPickSeriesDropdownOpen((prev) => !prev)}
-              className='flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
+              className='shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-colors'
             >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${pickSeriesConnectedCount > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
@@ -444,24 +452,43 @@ const Header = () => {
         )}
 
         {googleInitialized && loginToken ? (
-          <Button onClick={handleGoogleLogout}>Google 로그아웃</Button>
+          <Button
+            onClick={handleGoogleLogout}
+            className='hidden lg:inline-flex'
+          >
+            Google 로그아웃
+          </Button>
         ) : (
           googleInitialized && (
-            <Button onClick={handleGoogleLogin}>Google 로그인</Button>
+            <Button
+              onClick={handleGoogleLogin}
+              className='hidden lg:inline-flex'
+            >
+              Google 로그인
+            </Button>
           )
         )}
         {hasPicknowSession && (
-          <Button onClick={() => handleServiceLogout('picknow')}>
+          <Button
+            onClick={() => handleServiceLogout('picknow')}
+            className='hidden lg:inline-flex'
+          >
             Picknow 로그아웃
           </Button>
         )}
         {hasPickleSession && (
-          <Button onClick={() => handleServiceLogout('pickle')}>
+          <Button
+            onClick={() => handleServiceLogout('pickle')}
+            className='hidden lg:inline-flex'
+          >
             Pickle 로그아웃
           </Button>
         )}
         {hasPickSeriesSession && (
-          <Button onClick={() => handleServiceLogout('pickseries')}>
+          <Button
+            onClick={() => handleServiceLogout('pickseries')}
+            className='hidden lg:inline-flex'
+          >
             PickSeries 로그아웃
           </Button>
         )}
