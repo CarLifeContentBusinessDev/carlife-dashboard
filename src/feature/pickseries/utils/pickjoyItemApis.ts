@@ -112,16 +112,6 @@ function sumDaily(stats: DailyStat[], key: string): number {
   return stats.reduce((sum, day) => sum + (Number(day[key]) || 0), 0);
 }
 
-function assertValidXlsxBuffer(buffer: ArrayBuffer): void {
-  const bytes = new Uint8Array(buffer.slice(0, 2));
-  const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b; // 'PK'
-  if (!isZip) {
-    throw new Error(
-      '통계 export 응답이 올바른 엑셀 파일이 아닙니다. 픽조이 로그인 토큰이 만료되었을 수 있습니다. 다시 로그인해주세요.'
-    );
-  }
-}
-
 // searchType에 따라 export 응답에 실제로 담길 데이터 행 수를 계산 (DAILY || MONTHLY)
 function countExpectedRows(
   range: DateRange,
