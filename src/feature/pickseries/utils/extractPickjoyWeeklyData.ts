@@ -44,8 +44,8 @@ function toMonthStart(apiDate: string): string {
 
 function addDays(apiDate: string, days: number): string {
   const d = new Date(apiDate);
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  d.setUTCDate(d.getUTCDate() + days);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 function buildOemParamsList(
@@ -86,7 +86,6 @@ export async function extractPickjoyWeeklyData(params: {
   );
   const needsOEMParams = needsUserStatus || topContentItems.length > 0;
 
-
   const oemParamsMap = needsOEMParams
     ? await buildOEMParamsMap(
         api,
@@ -122,8 +121,7 @@ export async function extractPickjoyWeeklyData(params: {
     );
   }
 
-  // 누적 사용자 수의 절대값(baseline): 해당 주차가 속한 달 이전은 MONTHLY로 한 번에 합산하고,
-  // 이번 달(주차 포함)은 DAILY로 합산한다.
+  // 누적 사용자 수 : 해당 주차가 속한 달 이전은 MONTHLY로 한 번에 합산하고, 해당 달(주차 포함)은 DAILY로 합산
   async function computeAbsoluteRegisteredVin(
     sheetDate: string
   ): Promise<number> {
@@ -131,10 +129,9 @@ export async function extractPickjoyWeeklyData(params: {
     const monthStart = toMonthStart(weekEnd);
     const activeOEMs = getActiveWeeklyOEMs(sheetDate);
 
-    let total = 0;
-    for (const oem of activeOEMs) {
+    const promises = activeOEMs.map(async (oem) => {
       const resolved = oemParamsMap[oem.name];
-      if (!resolved) continue;
+      if (!resolved) return 0;
       const oemParamsList = resolved.companySeqs.map((companySeq) => ({
         manufacturerSeq: resolved.manufacturerSeq,
         deviceSeq: resolved.deviceSeq,
@@ -143,24 +140,33 @@ export async function extractPickjoyWeeklyData(params: {
 
       const historyStart = `${oem.availableFrom.replace('.', '-')}-01`;
       const historyEnd = addDays(monthStart, -1);
+
+      const tasks: Promise<number>[] = [];
       if (historyStart <= historyEnd) {
-        total += await fetchCombinedRegisteredVinCount(
-          api,
-          { startDate: historyStart, endDate: historyEnd },
-          oemParamsList,
-          'MONTHLY'
+        tasks.push(
+          fetchCombinedRegisteredVinCount(
+            api,
+            { startDate: historyStart, endDate: historyEnd },
+            oemParamsList,
+            'MONTHLY'
+          )
         );
       }
-
-      total += await fetchCombinedRegisteredVinCount(
-        api,
-        { startDate: monthStart, endDate: weekEnd },
-        oemParamsList,
-        'DAILY'
+      tasks.push(
+        fetchCombinedRegisteredVinCount(
+          api,
+          { startDate: monthStart, endDate: weekEnd },
+          oemParamsList,
+          'DAILY'
+        )
       );
-    }
 
-    return total;
+      const results = await Promise.all(tasks);
+      return results.reduce((sum, val) => sum + val, 0);
+    });
+
+    const oemTotals = await Promise.all(promises);
+    return oemTotals.reduce((sum, val) => sum + val, 0);
   }
 
   const results: WeeklyExtractionResult = {};

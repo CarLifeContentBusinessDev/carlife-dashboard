@@ -4,8 +4,6 @@ import * as XLSX from 'xlsx';
 const PICKJOY_TOKEN_EXPIRED_MESSAGE =
   '픽조이 로그인이 만료되었습니다. 다시 로그인해주세요.';
 
-// 픽클/픽나우 서버와 동일하게, 토큰 만료 감지 즉시 로그인 상태를 지워서
-// 사용자가 다시 로그인하도록 유도한다. (store import를 지연해서 순환 참조 방지)
 function logoutPickjoy(): void {
   import('@/feature/pickseries/store/usePickSeriesServerStore').then(
     ({ usePickSeriesServerStore }) => {
@@ -14,8 +12,6 @@ function logoutPickjoy(): void {
   );
 }
 
-// 픽조이 API 전용 axios 인스턴스. 토큰 만료 시 응답이 조용히 0으로 집계되는 것을
-// 막기 위해, 응답 인터셉터에서 만료/에러 응답을 감지해 바로 에러를 던진다.
 export function createPickjoyApi(token: string): AxiosInstance {
   const instance = axios.create({
     baseURL: import.meta.env.VITE_PICKJOY_API_URL as string,
@@ -24,11 +20,21 @@ export function createPickjoyApi(token: string): AxiosInstance {
 
   instance.interceptors.response.use((response) => {
     if (response.config.responseType === 'arraybuffer') {
-      try {
-        assertValidXlsxBuffer(response.data as ArrayBuffer);
-      } catch (err) {
-        logoutPickjoy();
-        throw err;
+      const buffer = response.data as ArrayBuffer;
+      const bytes = new Uint8Array(buffer.slice(0, 2));
+      const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+      if (isZip) {
+        try {
+          const text = new TextDecoder('utf-8').decode(buffer);
+          const json = JSON.parse(text) as { resultCode?: string };
+          if (json.resultCode === 'E0123') {
+            logoutPickjoy();
+            return Promise.reject(new Error(PICKJOY_TOKEN_EXPIRED_MESSAGE));
+          }
+        } catch {}
+        return Promise.reject(
+          new Error('통계 export 응답이 올바른 엑셀 파일이 아닙니다.')
+        );
       }
       return response;
     }
@@ -116,7 +122,7 @@ function assertValidXlsxBuffer(buffer: ArrayBuffer): void {
   }
 }
 
-// searchType에 따라 export 응답에 실제로 담길 데이터 행 수를 계산 (DAILY: 일수, MONTHLY: 월수)
+// searchType에 따라 export 응답에 실제로 담길 데이터 행 수를 계산 (DAILY || MONTHLY)
 function countExpectedRows(
   range: DateRange,
   searchType: StatisticsSearchType
@@ -126,8 +132,8 @@ function countExpectedRows(
 
   if (searchType === 'MONTHLY') {
     return (
-      (end.getFullYear() - start.getFullYear()) * 12 +
-      (end.getMonth() - start.getMonth()) +
+      (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+      (end.getUTCMonth() - start.getUTCMonth()) +
       1
     );
   }
@@ -142,21 +148,21 @@ export async function fetchCombinedRegisteredVinCount(
   oemParamsList: PickjoyOEMParams[],
   searchType: StatisticsSearchType = 'DAILY'
 ): Promise<number> {
-  let total = 0;
-
-  for (const oemParams of oemParamsList) {
+  const expectedRows = countExpectedRows(range, searchType);
+  const promises = oemParamsList.map(async (oemParams) => {
     const res = await api.get('/api/admin/v1/statistics/export', {
       params: { statisticsSearchType: searchType, ...range, ...oemParams },
       responseType: 'arraybuffer',
     });
     const { registeredVin } = parseServiceStats(
       res.data as ArrayBuffer,
-      countExpectedRows(range, searchType)
+      expectedRows
     );
-    total += registeredVin;
-  }
+    return registeredVin;
+  });
 
-  return total;
+  const results = await Promise.all(promises);
+  return results.reduce((sum, val) => sum + val, 0);
 }
 
 // 주간지표 - WAU, 총 클릭 수
@@ -194,7 +200,6 @@ export async function fetchContentsStats(
 }
 
 // OEM 지표 - 단일 OEM '서비스 통계' 탭 → 누적 사용자 수 + 활성 사용자 수
-// expectedRows: 헤더 다음에 나오는 실제 데이터 행 수 (그 이후는 합계 등 다른 행일 수 있어 제외)
 function parseServiceStats(
   buffer: ArrayBuffer,
   expectedRows: number

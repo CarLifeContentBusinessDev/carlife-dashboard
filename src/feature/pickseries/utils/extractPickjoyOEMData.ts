@@ -42,16 +42,14 @@ function sheetDateToApiDates(sheetDate: string): {
   };
 }
 
-// 'YYYY-MM-DD' → 같은 달의 1일
 function toMonthStart(apiDate: string): string {
   return `${apiDate.slice(0, 7)}-01`;
 }
 
-// 'YYYY-MM-DD'에 일수를 더함 (음수 가능)
 function addDays(apiDate: string, days: number): string {
   const d = new Date(apiDate);
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  d.setUTCDate(d.getUTCDate() + days);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 export async function extractPickjoyOEMData(params: {
@@ -190,22 +188,28 @@ export async function extractPickjoyOEMData(params: {
       const historyStart = `${availableFrom.replace('.', '-')}-01`;
       const historyEnd = addDays(monthStart, -1);
 
-      let total = 0;
+      const tasks: Promise<number>[] = [];
       if (historyStart <= historyEnd) {
-        total += await fetchCombinedRegisteredVinCount(
-          apiInstance,
-          { startDate: historyStart, endDate: historyEnd },
-          oemParamsList,
-          'MONTHLY'
+        tasks.push(
+          fetchCombinedRegisteredVinCount(
+            apiInstance,
+            { startDate: monthStart, endDate: weekEnd },
+            oemParamsList,
+            'DAILY'
+          )
         );
       }
-      total += await fetchCombinedRegisteredVinCount(
-        apiInstance,
-        { startDate: monthStart, endDate: weekEnd },
-        oemParamsList,
-        'DAILY'
+      tasks.push(
+        fetchCombinedRegisteredVinCount(
+          apiInstance,
+          { startDate: monthStart, endDate: weekEnd },
+          oemParamsList,
+          'DAILY'
+        )
       );
-      return total;
+
+      const results = await Promise.all(tasks);
+      return results.reduce((sum, val) => sum + val, 0);
     }
 
     async function processOEM(oem: OEMGroup): Promise<void> {
