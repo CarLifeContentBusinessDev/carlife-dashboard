@@ -1,8 +1,7 @@
 import LoadingOverlay from '@/shared/components/common/LoadingOverlay';
 import Pagination from '@/shared/components/common/Pagination';
-import PickleLoginBanner from '@/shared/components/common/PickleLoginBanner';
-import TabHeader from '@/shared/components/common/TabHeader';
 import SheetSelector from '@/feature/pickseries/components/SheetSelector';
+import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout';
 import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio';
 import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader';
 import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState';
@@ -60,7 +59,6 @@ const EpisodeLayout = () => {
   const isPickleLoggedIn = isServerLoggedIn(
     isStaging ? 'pickle-stg' : 'pickle-prod'
   );
-  const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
   // ── 데이터 탭 ──────────────────────────────────────────────────────────────
   const [allEpiData, setAllEpiData] = useState<usingDataProps[]>([]);
@@ -326,18 +324,13 @@ const EpisodeLayout = () => {
     : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=1925187377#gid=1925187377`;
 
   return (
-    <div className='flex flex-col h-full'>
-      <PickleLoginBanner
-        serverId={isStaging ? 'pickle-stg' : 'pickle-prod'}
-        serverLabel={isStaging ? 'STG' : '상용'}
-      />
-      <div className='p-10 flex flex-col h-full'>
-        <h1 className='text-xl font-bold mb-4 indent-1'>
-          에피소드 관리{isStaging ? ' (스테이징)' : ''}
-        </h1>
-        <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
-          <TabHeader activeTab={activeTab} onChange={setActiveTab} />
-
+    <ProdTabLayout
+      parentMenu='상용 콘텐츠 관리'
+      childMenu='에피소드 관리'
+      isStaging={isStaging}
+    >
+      {(activeTab) => (
+        <>
           {activeTab === 'data' && (
             <div className='flex-1 p-8 flex flex-col min-h-0'>
               <div className='flex justify-between items-center shrink-0 mb-4'>
@@ -486,9 +479,9 @@ const EpisodeLayout = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </ProdTabLayout>
   );
 };
 

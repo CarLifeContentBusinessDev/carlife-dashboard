@@ -1,8 +1,7 @@
 import LoadingOverlay from '@/shared/components/common/LoadingOverlay';
 import Pagination from '@/shared/components/common/Pagination';
-import PickleLoginBanner from '@/shared/components/common/PickleLoginBanner';
-import TabHeader from '@/shared/components/common/TabHeader';
 import SheetSelector from '@/feature/pickseries/components/SheetSelector';
+import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout';
 import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio';
 import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader';
 import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState';
@@ -126,7 +125,6 @@ const CurationLayout = () => {
   const isPickleLoggedIn = isServerLoggedIn(
     isStaging ? 'pickle-stg' : 'pickle-prod'
   );
-  const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
 
   // ── 데이터 탭 ──────────────────────────────────────────────────────────────
   const [allCurationData, setAllCurationData] = useState<ProdCurationRow[]>([]);
@@ -389,18 +387,14 @@ const CurationLayout = () => {
     syncPreviewMode === 'new' ? newCurations : allCurations;
 
   return (
-    <div className='flex flex-col h-[90vh]'>
-      <PickleLoginBanner
-        serverId={isStaging ? 'pickle-stg' : 'pickle-prod'}
-        serverLabel={isStaging ? 'STG' : '상용'}
-      />
-      <div className='p-10 flex flex-col h-full'>
-        <h1 className='text-xl font-bold mb-4 indent-1'>
-          큐레이션 관리{isStaging ? ' (스테이징)' : ''}
-        </h1>
-        <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
-          <TabHeader activeTab={activeTab} onChange={setActiveTab} />
-
+    <ProdTabLayout
+      parentMenu='상용 콘텐츠 관리'
+      childMenu='큐레이션 관리'
+      isStaging={isStaging}
+      heightClass='h-[90vh]'
+    >
+      {(activeTab) => (
+        <>
           {activeTab === 'data' && (
             <div className='flex-1 p-8 flex flex-col min-h-0'>
               <div className='flex justify-between items-center shrink-0 mb-4'>
@@ -561,9 +555,9 @@ const CurationLayout = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </ProdTabLayout>
   );
 };
 
