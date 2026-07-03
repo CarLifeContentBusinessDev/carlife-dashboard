@@ -175,7 +175,7 @@ const Header = () => {
   const serviceLabelRest = serviceLabelRestWords.join(' ');
 
   return (
-    <div className='w-full min-h-18 py-3 flex justify-between items-center mb-0 px-10 bg-white'>
+    <div className='w-full min-h-18 py-3 flex justify-between items-center mb-0 px-5 bg-white'>
       <h1 className='text-xl font-bold flex gap-4 items-center'>
         <img
           src={
