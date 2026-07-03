@@ -14,10 +14,9 @@ const SIZE = 10000;
 const CURATIONSIZE = 100;
 
 function isAbortOrCanceledError(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    (err.name === 'AbortError' || err.name === 'CanceledError')
-  );
+  const name =
+    err instanceof Error ? err.name : (err as { name?: string })?.name;
+  return name === 'AbortError' || name === 'CanceledError';
 }
 
 export async function fetchAllData(

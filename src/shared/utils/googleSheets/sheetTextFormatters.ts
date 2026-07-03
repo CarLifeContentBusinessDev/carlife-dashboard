@@ -174,10 +174,12 @@ export const formatUnSupportedDomainList = (
   if (entries.length === 0) return '';
   return entries
     .map(([domain, keywords]) => {
-      const keywordText = keywords
-        .map((keyword) => extractSheetText(keyword))
-        .filter(Boolean)
-        .join(', ');
+      const keywordText = Array.isArray(keywords)
+        ? keywords
+            .map((keyword) => extractSheetText(keyword))
+            .filter(Boolean)
+            .join(', ')
+        : '';
 
       return keywordText ? `${domain}\n-> ${keywordText}` : domain;
     })

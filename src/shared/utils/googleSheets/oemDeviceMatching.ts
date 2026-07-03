@@ -129,7 +129,7 @@ export const groupRowRecords = (
       category: string;
       oems: string[];
       devices: string[];
-      row: Omit<(string | number)[], 0>;
+      row: (string | number)[];
     }
   >();
 
@@ -154,7 +154,7 @@ export const groupRowRecords = (
 
   const results: Array<{
     category: string;
-    row: Omit<(string | number)[], 0>;
+    row: (string | number)[];
   }> = [];
 
   for (const record of groupedRows.values()) {
