@@ -63,7 +63,7 @@ export default function LoginPopup({
       // pickle API 로그인 (Google Sheets 연동용, 실패해도 로그인은 완료)
       try {
         const res = await api.post<LoginApiResponse>(
-          'https://pickle.obigo.ai/admin/login',
+          `${import.meta.env.VITE_PROD_API_URL}/admin/login`,
           { adminId: id, password: password },
           { headers: { 'Content-Type': 'application/json' } }
         );
@@ -75,7 +75,6 @@ export default function LoginPopup({
           if (onLoginSuccess) onLoginSuccess(data.data);
         }
       } catch {
-        // pickle API 연결 실패는 무시 (Google Sheets 기능만 제한됨)
         console.warn(
           'pickle API 연결 실패 - Google Sheets 기능을 사용할 수 없습니다.'
         );
