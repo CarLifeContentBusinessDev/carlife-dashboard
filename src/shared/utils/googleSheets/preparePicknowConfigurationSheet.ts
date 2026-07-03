@@ -266,14 +266,14 @@ export async function preparePicknowConfigurationSheet(
     });
   }
 
-  // 기본 필터(setBasicFilter)는 데이터를 쓴 뒤 syncPicknowConfigurationSheet에서 설정합니다.
+  // 기본 필터(setBasicFilter)는 데이터를 쓴 뒤 syncPicknowConfigurationSheet에서 설정
   try {
     const latestSpreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
     const targetSheet = latestSpreadsheet.result.sheets?.find(
       (s) => s.properties?.sheetId === sheetId
     );
 
-    const requests: any[] = [];
+    const requests: gapi.client.sheets.Request[] = [];
     const filterViews = targetSheet?.filterViews ?? [];
     for (const fv of filterViews) {
       if (fv && fv.filterViewId != null) {

@@ -15,8 +15,8 @@ const LoadingOverlay = ({
   let spinnerStyle = 'w-12 h-12 border-white';
 
   if (!vertical) {
-    boxStyle = 'text-black flex-shrink-0 min-w-fit';
-    spinnerStyle = 'w-8 h-8 border-black flex-shrink-0';
+    boxStyle = 'text-black shrink-0 min-w-fit';
+    spinnerStyle = 'w-8 h-8 border-black shrink-0';
   }
 
   return (

@@ -205,7 +205,7 @@ const DemoProgramEdit = () => {
   return (
     <FormLayout title='프로그램 편집' id={program.id}>
       {/* 탭 + 버튼 행 */}
-      <div className='flex justify-between items-center flex-shrink-0 mb-6'>
+      <div className='flex justify-between items-center shrink-0 mb-6'>
         <FormTabs
           tabs={[{ key: 'basic', label: '기본 정보' }]}
           active={activeTab}

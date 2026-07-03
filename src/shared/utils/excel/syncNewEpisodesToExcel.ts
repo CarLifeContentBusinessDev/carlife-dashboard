@@ -239,12 +239,11 @@ export async function syncNewDataToExcel(
   const sheetName = localStorage.getItem('sheetName') || '';
   const excelData = await getExcelData(token, category, sheetName);
 
-  const excelIds = new Set(
-    excelData.map((item) => (item as any).episodeId ?? (item as any).channelId)
-  );
-  const filteredNew = newData.filter(
-    (item) => !excelIds.has((item as any).episodeId ?? (item as any).channelId)
-  );
+  const getItemId = (item: usingDataProps | usingChannelProps) =>
+    'episodeId' in item ? item.episodeId : item.channelId;
+
+  const excelIds = new Set(excelData.map(getItemId));
+  const filteredNew = newData.filter((item) => !excelIds.has(getItemId(item)));
 
   const updatedData = [...filteredNew, ...excelData];
 

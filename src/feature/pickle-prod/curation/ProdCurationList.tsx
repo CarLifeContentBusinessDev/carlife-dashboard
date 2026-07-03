@@ -134,7 +134,9 @@ const ProdCurationList: React.FC<ProdCurationListProps> = ({
   const location = useLocation();
 
   const handleRowClick = (row: ProdCurationRow) => {
-    const basePath = isStaging ? '/pickle/stg/curations/detail' : '/pickle/curations/detail';
+    const basePath = isStaging
+      ? '/pickle/stg/curations/detail'
+      : '/pickle/curations/detail';
 
     navigate(`${basePath}/${row.curationId}`, {
       state: { curation: row, from: location.pathname },
@@ -147,7 +149,7 @@ const ProdCurationList: React.FC<ProdCurationListProps> = ({
         {COLUMNS.map((col) => (
           <p
             key={col.key}
-            className='px-2 flex-shrink-0 text-sm'
+            className='px-2 shrink-0 text-sm'
             style={{ width: col.width }}
           >
             {col.label}
@@ -169,7 +171,7 @@ const ProdCurationList: React.FC<ProdCurationListProps> = ({
             {COLUMNS.map((col) => (
               <div
                 key={col.key}
-                className={`px-2 flex-shrink-0 text-sm ${col.key === 'thumbnailUrlSquare' ? '' : 'truncate'}`}
+                className={`px-2 shrink-0 text-sm ${col.key === 'thumbnailUrlSquare' ? '' : 'truncate'}`}
                 style={{ width: col.width }}
               >
                 {getCellContent(row, col.key)}

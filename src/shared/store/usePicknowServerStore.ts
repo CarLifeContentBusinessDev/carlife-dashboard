@@ -14,7 +14,9 @@ function loadSelectedServerIds(): string[] {
       const parsed = JSON.parse(stored) as unknown;
       if (Array.isArray(parsed) && parsed.length > 0) return parsed as string[];
     }
-  } catch {}
+  } catch {
+    // 저장된 값이 손상된 경우 기본 서버로 폴백
+  }
   return PICKNOW_SERVERS[0] ? [PICKNOW_SERVERS[0].id] : [];
 }
 

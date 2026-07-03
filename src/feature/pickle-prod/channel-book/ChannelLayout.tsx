@@ -2,9 +2,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/shared/components/common/LoadingOverlay.tsx';
 import Pagination from '@/shared/components/common/Pagination.tsx';
-import PickleLoginBanner from '@/shared/components/common/PickleLoginBanner.tsx';
-import TabHeader from '@/shared/components/common/TabHeader.tsx';
 import SheetSelector from '@/feature/pickseries/components/SheetSelector.tsx';
+import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout.tsx';
 import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio.tsx';
 import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader.tsx';
 import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState.tsx';
@@ -31,11 +30,7 @@ import ProdChannelList from './ProdChannelList.tsx';
 const CATEGORY = 'channel';
 
 type ChannelSortKey =
-  | 'createdAt'
-  | 'channelName'
-  | 'dispDtime'
-  | 'likeCnt'
-  | 'listenCnt';
+  'createdAt' | 'channelName' | 'dispDtime' | 'likeCnt' | 'listenCnt';
 
 const CHANNEL_SORT_OPTIONS: Array<{ value: ChannelSortKey; label: string }> = [
   { value: 'createdAt', label: '등록일' },
@@ -63,9 +58,11 @@ const ChannelLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { loginToken } = useLoginTokenStore();
   const { getServerToken, isServerLoggedIn } = usePickleServerStore();
-  const accessToken = getServerToken(isStaging ? 'stg' : 'prod') ?? '';
-  const isPickleLoggedIn = isServerLoggedIn(isStaging ? 'stg' : 'prod');
-  const [activeTab, setActiveTab] = useState<'data' | 'sync'>('data');
+  const accessToken =
+    getServerToken(isStaging ? 'pickle-stg' : 'pickle-prod') ?? '';
+  const isPickleLoggedIn = isServerLoggedIn(
+    isStaging ? 'pickle-stg' : 'pickle-prod'
+  );
 
   // ── 데이터 탭 ──────────────────────────────────────────────────────────────
   const [allChannelData, setAllChannelData] = useState<usingChannelProps[]>([]);
@@ -329,21 +326,17 @@ const ChannelLayout = () => {
     syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
 
   return (
-    <div className='flex flex-col h-[90vh]'>
-      <PickleLoginBanner
-        serverId={isStaging ? 'stg' : 'prod'}
-        serverLabel={isStaging ? 'STG' : '상용'}
-      />
-      <div className='p-10 flex flex-col h-full'>
-        <h1 className='text-3xl font-bold mb-4 indent-1'>
-          채널·도서 관리{isStaging ? ' (스테이징)' : ''}
-        </h1>
-        <div className='w-full rounded-2xl bg-white mt-4 flex flex-col'>
-          <TabHeader activeTab={activeTab} onChange={setActiveTab} />
-
+    <ProdTabLayout
+      parentMenu='상용 콘텐츠 관리'
+      childMenu='채널·도서 관리'
+      isStaging={isStaging}
+      heightClass='h-[90vh]'
+    >
+      {(activeTab) => (
+        <>
           {activeTab === 'data' && (
             <div className='flex-1 p-8 flex flex-col min-h-0'>
-              <div className='flex justify-between items-center flex-shrink-0 mb-4'>
+              <div className='flex justify-between items-center shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
                   채널·도서 총{' '}
                   <span className='font-extrabold'>
@@ -442,7 +435,7 @@ const ChannelLayout = () => {
                 progress={progress}
                 syncPreviewMode={syncPreviewMode}
               />
-              <div className='flex justify-between items-center flex-shrink-0'>
+              <div className='flex justify-between items-center shrink-0'>
                 <SyncCountHeader
                   syncPreviewMode={syncPreviewMode}
                   newCount={newChannels?.length ?? 0}
@@ -494,9 +487,9 @@ const ChannelLayout = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </ProdTabLayout>
   );
 };
 

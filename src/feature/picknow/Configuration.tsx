@@ -1,15 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'react-toastify';
+import type { PicknowServer } from '@/constants/servers';
+import { PICKNOW_SERVERS } from '@/constants/servers';
+import ConfigurationStatus from '@/feature/picknow/components/ConfigurationStatus';
+import DeviceChip from '@/feature/picknow/components/DeviceChip';
+import OemCheckbox from '@/feature/picknow/components/OemCheckBox';
+import ServerSelector from '@/feature/picknow/components/ServerSelector';
+import SpreadSheetLinkButton from '@/feature/picknow/components/SpreadSheetLinkButton';
+import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
 import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
-import { PICKNOW_SERVERS } from '@/constants/servers';
-import type { PicknowServer } from '@/constants/servers';
+import { getPicknowServerApi } from '@/shared/utils/api/api';
 import type { SettingRow } from '@/shared/utils/googleSheets/fetchSettingData';
 import { fetchSettingData } from '@/shared/utils/googleSheets/fetchSettingData';
 import { syncPicknowConfigurationSheet } from '@/shared/utils/googleSheets/syncPicknowConfigurationSheet';
-import { getPicknowServerApi } from '@/shared/utils/api/api';
-import Button from '@/shared/components/common/Button';
-import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 
 export default function Configuration() {
   const { loginToken } = useLoginTokenStore();
@@ -66,10 +70,17 @@ export default function Configuration() {
     loggedInSelectedServers[0] ??
     null;
 
-  const currentRows = activeServer ? (rowsByServer[activeServer.id] ?? []) : [];
-  const currentSelectedDevices = activeServer
-    ? (selectedDevicesByServer[activeServer.id] ?? new Set<string>())
-    : new Set<string>();
+  const currentRows = useMemo(
+    () => (activeServer ? (rowsByServer[activeServer.id] ?? []) : []),
+    [activeServer, rowsByServer]
+  );
+  const currentSelectedDevices = useMemo(
+    () =>
+      activeServer
+        ? (selectedDevicesByServer[activeServer.id] ?? new Set<string>())
+        : new Set<string>(),
+    [activeServer, selectedDevicesByServer]
+  );
 
   const setCurrentSelectedDevices = useCallback(
     (updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
@@ -454,134 +465,35 @@ export default function Configuration() {
     <div className='p-6'>
       <div className='flex justify-between mb-5'>
         <div className='flex items-end gap-3'>
-          <h1 className='text-2xl font-bold text-[#1B1E2F]'>
+          <h1 className='text-xl font-bold text-[#1B1E2F]'>
             Configuration 데이터 추출
           </h1>
           <span className='text-sm text-slate-400 pb-0.5'>
             OEM과 디바이스를 선택해 데이터를 추출하세요
           </span>
         </div>
-        {(() => {
-          const loggedInServers = selectedServers.filter((s) =>
-            isServerLoggedIn(s.id)
-          );
-          if (loggedInServers.length === 0) return null;
-          if (loggedInServers.length === 1) {
-            const s = loggedInServers[0];
-            return (
-              <Button
-                onClick={() => {
-                  window.open(
-                    `https://docs.google.com/spreadsheets/d/${s.spreadsheetId}/edit`,
-                    '_blank'
-                  );
-                }}
-              >
-                스프레드 시트 바로가기
-              </Button>
-            );
-          }
-          return (
-            <div className='relative' ref={sheetDropdownRef}>
-              <Button onClick={() => setSheetDropdownOpen((v) => !v)}>
-                <span className='flex items-center gap-1.5'>
-                  스프레드 시트 바로가기
-                  <svg
-                    className={`w-3.5 h-3.5 transition-transform ${sheetDropdownOpen ? 'rotate-180' : ''}`}
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      d='M19 9l-7 7-7-7'
-                    />
-                  </svg>
-                </span>
-              </Button>
-              {sheetDropdownOpen && (
-                <div className='absolute right-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden'>
-                  {loggedInServers.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => {
-                        window.open(
-                          `https://docs.google.com/spreadsheets/d/${s.spreadsheetId}/edit`,
-                          '_blank'
-                        );
-                        setSheetDropdownOpen(false);
-                      }}
-                      className='w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer'
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        <SpreadSheetLinkButton
+          selectedServers={selectedServers}
+          isServerLoggedIn={isServerLoggedIn}
+          sheetDropdownRef={sheetDropdownRef}
+          sheetDropdownOpen={sheetDropdownOpen}
+          setSheetDropdownOpen={setSheetDropdownOpen}
+        />
       </div>
 
-      {/* 서버 선택 */}
-      <div className='flex items-center gap-3 mb-5'>
-        <span className='text-sm font-medium text-gray-500 shrink-0'>
-          서버 선택
-        </span>
-        <div className='flex gap-2 flex-wrap'>
-          {PICKNOW_SERVERS.map((server) => {
-            const connected = isServerLoggedIn(server.id);
-            const isSelected = selectedServerIds.includes(server.id);
-            return (
-              <button
-                key={server.id}
-                onClick={() => {
-                  if (!connected) {
-                    setLoginModalServer(server);
-                  } else {
-                    toggleSelectedServer(server.id);
-                  }
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
-                  isSelected && connected
-                    ? 'bg-indigo-600 border-indigo-600 text-white'
-                    : connected
-                      ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                      : 'bg-gray-50 border-dashed border-gray-300 text-gray-400'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${connected ? (isSelected ? 'bg-white' : 'bg-green-500') : 'bg-gray-300'}`}
-                />
-                {server.label}
-                {!connected && (
-                  <span className='text-xs text-gray-400'>(미연결)</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <ServerSelector
+        isServerLoggedIn={isServerLoggedIn}
+        selectedServerIds={selectedServerIds}
+        toggleSelectedServer={toggleSelectedServer}
+        setLoginModalServer={setLoginModalServer}
+      />
 
-      {!loginToken ? (
-        <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3'>
-          <p className='text-gray-600 text-sm'>
-            Google Sheets 로그인이 필요합니다.
-          </p>
-        </div>
-      ) : loggedInSelectedServers.length === 0 ? (
-        <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3'>
-          <p className='text-gray-600 text-sm'>서버를 선택해 주세요</p>
-        </div>
-      ) : loading ? (
-        <p className='text-sm text-gray-400'>데이터를 불러오는 중...</p>
-      ) : error ? (
-        <p className='text-sm text-red-500 bg-red-50 px-4 py-2 rounded-md'>
-          {error}
-        </p>
-      ) : (
+      <ConfigurationStatus
+        loginToken={loginToken}
+        loggedInSelectedServers={loggedInSelectedServers}
+        loading={loading}
+        error={error}
+      >
         <div className='flex flex-col gap-5'>
           {/* 서버 탭 */}
           {loggedInSelectedServers.length > 0 && (
@@ -938,7 +850,8 @@ export default function Configuration() {
             </div>
           )}
         </div>
-      )}
+      </ConfigurationStatus>
+
       {loginModalServer && (
         <ServerLoginModal
           server={loginModalServer}
@@ -957,77 +870,5 @@ export default function Configuration() {
         />
       )}
     </div>
-  );
-}
-
-interface OemCheckboxProps {
-  state: 'none' | 'partial' | 'all';
-}
-
-function OemCheckbox({ state }: OemCheckboxProps) {
-  const base =
-    'w-[18px] h-[18px] flex-shrink-0 rounded-[5px] flex items-center justify-center border-2 transition-colors';
-
-  if (state === 'none') {
-    return <div className={`${base} border-gray-300 bg-white`} />;
-  }
-  if (state === 'partial') {
-    return (
-      <div className={`${base} border-indigo-600 bg-indigo-600`}>
-        <div className='w-2 h-0.5 bg-white rounded-sm' />
-      </div>
-    );
-  }
-  return (
-    <div className={`${base} border-white bg-white`}>
-      <svg
-        className='w-3 h-3 text-indigo-600'
-        fill='none'
-        viewBox='0 0 24 24'
-        stroke='currentColor'
-        strokeWidth={3}
-      >
-        <path strokeLinecap='round' strokeLinejoin='round' d='M5 13l4 4L19 7' />
-      </svg>
-    </div>
-  );
-}
-
-interface DeviceChipProps {
-  label: string;
-  selected: boolean;
-  onToggle: () => void;
-}
-
-function DeviceChip({ label, selected, onToggle }: DeviceChipProps) {
-  return (
-    <button
-      onClick={onToggle}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border cursor-pointer
-        ${
-          selected
-            ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700'
-            : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-500 hover:text-indigo-700 hover:bg-indigo-50'
-        }`}
-    >
-      {selected && (
-        <span className='w-[14px] h-[14px] inline-flex items-center justify-center rounded-full bg-white/25 flex-shrink-0'>
-          <svg
-            className='w-2.5 h-2.5 text-white'
-            fill='none'
-            viewBox='0 0 24 24'
-            stroke='currentColor'
-            strokeWidth={3}
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              d='M5 13l4 4L19 7'
-            />
-          </svg>
-        </span>
-      )}
-      {label}
-    </button>
   );
 }

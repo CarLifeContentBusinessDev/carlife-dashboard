@@ -12,7 +12,7 @@ export default function PickSeriesPageHeader({
   return (
     <div className='flex justify-between mb-5'>
       <div className='flex items-end gap-3'>
-        <h1 className='text-2xl font-black text-[#1B1E2F]'>{title}</h1>
+        <h1 className='text-xl font-black text-[#1B1E2F]'>{title}</h1>
         <span className='text-sm text-slate-400 pb-0.5'>{description}</span>
       </div>
       <Button

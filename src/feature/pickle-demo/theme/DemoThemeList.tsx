@@ -1,8 +1,9 @@
 import React from 'react';
 import DemoTableList from '@/feature/pickle-demo/components/DemoTableList';
+import type { Theme } from '@/shared/types/pickleDemoContents';
 
 interface DemoThemeListProps {
-  themes: any[];
+  themes: (Theme & { sections?: { title?: string } })[];
   selectedLang: string;
   onDeleted?: () => void;
 }

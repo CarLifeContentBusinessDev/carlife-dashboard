@@ -1,8 +1,9 @@
 import React from 'react';
 import DemoTableList from '@/feature/pickle-demo/components/DemoTableList';
+import type { Series } from '@/shared/types/pickleDemoContents';
 
 interface DemoSeriesListProps {
-  series: any[];
+  series: (Series & { sections?: { title?: string } })[];
   selectedLang: string;
   onDeleted?: () => void;
 }

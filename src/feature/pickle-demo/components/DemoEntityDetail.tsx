@@ -760,7 +760,7 @@ const DemoEntityDetail = ({
                           <div className='px-4 py-3 bg-gray-50 font-semibold text-sm text-gray-600'>
                             {entry.label}
                           </div>
-                          <div className='px-4 py-3 text-sm bg-white whitespace-pre-wrap break-words min-w-0'>
+                          <div className='px-4 py-3 text-sm bg-white whitespace-pre-wrap wrap-break-word min-w-0'>
                             {entry.isBadge ? (
                               <span
                                 className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${getBadgeClassName(
@@ -797,7 +797,7 @@ const DemoEntityDetail = ({
                     <div className='px-4 py-4 bg-gray-50 font-semibold text-sm text-gray-600'>
                       {entry.label}
                     </div>
-                    <div className='px-4 py-4 text-sm whitespace-pre-wrap break-words bg-white min-w-0'>
+                    <div className='px-4 py-4 text-sm whitespace-pre-wrap wrap-break-word bg-white min-w-0'>
                       {entry.isBadge ? (
                         <span
                           className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${getBadgeClassName(
@@ -876,7 +876,11 @@ const DemoEntityDetail = ({
 
             {!(relatedLoading[index] ?? false) && (
               <DemoTableList
-                data={filteredData}
+                data={
+                  filteredData as (Record<string, unknown> & {
+                    id: number | string;
+                  })[]
+                }
                 selectedLang={selectedRelatedLang}
                 tableName={config.tableName}
                 detailPath={config.detailPath}

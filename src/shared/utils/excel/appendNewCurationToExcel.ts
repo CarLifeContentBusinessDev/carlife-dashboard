@@ -1,6 +1,10 @@
 import { toast } from 'react-toastify';
 import type { usingCurationExcelProps } from '@/shared/types/pickleProdContents';
-import { getGoogleToken, getSheetsClient } from '@/shared/utils/auth/auth';
+import {
+  getGoogleApiErrorMessage,
+  getGoogleToken,
+  getSheetsClient,
+} from '@/shared/utils/auth/auth';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { formatPlayTime } from '@/shared/utils/format/formatPlayTime';
 
@@ -125,11 +129,10 @@ export async function appendNewCurationToExcel(
     setProgress('');
     setLoading(false);
     toast.success(`${filteredData.length}개의 데이터가 추가되었습니다!`);
-  } catch (err: any) {
+  } catch (err: unknown) {
     setLoading(false);
     setProgress('');
-    const errorMessage = err.result?.error?.message || '알 수 없는 오류';
-    toast.error(`데이터 추가에 실패했습니다: ${errorMessage}`);
+    toast.error(`데이터 추가에 실패했습니다: ${getGoogleApiErrorMessage(err)}`);
     throw err;
   }
 }

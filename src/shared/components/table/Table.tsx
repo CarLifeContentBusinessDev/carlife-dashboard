@@ -5,7 +5,7 @@ export interface Column {
   label: string;
 }
 
-interface TableProps<T> {
+interface TableProps<T extends { id?: string | number }> {
   columns: Column[];
   data: T[];
   gridTemplateColumns: string;
@@ -14,7 +14,7 @@ interface TableProps<T> {
   emptyText?: string;
 }
 
-function Table<T>({
+function Table<T extends { id?: string | number }>({
   columns,
   data,
   gridTemplateColumns,
@@ -41,7 +41,7 @@ function Table<T>({
         {data.length > 0 ? (
           data.map((row: T, rowIndex) => (
             <div
-              key={(row as any).id ?? rowIndex}
+              key={row.id ?? rowIndex}
               className={`grid border-b border-gray-200 items-center hover:bg-gray-50 transition ${
                 onRowClick ? 'cursor-pointer' : ''
               }`}

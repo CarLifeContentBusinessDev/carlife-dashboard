@@ -3,7 +3,7 @@ import { api, stgApi } from '@/shared/utils/api/api';
 
 export function useStagingEnv() {
   const { pathname } = useLocation();
-  const isStaging = pathname.startsWith('/stg');
+  const isStaging = pathname.startsWith('/pickle/stg');
   const apiInstance = isStaging ? stgApi : api;
   const spreadsheetId = isStaging
     ? import.meta.env.VITE_STG_SPREADSHEET_ID

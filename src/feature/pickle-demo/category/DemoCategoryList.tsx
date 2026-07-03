@@ -1,8 +1,18 @@
 import React from 'react';
 import DemoTableList from '@/feature/pickle-demo/components/DemoTableList';
 
+interface DisplayCategory {
+  id: number;
+  title: string | undefined;
+  img_url: string | undefined;
+  order: number;
+  created_at: string;
+  language: string[];
+  programsCount: number;
+}
+
 interface DemoCategoryListProps {
-  categories: any[];
+  categories: DisplayCategory[];
   selectedLang: string;
   onDeleted?: () => void;
 }

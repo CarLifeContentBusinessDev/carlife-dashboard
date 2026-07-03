@@ -48,7 +48,7 @@ export async function getNewCurationData(
     allApiData = allApiData.concat(pageData);
   }
 
-  let allEpiData: usingCurationExcelProps[] = [];
+  const allEpiData: usingCurationExcelProps[] = [];
 
   for (let i = 0; i < allApiData.length; i++) {
     const listItem = allApiData[i];
@@ -77,9 +77,7 @@ export async function getNewCurationData(
       curationType: detailData.curationType,
       curationName: detailData.curationName,
       curationDesc: detailData.curationDesc,
-      // 활성 상태: usageYn (Y/N)
       activeState: detailData.usageYn ?? listItem.usageYn ?? '',
-      // 전시 상태: status (ACTIVE / INACTIVE / ACTIVE_NONE_DISPLAY)
       exhibitionState: mapCurationStatus(
         detailData.status ?? listItem.status ?? ''
       ),
@@ -90,11 +88,9 @@ export async function getNewCurationData(
       curationCreatedAt: detailData.createdAt,
     };
 
-    // 게시자 정보: 큐레이션 생성자
     const creatorName = detailData.creatorName ?? listItem.creatorName ?? '';
 
     if (episodes.length === 0) {
-      // 에피소드 없는 큐레이션도 한 행으로 포함
       allEpiData.push({
         ...baseCurationData,
         channelId: 0,
@@ -129,8 +125,6 @@ export async function getNewCurationData(
     }
   }
 
-  // 에피소드 있는 항목: episodeId 기준 신규 필터
-  // 에피소드 없는 항목: curationName 기준 중복 제거
   const existingCurationNames = new Set(
     excelData.map((item) => item.curationName)
   );

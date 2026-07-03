@@ -13,10 +13,11 @@ const MenuButton = ({
   isOpen,
   openInNewTab = false,
 }: MenuButtonProps) => {
-  const activeLinkClass = 'bg-indigo-500 text-white font-bold';
-  const defaultLinkClass = 'text-gray-400 hover:bg-gray-700 hover:text-white';
-  const disabledClass = 'text-gray-600 cursor-not-allowed opacity-60';
-  const baseClass = `flex items-center ${isOpen ? 'p-4 gap-3' : 'p-4 justify-center'} transition-colors duration-200`;
+  const activeLinkClass = 'bg-indigo-500 text-white font-bold text-sm';
+  const defaultLinkClass =
+    'text-gray-400 hover:bg-gray-700 hover:text-white text-sm';
+  const disabledClass = 'text-gray-600 cursor-not-allowed opacity-60 text-sm';
+  const baseClass = `flex items-center ${isOpen ? 'p-4 gap-3' : 'p-4 justify-center'} transition-colors duration-200 text-sm`;
   if (!to) {
     return <div className={`${baseClass} ${disabledClass}`}>{children}</div>;
   }

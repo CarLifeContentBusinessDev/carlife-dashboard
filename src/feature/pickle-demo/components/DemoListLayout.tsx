@@ -87,7 +87,7 @@ const DemoListLayout = ({
   children,
 }: DemoListLayoutProps) => {
   const { isServerLoggedIn } = usePickleServerStore();
-  const isWebDemoLoggedIn = isServerLoggedIn('web-demo');
+  const isWebDemoLoggedIn = isServerLoggedIn('pickle-web-demo');
 
   const onAdd = () => {
     if (!isWebDemoLoggedIn) {
@@ -99,7 +99,7 @@ const DemoListLayout = ({
 
   return (
     <div className='flex flex-col'>
-      <PickleLoginBanner serverId='web-demo' serverLabel='웹데모' />
+      <PickleLoginBanner serverId='pickle-web-demo' serverLabel='웹데모' />
       <div className='p-10 flex flex-col'>
         <h1 className='mb-4 indent-1' style={{ fontSize: '16px' }}>
           <span className='text-gray-500'>{parentMenu} / </span>

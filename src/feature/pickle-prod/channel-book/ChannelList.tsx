@@ -10,7 +10,7 @@ interface HeaderColumnProps {
 
 const HeaderColumn = ({ label, width }: HeaderColumnProps) => {
   return (
-    <p className='px-2 flex-shrink-0' style={{ width: width }}>
+    <p className='px-2 shrink-0' style={{ width: width }}>
       {label}
     </p>
   );
@@ -48,49 +48,49 @@ const ChannelList = ({ data }: { data: usingChannelProps[] }) => {
       label: '채널ID',
       width: '120px',
       noDataWidth: '120px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'interfaceUrl',
       label: 'interface_url',
       width: '400px',
       noDataWidth: '400px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
     {
       key: 'channelTypeName',
       label: '채널 타입',
       width: '100px',
       noDataWidth: '100px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
     },
     {
       key: 'interfaceType',
       label: 'interface_type',
       width: '140px',
       noDataWidth: '140px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
     },
     {
       key: 'channelName',
       label: '채널명',
       width: '280px',
       noDataWidth: '280px',
-      className: 'px-2 line-clamp-2 break-words flex-shrink-0',
+      className: 'px-2 line-clamp-2 break-words shrink-0',
     },
     {
       key: 'categoryId',
       label: '카테고리ID',
       width: '100px',
       noDataWidth: '100px',
-      className: 'px-3 truncate flex-shrink-0',
+      className: 'px-3 truncate shrink-0',
     },
     {
       key: 'createdAt',
       label: '등록일',
       width: '180px',
       noDataWidth: '120px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
       render: (channel: usingChannelProps) =>
         formatDateString(channel.createdAt),
     },
@@ -99,7 +99,7 @@ const ChannelList = ({ data }: { data: usingChannelProps[] }) => {
       label: '최근 에피소드 업로드일',
       width: '180px',
       noDataWidth: '180px',
-      className: 'px-2 truncate flex-shrink-0',
+      className: 'px-2 truncate shrink-0',
       render: (channel: usingChannelProps) =>
         formatDateString(channel.dispDtime),
     },

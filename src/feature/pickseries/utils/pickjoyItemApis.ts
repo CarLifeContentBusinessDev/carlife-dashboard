@@ -31,7 +31,9 @@ export function createPickjoyApi(token: string): AxiosInstance {
             logoutPickjoy();
             return Promise.reject(new Error(PICKJOY_TOKEN_EXPIRED_MESSAGE));
           }
-        } catch {}
+        } catch {
+          // JSON 파싱 실패 시 아래에서 엑셀 파일 오류로 처리
+        }
         return Promise.reject(
           new Error('통계 export 응답이 올바른 엑셀 파일이 아닙니다.')
         );

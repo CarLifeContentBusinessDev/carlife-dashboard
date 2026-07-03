@@ -13,9 +13,14 @@ const SORT_KEY_OPTIONS: Array<{ value: 'id'; label: string }> = [
   { value: 'id', label: 'ID 기준' },
 ];
 
+type ProgramWithRelations = Program & {
+  categories?: { title?: string };
+  broadcastings?: { title?: string; channel?: string };
+};
+
 const DemoProgramLayout = () => {
   const navigate = useNavigate();
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const [programs, setPrograms] = useState<ProgramWithRelations[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const {
@@ -38,7 +43,7 @@ const DemoProgramLayout = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await fetchAllSupabaseRows<Program>({
+      const data = await fetchAllSupabaseRows<ProgramWithRelations>({
         table: 'programs',
         select: '*, categories(title), broadcastings(title, channel)',
         orderColumn: 'id',
@@ -55,7 +60,7 @@ const DemoProgramLayout = () => {
   }, []);
 
   const displayPrograms = filteredData.map((prog) => {
-    const broadcasting = (prog as any).broadcastings;
+    const broadcasting = prog.broadcastings;
     const broadcastingLabel = [broadcasting?.title, broadcasting?.channel]
       .filter(Boolean)
       .join(' ');

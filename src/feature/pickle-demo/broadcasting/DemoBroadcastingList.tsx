@@ -1,8 +1,9 @@
 import React from 'react';
 import DemoTableList from '@/feature/pickle-demo/components/DemoTableList';
+import type { Broadcasting } from '@/shared/types/pickleDemoContents';
 
 interface DemoBroadcastingListProps {
-  broadcasting: any[];
+  broadcasting: (Broadcasting & { programsCount?: number })[];
   selectedLang: string;
   onDeleted?: () => void;
 }

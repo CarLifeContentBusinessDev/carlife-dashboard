@@ -26,13 +26,13 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`h-screen flex-shrink-0 bg-[#1B1E2F] shadow-md transition-all duration-300 flex flex-col ${
-        isOpen ? 'w-80' : 'w-20'
+      className={`h-screen shrink-0 bg-[#1B1E2F] shadow-md transition-all duration-300 flex flex-col ${
+        isOpen ? 'w-75' : 'w-20'
       }`}
     >
-      <div className='flex justify-end my-3 px-3 flex-shrink-0'>
+      <div className='flex justify-end my-3 px-3 shrink-0'>
         <Button
-          className='!border-none !px-4'
+          className='border-none! px-4!'
           onClick={() => setIsOpen((prev) => !prev)}
         >
           <img

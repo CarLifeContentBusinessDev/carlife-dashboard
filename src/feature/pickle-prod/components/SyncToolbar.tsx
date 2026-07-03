@@ -23,7 +23,7 @@ const SyncToolbar = ({
   progress,
   syncPreviewMode,
 }: SyncToolbarProps) => (
-  <div className='flex justify-between items-center gap-2 mb-4 flex-shrink-0'>
+  <div className='flex justify-between items-center gap-2 mb-4 shrink-0'>
     <div className='flex gap-2 items-center'>
       <Button onClick={onSearchNew} disabled={excelLoading || loading}>
         신규 조회

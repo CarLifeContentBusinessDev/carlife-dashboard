@@ -18,7 +18,7 @@ export const ThumbnailPreview = ({
   return (
     <div className='flex flex-col items-start gap-4 p-4'>
       {showPlaceholder ? (
-        <div className='w-40 h-40 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center flex-shrink-0 bg-white'>
+        <div className='w-40 h-40 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center shrink-0 bg-white'>
           <svg width='40' height='40' fill='none' viewBox='0 0 24 24'>
             <rect
               x='3'
@@ -49,7 +49,7 @@ export const ThumbnailPreview = ({
         <img
           src={url}
           alt={title}
-          className='w-40 h-40 object-cover rounded-lg shadow-sm flex-shrink-0'
+          className='w-40 h-40 object-cover rounded-lg shadow-sm shrink-0'
           onError={() => setImgError(true)}
         />
       )}

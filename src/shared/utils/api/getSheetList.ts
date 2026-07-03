@@ -1,4 +1,8 @@
-import { getGoogleToken, getSheetsClient } from '@/shared/utils/auth/auth';
+import {
+  getGoogleApiErrorStatus,
+  getGoogleToken,
+  getSheetsClient,
+} from '@/shared/utils/auth/auth';
 
 const getSheetList = async (spreadsheetId: string) => {
   try {
@@ -22,7 +26,7 @@ const getSheetList = async (spreadsheetId: string) => {
   } catch (err) {
     console.error('시트 목록 조회 실패:', err);
 
-    if ((err as any)?.status === 401) {
+    if (getGoogleApiErrorStatus(err) === 401) {
       console.warn('토큰 만료, 재발급 시도');
       const newToken = await getGoogleToken();
 
