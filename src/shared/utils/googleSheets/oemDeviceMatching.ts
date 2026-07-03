@@ -4,13 +4,16 @@ import type {
   PicknowSelection,
 } from '@/shared/utils/googleSheets/syncPicknowConfigurationSheet.types';
 
-export const normalizeText = (value: string) =>
-  value
+export const normalizeText = (value: unknown) => {
+  if (value === null || value === undefined) return '';
+
+  return String(value)
     .normalize('NFKC')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
+};
 
 export const compactText = (value: string) =>
   normalizeText(value).replace(/\s+/g, '');
@@ -117,7 +120,7 @@ export const resolveSelectedSeqs = (
 export const groupRowRecords = (
   rowRecords: Array<{
     category: string;
-    row: Omit<(string | number)[], 0>;
+    row: (string | number)[];
   }>
 ) => {
   const groupedRows = new Map<
