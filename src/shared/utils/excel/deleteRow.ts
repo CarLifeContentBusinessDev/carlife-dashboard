@@ -11,7 +11,7 @@ export type DeleteRowResult =
 
 export async function deleteRow(
   table: string,
-  id: number
+  id: number | string
 ): Promise<DeleteRowResult> {
   // 시리즈/테마는 조인 테이블 매핑을 먼저 지워야 FK/RLS 충돌을 피할 수 있습니다.
   if (table === 'series') {

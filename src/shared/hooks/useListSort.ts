@@ -59,11 +59,10 @@ export default function useListSort<
     const emptyLast =
       sortDirection === 'asc' && emptyLastOnAscKeys.includes(sortKey);
 
-    // Schwartzian transform: key를 O(n)번만 추출해 O(n log n) 중복 계산 방지
     const keyed = data.map((item) => ({
       item,
-      key: toComparableValue((item as any)[sortKey]),
-      empty: emptyLast && isEmptyValue((item as any)[sortKey]),
+      key: toComparableValue(item[sortKey]),
+      empty: emptyLast && isEmptyValue(item[sortKey]),
     }));
 
     keyed.sort((a, b) => {

@@ -5,6 +5,7 @@ import { LANGUAGES, LANG_COLUMN_MAP } from '@/constants/languages';
 import useDemoFilter from '@/feature/pickle-demo/hooks/useDemoFilter';
 import useListSort from '@/shared/hooks/useListSort';
 import fetchAllSupabaseRows from '@/shared/utils/api/fetchAllSupabaseRows';
+import type { Category } from '@/shared/types/pickleDemoContents';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoCategoryList from './DemoCategoryList';
@@ -17,13 +18,6 @@ const SORT_KEY_OPTIONS: Array<{ value: 'id' | 'order'; label: string }> = [
 const CATEGORY_LANGUAGE_OPTIONS = LANGUAGES.filter(
   (lang) => lang.value !== 'all'
 );
-
-interface Category {
-  id: number;
-  title: string;
-  language: string[];
-  [key: string]: any;
-}
 
 const DemoCategoryLayout = () => {
   const navigate = useNavigate();

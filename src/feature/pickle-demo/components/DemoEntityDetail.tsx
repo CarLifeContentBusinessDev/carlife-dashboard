@@ -876,7 +876,13 @@ const DemoEntityDetail = ({
 
             {!(relatedLoading[index] ?? false) && (
               <DemoTableList
-                data={filteredData}
+                data={
+                  filteredData as unknown as (Record<string, unknown> & {
+                    id: number | string;
+                    img_url: string;
+                    language: string[];
+                  })[]
+                }
                 selectedLang={selectedRelatedLang}
                 tableName={config.tableName}
                 detailPath={config.detailPath}

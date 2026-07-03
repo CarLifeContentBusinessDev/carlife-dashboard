@@ -3,7 +3,11 @@ import type {
   usingChannelProps,
   usingDataProps,
 } from '@/shared/types/pickleProdContents';
-import { getGoogleToken, getSheetsClient } from '@/shared/utils/auth/auth';
+import {
+  getGoogleApiErrorMessage,
+  getGoogleToken,
+  getSheetsClient,
+} from '@/shared/utils/auth/auth';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { formatPlayTime } from '@/shared/utils/format/formatPlayTime';
 import { buildSheetRange } from './sheetRange';
@@ -153,7 +157,7 @@ export async function appendNewDataToTop(
     }
 
     // Step 3: 데이터 변환 로직
-    let allNewValues: any[][];
+    let allNewValues: (string | number)[][];
     if (category === 'episode') {
       allNewValues = (effectiveData as usingDataProps[]).map((row) => [
         row.episodeId,
@@ -224,11 +228,10 @@ export async function appendNewDataToTop(
     setLoading(false);
     if (showToast)
       toast.success(`${filteredData.length}개의 데이터가 추가되었습니다!`);
-  } catch (err: any) {
+  } catch (err: unknown) {
     setLoading(false);
     setProgress('');
-    const errorMessage = err.result?.error?.message || '알 수 없는 오류';
-    toast.error(`데이터 추가에 실패했습니다: ${errorMessage}`);
+    toast.error(`데이터 추가에 실패했습니다: ${getGoogleApiErrorMessage(err)}`);
     throw err;
   }
 }

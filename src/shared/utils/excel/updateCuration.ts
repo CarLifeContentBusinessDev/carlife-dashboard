@@ -1,6 +1,10 @@
 import { toast } from 'react-toastify';
 import type { usingCurationExcelProps } from '@/shared/types/pickleProdContents';
-import { getGoogleToken, getSheetsClient } from '@/shared/utils/auth/auth';
+import {
+  getGoogleApiErrorStatus,
+  getGoogleToken,
+  getSheetsClient,
+} from '@/shared/utils/auth/auth';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import {
   formatPlayTime,
@@ -40,7 +44,7 @@ export async function getCurationExcelData(
       const values = response.result.values as (string | number)[][];
       if (values && values.length > 0) allRows.push(...values);
     } catch (err: unknown) {
-      if ((err as any)?.status === 401) {
+      if (getGoogleApiErrorStatus(err) === 401) {
         const refreshedToken = await getGoogleToken();
         if (!refreshedToken)
           throw new Error('토큰 재발급 실패, 엑셀 조회 중단');
@@ -53,8 +57,7 @@ export async function getCurationExcelData(
         });
 
         const retryValues = retryResponse.result.values as (
-          | string
-          | number
+          string | number
         )[][];
         if (retryValues && retryValues.length > 0) allRows.push(...retryValues);
       } else {
@@ -202,7 +205,7 @@ export async function overwriteCurationExcelData(
     console.error('큐레이션 데이터 덮어쓰기 실패:', err);
     toast.error('큐레이션 데이터 덮어쓰기 실패!');
 
-    if ((err as any)?.status === 401) {
+    if (getGoogleApiErrorStatus(err) === 401) {
       const newToken = await getGoogleToken();
       if (newToken) {
         return overwriteCurationExcelData(
@@ -246,10 +249,9 @@ export async function addMissingCurationRows(
       i,
       i + batchSize
     ) as usingCurationExcelProps[];
-    let values;
 
     const sheetName = localStorage.getItem('sheetName');
-    values = (batch as usingCurationExcelProps[]).map((row) => [
+    const values = (batch as usingCurationExcelProps[]).map((row) => [
       row.thumbnailTitle,
       row.curationType,
       row.curationName,
@@ -288,7 +290,7 @@ export async function addMissingCurationRows(
         resource: { values },
       });
     } catch (err: unknown) {
-      if ((err as any)?.status === 401) {
+      if (getGoogleApiErrorStatus(err) === 401) {
         const refreshedToken = await getGoogleToken();
         if (!refreshedToken)
           throw new Error('토큰 재발급 실패, 엑셀 업데이트 중단');

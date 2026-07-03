@@ -13,6 +13,13 @@ import { api } from './api';
 const SIZE = 10000;
 const CURATIONSIZE = 100;
 
+function isAbortOrCanceledError(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    (err.name === 'AbortError' || err.name === 'CanceledError')
+  );
+}
+
 export async function fetchAllData(
   category: 'channel',
   setProgress: (message: string) => void,
@@ -95,10 +102,7 @@ export async function fetchAllData(
             channel.dispDtime = '';
           }
         } catch (err) {
-          if (
-            (err as any).name === 'AbortError' ||
-            (err as any).name === 'CanceledError'
-          ) {
+          if (isAbortOrCanceledError(err)) {
             return [];
           }
           console.error(`채널 ${channel.channelId}의 에피소드 조회 실패:`, err);
@@ -110,10 +114,7 @@ export async function fetchAllData(
 
     return allData;
   } catch (err) {
-    if (
-      (err as any).name === 'AbortError' ||
-      (err as any).name === 'CanceledError'
-    ) {
+    if (isAbortOrCanceledError(err)) {
       return [];
     }
     console.error('데이터 API 가져오기 실패:', err);
@@ -159,9 +160,7 @@ export async function fetchAllCurationData(
         curationType: detailData.curationType,
         curationName: detailData.curationName,
         curationDesc: detailData.curationDesc,
-        // 활성 상태: usageYn (Y/N)
         activeState: detailData.usageYn ?? '',
-        // 전시 상태: status (ACTIVE / INACTIVE / ACTIVE_NONE_DISPLAY)
         exhibitionState: mapCurationStatus(detailData.status ?? ''),
         field: detailData.field ?? '',
         section: detailData.section ?? undefined,
@@ -170,11 +169,9 @@ export async function fetchAllCurationData(
         curationCreatedAt: detailData.createdAt,
       };
 
-      // 게시자 정보: 큐레이션 생성자
       const creatorName = detailData.creatorName ?? '';
 
       if (episodes.length === 0) {
-        // 에피소드 없는 큐레이션도 한 행으로 포함
         allCurationData.push({
           ...baseCurationData,
           channelId: 0,

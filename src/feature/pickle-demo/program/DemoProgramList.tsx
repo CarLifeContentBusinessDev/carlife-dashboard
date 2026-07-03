@@ -1,8 +1,12 @@
 import React from 'react';
 import DemoTableList from '@/feature/pickle-demo/components/DemoTableList';
+import type { Program } from '@/shared/types/pickleDemoContents';
 
 interface DemoProgramListProps {
-  programs: any[];
+  programs: (Program & {
+    broadcastingLabel?: string;
+    categories?: { title?: string };
+  })[];
   selectedLang: string;
   onDeleted?: () => void;
 }

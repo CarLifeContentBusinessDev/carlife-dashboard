@@ -10,8 +10,14 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { BLUE_BADGE_STYLE } from '@/constants/badgeStyles';
 
-interface DemoTableListProps {
-  data: any[];
+interface DemoTableRow {
+  id: number | string;
+  img_url?: string;
+  language?: string[];
+}
+
+interface DemoTableListProps<T extends DemoTableRow> {
+  data: T[];
   columnDefs: { key: string; label: string; width: string }[];
   selectedLang: string;
   detailPath?: string;
@@ -20,7 +26,7 @@ interface DemoTableListProps {
   onDeleted?: () => void;
 }
 
-const DemoTableList: React.FC<DemoTableListProps> = ({
+function DemoTableList<T extends DemoTableRow>({
   data,
   columnDefs,
   selectedLang,
@@ -28,18 +34,17 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
   editPath,
   tableName,
   onDeleted,
-}) => {
+}: DemoTableListProps<T>) {
   const navigate = useNavigate();
   const { isServerLoggedIn } = usePickleServerStore();
   const accessToken = isServerLoggedIn('pickle-web-demo');
   const { page, setPage, totalPages, pagedData } = usePagination(data);
 
-  // 언어 변경 시 1페이지로 이동
   useEffect(() => {
     setPage(1);
   }, [selectedLang, setPage]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | string) => {
     if (!accessToken) {
       toast.warn('웹데모 로그인이 필요합니다.');
       return;
@@ -65,34 +70,38 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
     alert('삭제 실패: ' + result.message);
   };
 
-  const handleRowClick = (row: any) => {
+  const handleRowClick = (row: T) => {
     if (!detailPath) return;
     navigate(`${detailPath}/${row.id}?lang=${selectedLang}`);
   };
 
-  const getValueByPath = (obj: any, path: string): any => {
-    if (!path.includes('.')) return obj?.[path];
+  const getValueByPath = (obj: unknown, path: string): unknown => {
+    const asRecord = (value: unknown) =>
+      value as Record<string, unknown> | null | undefined;
 
-    return path.split('.').reduce((acc: any, part: string) => {
+    if (!path.includes('.')) return asRecord(obj)?.[path];
+
+    return path.split('.').reduce((acc: unknown, part: string) => {
       if (acc == null) return undefined;
 
-      // 관계 데이터가 배열로 내려오면 각 항목의 값을 추출합니다.
       if (Array.isArray(acc)) {
-        return acc.map((item) => item?.[part]).filter((item) => item != null);
+        return acc
+          .map((item) => asRecord(item)?.[part])
+          .filter((item) => item != null);
       }
 
-      return acc[part];
+      return asRecord(acc)?.[part];
     }, obj);
   };
 
-  const renderCell = (key: string, row: any) => {
+  const renderCell = (key: string, row: T): React.ReactNode => {
     if (key === 'img_url') {
       if (!row.img_url) return null;
       return <ImageCell url={row.img_url} />;
     }
 
     if (key === 'language') {
-      return <LanguageBadge languages={row.language} />;
+      return <LanguageBadge languages={row.language ?? []} />;
     }
 
     if (key === 'actions') {
@@ -127,7 +136,6 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
 
     const value = getValueByPath(row, key);
 
-    // boolean 타입 처리
     if (typeof value === 'boolean') {
       if (key === 'is_active' || key === 'is_searchable') {
         return value ? (
@@ -143,7 +151,7 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
       return value ? 'O' : 'X';
     }
 
-    return Array.isArray(value) ? value.join(', ') : value;
+    return (Array.isArray(value) ? value.join(', ') : value) as React.ReactNode;
   };
 
   const columns = columnDefs.map(({ key, label }) => ({ key, label }));
@@ -162,6 +170,6 @@ const DemoTableList: React.FC<DemoTableListProps> = ({
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
     </>
   );
-};
+}
 
 export default DemoTableList;

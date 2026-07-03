@@ -71,7 +71,7 @@ export default function ServerLoginModal({
         passwordToSend = encryptedPassword;
       }
 
-      let loginData = server.id.startsWith('pickle')
+      const loginData = server.id.startsWith('pickle')
         ? { adminId: id, password: passwordToSend }
         : { email: id, password: passwordToSend };
 

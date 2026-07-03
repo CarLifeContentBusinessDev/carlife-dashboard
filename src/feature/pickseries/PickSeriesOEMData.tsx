@@ -96,9 +96,9 @@ export default function PickSeriesOEMData() {
         })
         .catch((err: unknown) => {
           const message =
-            (err instanceof Error ? err.message : null) ??
-            String((err as Record<string, unknown>)?.message ?? err) ??
-            '알 수 없는 오류';
+            err instanceof Error
+              ? err.message
+              : String((err as Record<string, unknown>)?.message ?? err);
           console.error(`[OEMSheet] ${product.label} 로드 실패:`, err);
           setProductStates((prev) => ({
             ...prev,

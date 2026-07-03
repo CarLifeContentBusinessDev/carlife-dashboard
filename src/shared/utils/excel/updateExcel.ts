@@ -3,7 +3,11 @@ import type {
   usingChannelProps,
   usingDataProps,
 } from '@/shared/types/pickleProdContents';
-import { getGoogleToken, getSheetsClient } from '@/shared/utils/auth/auth';
+import {
+  getGoogleApiErrorStatus,
+  getGoogleToken,
+  getSheetsClient,
+} from '@/shared/utils/auth/auth';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import {
   formatPlayTime,
@@ -157,7 +161,7 @@ export async function getExcelData(
   } catch (err) {
     console.error('Excel 데이터 조회 실패:', err);
 
-    if ((err as any)?.status === 401) {
+    if (getGoogleApiErrorStatus(err) === 401) {
       const newToken = await getGoogleToken();
       if (newToken) {
         return getExcelData(newToken, category, sheetName, spreadSheetId);
@@ -212,7 +216,7 @@ export async function getExcelLastData({
   } catch (err) {
     console.error('Excel 마지막 데이터 조회 실패:', err);
 
-    if ((err as any)?.status === 401) {
+    if (getGoogleApiErrorStatus(err) === 401) {
       const newToken = await getGoogleToken();
       if (newToken) {
         return getExcelLastData();
@@ -223,7 +227,7 @@ export async function getExcelLastData({
   }
 }
 
-const filterRows = (rows: any[][]) => {
+const filterRows = (rows: (string | number)[][]) => {
   return rows.filter(
     (row) => row[0] !== null && row[0] !== undefined && row[0] !== ''
   );
@@ -292,8 +296,7 @@ export async function addMissingRows(
 
     for (let i = 0; i < missingRows.length; i += batchSize) {
       const batch = missingRows.slice(i, i + batchSize) as (
-        | usingDataProps
-        | usingChannelProps
+        usingDataProps | usingChannelProps
       )[];
       let values;
       let lastColumn;
@@ -365,7 +368,7 @@ export async function addMissingRows(
     console.error('데이터 추가 실패:', err);
     toast.error('전체 데이터 업데이트 실패!');
 
-    if ((err as any)?.status === 401) {
+    if (getGoogleApiErrorStatus(err) === 401) {
       const newToken = await getGoogleToken();
       if (newToken) {
         if (category === 'episode') {
@@ -510,7 +513,6 @@ export async function overwriteExcelData(
     }
 
     // 5. 정확한 범위에 배치 쓰기
-    //    - 전체 재적재는 append보다 update가 안정적이다.
     for (let i = 0; i < values.length; i += WRITE_BATCH_SIZE) {
       const batch = values.slice(i, i + WRITE_BATCH_SIZE);
       const percent = Math.round(((i + batch.length) / values.length) * 100);
@@ -565,7 +567,7 @@ export async function overwriteExcelData(
     console.error('데이터 덮어쓰기 실패:', err);
     toast.error('데이터 덮어쓰기 실패!');
 
-    if ((err as any)?.status === 401) {
+    if (getGoogleApiErrorStatus(err) === 401) {
       const newToken = await getGoogleToken();
       if (newToken) {
         return overwriteExcelData(

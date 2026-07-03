@@ -297,7 +297,7 @@ const parseResolution = (res: string) => {
 };
 
 const getValueFromConfig = (
-  config: any,
+  config: unknown,
   orientation: string | undefined,
   size: number
 ): { value: string; heightRange: string } => {
@@ -579,9 +579,6 @@ const groupRowRecords = (
   for (const record of groupedRows.values()) {
     const { category, oems, devices, row } = record;
 
-    // If OEM and DEVICE arrays are the same length, expand them into separate rows
-    // preserving their pairing order. This avoids collapsing identical device
-    // names across different OEMs into a single deduplicated cell.
     if (oems.length === devices.length) {
       for (let i = 0; i < oems.length; i++) {
         results.push({
@@ -590,7 +587,6 @@ const groupRowRecords = (
         });
       }
     } else {
-      // Fallback: join unique values when lengths don't match
       results.push({
         category,
         row: [joinUniqueValues(oems), joinUniqueValues(devices), ...row],
@@ -645,7 +641,6 @@ const resolveSelectedSeqs = (
     });
 
     if (matchedFromClient.length === 0) {
-      // fallback: try global match by OEM/DEVICE name when the exact client row is missing
       const globalMatched = oemDevices.filter((device) =>
         matchesSelection(selection, device)
       );
@@ -715,7 +710,6 @@ export async function syncPicknowConfigurationSheet(
     spreadsheetId
   );
 
-  // fetch Setting sheet to determine device resolution / orientation
   const settingRows: SettingRow[] = await fetchSettingData(spreadsheetId);
 
   const binaryCodeResponse = await apiInstance.get<BinaryCodeResponse>(
@@ -875,7 +869,6 @@ export async function syncPicknowConfigurationSheet(
     }
 
     selectedMappings.forEach((mapping) => {
-      // find setting rows that match this OEM/DEVICE; prefer settings for the selected client(s)
       const clientsForSeq: string[] =
         seqToClients?.[mapping.oemDeviceSeq] ?? [];
 
@@ -970,20 +963,17 @@ export async function syncPicknowConfigurationSheet(
 
   const rows = groupRowRecords(rowRecords)
     .sort((a, b) => {
-      // 1) category (ascending, Korean)
       const cat = String(a.category ?? '').localeCompare(
         String(b.category ?? ''),
         'ko'
       );
       if (cat !== 0) return cat;
 
-      // 2) title/name (ascending, Korean). title is at row[3]
       const aTitle = String(a.row?.[3] ?? '');
       const bTitle = String(b.row?.[3] ?? '');
       const nameCmp = aTitle.localeCompare(bTitle, 'ko');
       if (nameCmp !== 0) return nameCmp;
 
-      // 3) country with custom priority
       const aCountry = String(a.row?.[5] ?? '').toUpperCase();
       const bCountry = String(b.row?.[5] ?? '').toUpperCase();
       const aIdx = countryPriority.indexOf(aCountry);
@@ -993,7 +983,6 @@ export async function syncPicknowConfigurationSheet(
       const bRank = bIdx >= 0 ? bIdx : countryPriority.length + 1;
       if (aRank !== bRank) return aRank - bRank;
 
-      // fallback: alphabetical by country code
       return aCountry.localeCompare(bCountry, 'en');
     })
     .map((item) => {
