@@ -30,6 +30,34 @@ export interface PicknowBookmarkListItem {
   oemDevices: PicknowOemDevice[];
 }
 
+export interface PicknowUrlConfigRangeItem {
+  from: string;
+  to: string;
+  value: string;
+}
+
+export interface PicknowUrlConfigVersion {
+  zoomFactor?: {
+    default?: string;
+    portrait?: PicknowUrlConfigRangeItem[];
+    landscape?: PicknowUrlConfigRangeItem[];
+  };
+  userAgent?: {
+    default?: string;
+    portrait?: PicknowUrlConfigRangeItem[];
+    landscape?: PicknowUrlConfigRangeItem[];
+  };
+  whiteList?: string[];
+  blackList?: string[];
+  duplicateDomainList?: string[];
+  unSupportedDomainList?: Record<string, string[]>;
+  mobilePage?: boolean;
+  pinchZoom?: boolean;
+  supportNewTab?: boolean;
+  mouseOnlyPage?: boolean;
+  sendStringOnEnter?: boolean;
+}
+
 export interface PicknowBookmarkDetail {
   bookmarkSeq: number;
   title: string;
@@ -43,33 +71,8 @@ export interface PicknowBookmarkDetail {
   urlActiveYn: string;
   domainActiveYn: string;
   payYn: string;
-  urlConfig: {
-    zoomFactor?: {
-      default?: string;
-      landscape?: Array<{
-        from: string;
-        to: string;
-        value: string;
-      }>;
-    };
-    userAgent?: {
-      default?: string;
-      landscape?: Array<{
-        from: string;
-        to: string;
-        value: string;
-      }>;
-    };
-    whiteList?: string[];
-    blackList?: string[];
-    duplicateDomainList?: string[];
-    unSupportedDomainList?: Record<string, string[]>;
-    mobilePage?: boolean;
-    pinchZoom?: boolean;
-    supportNewTab?: boolean;
-    mouseOnlyPage?: boolean;
-    sendStringOnEnter?: boolean;
-  };
+  // 버전(웹뷰 버전 등) 키로 감싸져 있으며, 'default' 키가 공통 설정으로 항상 존재한다.
+  urlConfig: Record<string, PicknowUrlConfigVersion>;
   appType: string;
   categoryCd: string;
   categoryCdNm: string;

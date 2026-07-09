@@ -2,6 +2,7 @@ export const PICKNOW_CONFIGURATION_HEADERS = [
   'No.',
   'OEM',
   'Device',
+  'Version',
   'Category',
   'Name',
   'URL',
@@ -24,5 +25,5 @@ export const PICKNOW_CONFIGURATION_HEADERS = [
   'sendStringOnEnter',
 ];
 
-export const PICKNOW_CONFIGURATION_HEADER_RANGE = 'B2:X2';
-export const PICKNOW_CONFIGURATION_DATA_RANGE = 'B3:X';
+export const PICKNOW_CONFIGURATION_HEADER_RANGE = 'B2:Y2';
+export const PICKNOW_CONFIGURATION_DATA_RANGE = 'B3:Y';

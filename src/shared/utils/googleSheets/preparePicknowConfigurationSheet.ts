@@ -91,7 +91,7 @@ export async function preparePicknowConfigurationSheet(
                 startRowIndex: 1,
                 endRowIndex: 2,
                 startColumnIndex: 1,
-                endColumnIndex: 25,
+                endColumnIndex: 26,
               },
               rows: [
                 {
@@ -122,7 +122,7 @@ export async function preparePicknowConfigurationSheet(
                 startRowIndex: 2,
                 endRowIndex: 1000,
                 startColumnIndex: 0,
-                endColumnIndex: 24,
+                endColumnIndex: 25,
               },
               cell: {
                 userEnteredFormat: {
@@ -183,8 +183,8 @@ export async function preparePicknowConfigurationSheet(
               range: {
                 sheetId,
                 dimension: 'COLUMNS',
-                startIndex: 5,
-                endIndex: 7,
+                startIndex: 6,
+                endIndex: 8,
               },
               properties: {
                 pixelSize: 180,
@@ -197,8 +197,8 @@ export async function preparePicknowConfigurationSheet(
               range: {
                 sheetId,
                 dimension: 'COLUMNS',
-                startIndex: 7,
-                endIndex: 11,
+                startIndex: 8,
+                endIndex: 12,
               },
               properties: {
                 pixelSize: 80,
@@ -211,8 +211,8 @@ export async function preparePicknowConfigurationSheet(
               range: {
                 sheetId,
                 dimension: 'COLUMNS',
-                startIndex: 15,
-                endIndex: 20,
+                startIndex: 16,
+                endIndex: 21,
               },
               properties: {
                 pixelSize: 200,
@@ -225,8 +225,8 @@ export async function preparePicknowConfigurationSheet(
               range: {
                 sheetId,
                 dimension: 'COLUMNS',
-                startIndex: 20,
-                endIndex: 24,
+                startIndex: 21,
+                endIndex: 25,
               },
               properties: {
                 pixelSize: 140,
@@ -239,8 +239,8 @@ export async function preparePicknowConfigurationSheet(
               range: {
                 sheetId,
                 dimension: 'COLUMNS',
-                startIndex: 24,
-                endIndex: 25,
+                startIndex: 25,
+                endIndex: 26,
               },
               properties: {
                 pixelSize: 20,
@@ -253,7 +253,7 @@ export async function preparePicknowConfigurationSheet(
               properties: {
                 sheetId,
                 gridProperties: {
-                  columnCount: 25,
+                  columnCount: 26,
                   frozenRowCount: 2,
                 },
               },

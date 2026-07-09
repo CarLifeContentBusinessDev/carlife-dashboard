@@ -14,6 +14,7 @@ export interface SettingRow {
   국가코드: string;
   해상도: string;
   Orientation: string;
+  Version: string;
 }
 
 export async function fetchSettingData(
@@ -40,7 +41,7 @@ export async function fetchSettingData(
   const fetchRange = () =>
     sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: buildSheetRange('Setting', 'B3:G1000'),
+      range: buildSheetRange('Setting', 'B3:H1000'),
     });
 
   let response;
@@ -77,6 +78,7 @@ export async function fetchSettingData(
       국가코드: String(row[3] ?? '').trim(),
       해상도: String(row[4] ?? '').trim(),
       Orientation: String(row[5] ?? '').trim(),
+      Version: String(row[6] ?? '').trim(),
     }))
     .filter((row) => row.고객사 !== '');
 }

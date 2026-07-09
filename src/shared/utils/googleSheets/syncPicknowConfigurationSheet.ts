@@ -31,6 +31,7 @@ import type {
   PicknowOemDevice,
   PicknowOemDeviceResponse,
   PicknowSelection,
+  PicknowUrlConfigVersion,
   SyncPicknowConfigurationResult,
 } from '@/shared/utils/googleSheets/syncPicknowConfigurationSheet.types';
 import type { AxiosInstance } from 'axios';
@@ -44,6 +45,33 @@ const isYes = (value: unknown): boolean => {
     return value.trim().toLowerCase() === 'y';
   }
   return false;
+};
+
+// urlConfig는 버전(웹뷰 버전 등) 키로 감싸져 있다.
+// Setting 시트의 Version 값이 있으면 해당 버전 키를 우선 사용하고,
+// 비어있거나 'default'이거나 urlConfig에 해당 버전 키가 없으면 공통 설정인 'default'로 폴백한다.
+// 옛 방식(버전 키 없이 필드가 바로 있는 경우)으로 남아있는 데이터도 대비해 그대로 폴백한다.
+const resolveUrlConfigVersion = (
+  urlConfig: Record<string, PicknowUrlConfigVersion> | undefined,
+  version: string | undefined
+): { config: PicknowUrlConfigVersion | undefined; resolvedVersion: string } => {
+  if (!urlConfig) return { config: undefined, resolvedVersion: 'default' };
+
+  const trimmedVersion = (version ?? '').trim();
+  if (trimmedVersion && trimmedVersion.toLowerCase() !== 'default') {
+    const versioned = urlConfig[trimmedVersion];
+    if (versioned && typeof versioned === 'object') {
+      return { config: versioned, resolvedVersion: trimmedVersion };
+    }
+  }
+
+  if (urlConfig.default && typeof urlConfig.default === 'object') {
+    return { config: urlConfig.default, resolvedVersion: 'default' };
+  }
+  return {
+    config: urlConfig as unknown as PicknowUrlConfigVersion,
+    resolvedVersion: 'default',
+  };
 };
 
 const parseResolution = (res: string) => {
@@ -351,13 +379,16 @@ export async function syncPicknowConfigurationSheet(
       const sizeForCheck =
         orient === 'landscape' ? height || width : width || height;
 
+      const { config: urlConfigVersion, resolvedVersion } =
+        resolveUrlConfigVersion(detail.urlConfig, setting?.Version);
+
       const resolvedZoom = getValueFromConfig(
-        detail.urlConfig?.zoomFactor,
+        urlConfigVersion?.zoomFactor,
         orient,
         sizeForCheck
       );
       const resolvedUA = getValueFromConfig(
-        detail.urlConfig?.userAgent,
+        urlConfigVersion?.userAgent,
         orient,
         sizeForCheck
       );
@@ -367,6 +398,7 @@ export async function syncPicknowConfigurationSheet(
         row: [
           mapping.oem,
           mapping.device,
+          resolvedVersion,
           detail.categoryCdNm,
           detail.title,
           detail.url,
@@ -379,19 +411,19 @@ export async function syncPicknowConfigurationSheet(
           resolvedZoom.heightRange,
           formatZoomFactorForSheet(resolvedZoom.value),
           resolvedUA.value,
-          stringifyBooleanArray(detail.urlConfig?.whiteList),
-          formatBlackListForSheet(detail.urlConfig?.blackList),
-          formatUnSupportedDomainList(detail.urlConfig?.unSupportedDomainList),
+          stringifyBooleanArray(urlConfigVersion?.whiteList),
+          formatBlackListForSheet(urlConfigVersion?.blackList),
+          formatUnSupportedDomainList(urlConfigVersion?.unSupportedDomainList),
           formatBinaryCodes(
             detail.binaryCds ?? [],
             binaryCodeMap,
             mapping.oem,
             mapping.device
           ),
-          toBooleanText(detail.urlConfig?.pinchZoom),
-          toBooleanText(detail.urlConfig?.supportNewTab),
-          toBooleanText(detail.urlConfig?.mouseOnlyPage),
-          toBooleanText(detail.urlConfig?.sendStringOnEnter),
+          toBooleanText(urlConfigVersion?.pinchZoom),
+          toBooleanText(urlConfigVersion?.supportNewTab),
+          toBooleanText(urlConfigVersion?.mouseOnlyPage),
+          toBooleanText(urlConfigVersion?.sendStringOnEnter),
           detail.bookmarkSeq,
         ],
       });
@@ -408,13 +440,13 @@ export async function syncPicknowConfigurationSheet(
       );
       if (cat !== 0) return cat;
 
-      const aTitle = String(a.row?.[3] ?? '');
-      const bTitle = String(b.row?.[3] ?? '');
+      const aTitle = String(a.row?.[4] ?? '');
+      const bTitle = String(b.row?.[4] ?? '');
       const nameCmp = aTitle.localeCompare(bTitle, 'ko');
       if (nameCmp !== 0) return nameCmp;
 
-      const aCountry = String(a.row?.[5] ?? '').toUpperCase();
-      const bCountry = String(b.row?.[5] ?? '').toUpperCase();
+      const aCountry = String(a.row?.[6] ?? '').toUpperCase();
+      const bCountry = String(b.row?.[6] ?? '').toUpperCase();
       const aIdx = countryPriority.indexOf(aCountry);
       const bIdx = countryPriority.indexOf(bCountry);
 
@@ -460,7 +492,7 @@ export async function syncPicknowConfigurationSheet(
                 startRowIndex: 1,
                 endRowIndex: rowCount,
                 startColumnIndex: 1,
-                endColumnIndex: 24,
+                endColumnIndex: 25,
               },
             },
           },
