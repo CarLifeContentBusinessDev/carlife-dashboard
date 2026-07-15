@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import AuthGuard from './shared/components/common/AuthGuard';
+import PageTitle from './shared/components/common/PageTitle';
 import Layout from './layout/Layout';
 import { supabase } from './lib/supabase';
 import { useAccessTokenStore } from './shared/store/useAccessTokenStore';
@@ -146,6 +147,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <PageTitle />
       <LogoutRedirectListener />
       <Suspense fallback={<div className='h-full w-full bg-white' />}>
         <Routes>

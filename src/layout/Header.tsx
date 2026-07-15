@@ -194,6 +194,7 @@ const Header = () => {
           {serviceLabelRest && (
             <span className='hidden md:inline'> {serviceLabelRest}</span>
           )}
+          <span className='text-red-500'> (팀 내부용)</span>
         </span>
       </h1>
 
