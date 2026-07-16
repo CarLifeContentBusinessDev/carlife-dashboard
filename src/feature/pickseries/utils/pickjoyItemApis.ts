@@ -294,6 +294,20 @@ export async function fetchServiceStatsFromExport(
   );
 }
 
+// 주간지표 - WAU
+export async function fetchCombinedActiveUsers(
+  api: AxiosInstance,
+  range: DateRange,
+  oemParamsList: PickjoyOEMParams[]
+): Promise<number> {
+  const results = await Promise.all(
+    oemParamsList.map((oemParams) =>
+      fetchServiceStatsFromExport(api, range, oemParams)
+    )
+  );
+  return results.reduce((sum, { activeUsers }) => sum + activeUsers, 0);
+}
+
 // OEM 지표용: 단일 OEM 기준 인기 콘텐츠
 export async function fetchTopContent(
   api: AxiosInstance,

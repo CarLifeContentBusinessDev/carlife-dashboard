@@ -5,6 +5,7 @@ import {
   fetchContentsStats,
   fetchCombinedTopContent,
   fetchCombinedRegisteredVinCount,
+  fetchCombinedActiveUsers,
   type PickjoyOEMParams,
 } from './pickjoyItemApis';
 import {
@@ -76,15 +77,16 @@ export async function extractPickjoyWeeklyData(params: {
   const keys = PICKJOY_WEEKLY_ITEM_KEYS;
 
   const needsUserStatus = selectedItems.has(keys.registeredVinCount);
-  const needsServiceStatus =
-    selectedItems.has(keys.wau) || selectedItems.has(keys.totalClicks);
+  const needsWAU = selectedItems.has(keys.wau);
+  const needsTotalClicks = selectedItems.has(keys.totalClicks);
   const needsContentsStatus =
     selectedItems.has(keys.contentClicks) ||
     selectedItems.has(keys.contentPlayTime);
   const topContentItems = PICKJOY_WEEKLY_TOP_CONTENT.filter(({ itemName }) =>
     selectedItems.has(itemName)
   );
-  const needsOEMParams = needsUserStatus || topContentItems.length > 0;
+  const needsOEMParams =
+    needsUserStatus || needsWAU || topContentItems.length > 0;
 
   const oemParamsMap = needsOEMParams
     ? await buildOEMParamsMap(
@@ -176,7 +178,8 @@ export async function extractPickjoyWeeklyData(params: {
 
   const callsPerDate =
     (needsUserStatus ? 1 : 0) +
-    (needsServiceStatus ? 1 : 0) +
+    (needsWAU ? 1 : 0) +
+    (needsTotalClicks ? 1 : 0) +
     (needsContentsStatus ? 1 : 0) +
     topContentItems.length;
 
@@ -210,19 +213,35 @@ export async function extractPickjoyWeeklyData(params: {
   for (const sheetDate of dates) {
     const { startDate, endDate } = sheetDateToApiDates(sheetDate);
 
-    if (needsServiceStatus) {
+    if (needsWAU) {
       onProgress({
         completed,
         total,
-        currentLabel: `${sheetDate} — WAU / 총 클릭 수`,
+        currentLabel: `${sheetDate} — WAU`,
       });
-      const { wau, totalClicks } = await fetchServiceStats(api, {
+      const oemParamsList = oemParamsListForDate(sheetDate);
+      results[sheetDate][keys.wau] =
+        oemParamsList.length > 0
+          ? await fetchCombinedActiveUsers(
+              api,
+              { startDate, endDate },
+              oemParamsList
+            )
+          : 0;
+      completed++;
+    }
+
+    if (needsTotalClicks) {
+      onProgress({
+        completed,
+        total,
+        currentLabel: `${sheetDate} — 총 클릭 수`,
+      });
+      const { totalClicks } = await fetchServiceStats(api, {
         startDate,
         endDate,
       });
-      if (selectedItems.has(keys.wau)) results[sheetDate][keys.wau] = wau;
-      if (selectedItems.has(keys.totalClicks))
-        results[sheetDate][keys.totalClicks] = totalClicks;
+      results[sheetDate][keys.totalClicks] = totalClicks;
       completed++;
     }
 
