@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const DEFAULT_TITLE = 'CarLife Dashboard';
@@ -13,11 +13,11 @@ const getTitleByPathname = (pathname: string): string => {
 const PageTitle = () => {
   const { pathname } = useLocation();
 
-  return (
-    <Helmet>
-      <title>{getTitleByPathname(pathname)}</title>
-    </Helmet>
-  );
+  useEffect(() => {
+    document.title = getTitleByPathname(pathname);
+  }, [pathname]);
+
+  return null;
 };
 
 export default PageTitle;
