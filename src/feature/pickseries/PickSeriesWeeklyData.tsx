@@ -8,7 +8,6 @@ import type {
   ProductGroup,
   ProductState,
 } from '@/feature/pickseries/types/pickSeriesTypes';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
 import {
   fetchPickSeriesWeeklySheet,
@@ -23,7 +22,6 @@ import { toast } from 'react-toastify';
 import { WEEKLY_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
 
 export default function PickSeriesWeeklyData() {
-  const { loginToken } = useLoginTokenStore();
   const { serverTokens } = usePickSeriesServerStore();
 
   const [productStates, setProductStates] = useState<
@@ -52,8 +50,6 @@ export default function PickSeriesWeeklyData() {
   );
 
   useEffect(() => {
-    if (!loginToken) return;
-
     loggedInProducts.forEach((product) => {
       if (initializedProducts.current.has(product.id)) return;
       if (fetchingProducts.current.has(product.id)) return;
@@ -104,7 +100,7 @@ export default function PickSeriesWeeklyData() {
           fetchingProducts.current.delete(product.id);
         });
     });
-  }, [loginToken, loggedInProducts]);
+  }, [loggedInProducts]);
 
   const allDates = useMemo(() => {
     const dateSet = new Set<string>();
@@ -342,10 +338,10 @@ export default function PickSeriesWeeklyData() {
           description='시트의 빈 주차를 자동으로 감지하고 데이터를 채웁니다. (월-일 기준)'
         />
 
-        {!loginToken ? (
+        {!hasAnyLoggedIn ? (
           <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5'>
             <p className='text-gray-600 text-sm'>
-              Google Sheets 로그인이 필요합니다.
+              PickSeries 서버 로그인이 필요합니다.
             </p>
           </div>
         ) : (
@@ -401,7 +397,7 @@ export default function PickSeriesWeeklyData() {
       </div>
 
       {/* 하단 고정 바 */}
-      {loginToken && hasAnyLoggedIn && (
+      {hasAnyLoggedIn && (
         <BottomBar
           handleReset={handleReset}
           activeSelectedDates={activeSelectedDates}

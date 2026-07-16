@@ -1,6 +1,5 @@
 import type { WeeklyExtractionResult } from '@/feature/pickseries/utils/extractPickjoyWeeklyData';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
-import { getSheetsClient, initializeGoogleAPI } from '@/shared/utils/auth/auth';
+import { batchUpdateSheetValues } from '@/feature/pickseries/utils/pickSeriesSheetApi';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
 import type { WeeklySheetData } from '@/feature/pickseries/utils/fetchPickSeriesWeeklySheet';
 
@@ -21,13 +20,6 @@ export async function writePickSeriesWeeklySheet(
 ): Promise<void> {
   const spreadsheetId = import.meta.env
     .VITE_PICKSERIES_SPREADSHEET_ID as string;
-
-  await initializeGoogleAPI();
-  const token = useLoginTokenStore.getState().loginToken;
-  if (!token) throw new Error('Google 인증 토큰이 없습니다.');
-  gapi.client.setToken({ access_token: token });
-
-  const sheets = getSheetsClient();
 
   const data: Array<{ range: string; values: (string | number)[][] }> = [];
 
@@ -50,9 +42,5 @@ export async function writePickSeriesWeeklySheet(
 
   if (data.length === 0) return;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (sheets.spreadsheets.values as any).batchUpdate({
-    spreadsheetId,
-    resource: { valueInputOption: 'USER_ENTERED', data },
-  });
+  await batchUpdateSheetValues(spreadsheetId, data);
 }

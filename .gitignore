@@ -29,3 +29,5 @@ README_MIGRATION.md
 
 .env
 .claude/*
+.vercel
+.env*

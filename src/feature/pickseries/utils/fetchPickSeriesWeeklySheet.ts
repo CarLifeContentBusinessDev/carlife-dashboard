@@ -1,9 +1,4 @@
-import {
-  getSheetsClient,
-  initializeGoogleAPI,
-  silentRefreshGoogleToken,
-} from '@/shared/utils/auth/auth';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
+import { getSheetValues } from '@/feature/pickseries/utils/pickSeriesSheetApi';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
 
 export interface WeeklySheetData {
@@ -29,14 +24,6 @@ function normalizeDate(raw: string): string {
 export async function fetchPickSeriesWeeklySheet(
   tabName: string
 ): Promise<WeeklySheetData> {
-  await initializeGoogleAPI();
-
-  const token = useLoginTokenStore.getState().loginToken;
-  if (!token) throw new Error('Google 인증 토큰이 없습니다.');
-
-  gapi.client.setToken({ access_token: token });
-
-  const sheets = getSheetsClient();
   const spreadsheetId = import.meta.env
     .VITE_PICKSERIES_SPREADSHEET_ID as string;
 
@@ -49,37 +36,7 @@ export async function fetchPickSeriesWeeklySheet(
   const range = buildSheetRange(tabName, 'A4:AJ200');
   console.log('[WeeklySheet] fetch 시작:', { tabName, spreadsheetId, range });
 
-  const callAPI = () =>
-    sheets.spreadsheets.values.get({ spreadsheetId, range });
-
-  let response: Awaited<ReturnType<typeof sheets.spreadsheets.values.get>>;
-  try {
-    response = await callAPI();
-  } catch (firstErr: unknown) {
-    const gapiErr = firstErr as Record<string, unknown>;
-    const status = gapiErr?.status as number | undefined;
-
-    if (status === 401) {
-      const newToken = await silentRefreshGoogleToken();
-      if (!newToken) {
-        throw new Error('Google 인증이 만료되었습니다. 다시 로그인해주세요.');
-      }
-      try {
-        response = await callAPI();
-      } catch {
-        throw new Error('Google 인증이 만료되었습니다. 다시 로그인해주세요.');
-      }
-    } else {
-      const errObj = (gapiErr?.result as Record<string, unknown>)?.error;
-      const msg = errObj
-        ? JSON.stringify(errObj)
-        : ((gapiErr?.message as string) ?? String(firstErr));
-      console.error('[WeeklySheet] API 오류:', gapiErr);
-      throw new Error(String(msg));
-    }
-  }
-
-  const rawValues = (response.result.values ?? []) as unknown[][];
+  const rawValues = await getSheetValues(spreadsheetId, range);
   console.log(
     '[WeeklySheet] 응답 rows:',
     rawValues.length,

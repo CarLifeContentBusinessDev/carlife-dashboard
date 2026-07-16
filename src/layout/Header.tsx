@@ -12,6 +12,7 @@ import {
   PICKSERIES_SERVERS,
 } from '@/constants/servers';
 import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
+import PickSeriesLoginModal from '@/feature/pickseries/components/PickSeriesLoginModal';
 import ServerConnectionDropdown from '@/layout/components/ServerConnectionDropdown';
 import { supabase } from '@/lib/supabase';
 import Button from '@/shared/components/common/Button';
@@ -71,9 +72,11 @@ const Header = () => {
     useState<PickleServer | null>(null);
   const [loginModalPickSeriesServer, setLoginModalPickSeriesServer] =
     useState<PickSeriesServer | null>(null);
+  const [showPickSeriesLoginModal, setShowPickSeriesLoginModal] =
+    useState(false);
 
   useEffect(() => {
-    if (!selectedService) return;
+    if (!selectedService || selectedService === 'pickseries') return;
     const initGoogle = async () => {
       try {
         await initializeGoogleAPI();
@@ -226,35 +229,36 @@ const Header = () => {
           />
         )}
 
-        {selectedService === 'pickseries' && (
-          <ServerConnectionDropdown
-            servers={PICKSERIES_SERVERS}
-            serverTokens={pickSeriesTokens}
-            clearServerToken={clearPickSeriesToken}
-            onRequestLogin={setLoginModalPickSeriesServer}
-            connectedActionLabel='해제'
-            disconnectedActionLabel='연결'
-          />
-        )}
-
-        {/* 구글 로그인 버튼 */}
-        {googleInitialized && loginToken ? (
-          <Button
-            onClick={handleGoogleLogout}
-            className='hidden lg:inline-flex'
-          >
-            Google 로그아웃
-          </Button>
-        ) : (
-          googleInitialized && (
+        {selectedService === 'pickseries' && !hasPickSeriesSession && (
+          <>
             <Button
-              onClick={handleGoogleLogin}
+              onClick={() => setShowPickSeriesLoginModal(true)}
               className='hidden lg:inline-flex'
             >
-              Google 로그인
+              PickSeries 로그인
             </Button>
-          )
+          </>
         )}
+
+        {/* 구글 로그인 버튼 (PickSeries는 서비스 계정으로 대체되어 불필요) */}
+        {selectedService !== 'pickseries' &&
+          (googleInitialized && loginToken ? (
+            <Button
+              onClick={handleGoogleLogout}
+              className='hidden lg:inline-flex'
+            >
+              Google 로그아웃
+            </Button>
+          ) : (
+            googleInitialized && (
+              <Button
+                onClick={handleGoogleLogin}
+                className='hidden lg:inline-flex'
+              >
+                Google 로그인
+              </Button>
+            )
+          ))}
 
         {/* 서비스별 로그아웃 버튼 */}
         {hasPicknowSession && (
@@ -274,12 +278,22 @@ const Header = () => {
           </Button>
         )}
         {hasPickSeriesSession && (
-          <Button
-            onClick={() => handleServiceLogout('pickseries')}
-            className='hidden lg:inline-flex'
-          >
-            PickSeries 로그아웃
-          </Button>
+          <>
+            <ServerConnectionDropdown
+              servers={PICKSERIES_SERVERS}
+              serverTokens={pickSeriesTokens}
+              clearServerToken={clearPickSeriesToken}
+              onRequestLogin={setLoginModalPickSeriesServer}
+              connectedActionLabel='해제'
+              disconnectedActionLabel='연결'
+            />
+            <Button
+              onClick={() => handleServiceLogout('pickseries')}
+              className='hidden lg:inline-flex'
+            >
+              PickSeries 로그아웃
+            </Button>
+          </>
         )}
       </div>
 
@@ -304,6 +318,13 @@ const Header = () => {
           server={loginModalPickSeriesServer}
           setServerToken={setPickSeriesServerToken}
           onClose={() => setLoginModalPickSeriesServer(null)}
+        />
+      )}
+
+      {showPickSeriesLoginModal && (
+        <PickSeriesLoginModal
+          setServerToken={setPickSeriesServerToken}
+          onClose={() => setShowPickSeriesLoginModal(false)}
         />
       )}
     </div>

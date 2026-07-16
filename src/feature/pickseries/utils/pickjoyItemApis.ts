@@ -191,7 +191,7 @@ export async function fetchContentsStats(
   };
 }
 
-// OEM 지표 - 단일 OEM '서비스 통계' 탭 → 누적 사용자 수 + 활성 사용자 수
+// OEM 지표 - 누적 사용자 수, 활성 사용자 수(WAU)
 function parseServiceStats(
   buffer: ArrayBuffer,
   expectedRows: number

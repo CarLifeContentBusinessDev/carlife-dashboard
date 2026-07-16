@@ -106,6 +106,7 @@ const PickSeriesWeeklyData = lazy(
 const PickSeriesOEMData = lazy(
   () => import('./feature/pickseries/PickSeriesOEMData')
 );
+const LoginPage = lazy(() => import('./feature/login/LoginPage'));
 
 const LOGOUT_EVENT_NAME = 'app:logout';
 
@@ -153,6 +154,7 @@ function App() {
         <Routes>
           {/* 서비스 선택 및 로그인 (Layout 없음) */}
           <Route path='' element={<ServiceEntryPage />} />
+          <Route path='pickseries/login' element={<LoginPage />} />
 
           {/* 인증된 어드민 페이지 */}
           <Route element={<AuthGuard />}>

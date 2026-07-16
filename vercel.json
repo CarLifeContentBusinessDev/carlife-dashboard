@@ -1,4 +1,5 @@
 {
+  "framework": "vite",
   "headers": [
     {
       "source": "/(.*)",
@@ -9,6 +10,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  ]
 }
