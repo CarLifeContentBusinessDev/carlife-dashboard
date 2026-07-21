@@ -121,7 +121,7 @@ export default function Configuration() {
         const results = await Promise.all(
           loggedIn.map(async (s) => ({
             id: s.id,
-            data: await fetchSettingData(s.spreadsheetId!),
+            data: await fetchSettingData(s.spreadsheetId!, s.label),
           }))
         );
         setRowsByServer((prev) => ({
@@ -211,7 +211,8 @@ export default function Configuration() {
               customerName,
               selections,
               apiInstance,
-              server.spreadsheetId!
+              server.spreadsheetId!,
+              server.label
             );
             results.success.push(`${server.label} / ${customerName}`);
             if (syncResult.failedBookmarkSeqs.length > 0) {

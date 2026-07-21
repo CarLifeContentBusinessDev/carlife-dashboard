@@ -146,15 +146,16 @@ const getValueFromConfig = (
 };
 
 export async function syncPicknowConfigurationSheet(
-  sheetName: string,
+  customerName: string,
   selections: PicknowSelection[],
   apiInstance: AxiosInstance,
-  spreadsheetId: string
+  spreadsheetId: string,
+  serverLabel: string
 ): Promise<SyncPicknowConfigurationResult> {
-  const targetSheetName = sheetName.trim();
+  const targetCustomerName = customerName.trim();
 
-  if (!targetSheetName) {
-    throw new Error('시트명이 비어 있습니다.');
+  if (!targetCustomerName) {
+    throw new Error('고객사명이 비어 있습니다.');
   }
 
   if (selections.length === 0) {
@@ -172,12 +173,31 @@ export async function syncPicknowConfigurationSheet(
 
   gapi.client.setToken({ access_token: token });
 
+  const settingRows: SettingRow[] = await fetchSettingData(
+    spreadsheetId,
+    serverLabel
+  );
+
+  const normalizedCustomerName = normalizeText(targetCustomerName);
+  const matchedSettingRow = settingRows.find(
+    (row) => normalizeText(row.고객사) === normalizedCustomerName
+  );
+  const rawSheetName = (
+    matchedSettingRow?.시트명 || targetCustomerName
+  ).trim();
+  const serverPrefix = matchedSettingRow?.서버?.trim();
+  const targetSheetName = serverPrefix
+    ? `[${serverPrefix}] ${rawSheetName}`
+    : rawSheetName;
+
+  if (!targetSheetName) {
+    throw new Error('시트명이 비어 있습니다.');
+  }
+
   const sheetId = await preparePicknowConfigurationSheet(
     targetSheetName,
     spreadsheetId
   );
-
-  const settingRows: SettingRow[] = await fetchSettingData(spreadsheetId);
 
   const binaryCodeResponse = await apiInstance.get<BinaryCodeResponse>(
     '/admin/common-code/common-codes/BinaryCode',

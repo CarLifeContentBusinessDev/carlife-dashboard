@@ -6,8 +6,11 @@ import {
 } from '@/shared/utils/auth/auth';
 import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
+import { normalizeText } from '@/shared/utils/googleSheets/oemDeviceMatching';
 
 export interface SettingRow {
+  서버: string;
+  시트명: string;
   고객사: string;
   OEM: string;
   DEVICE: string;
@@ -18,7 +21,8 @@ export interface SettingRow {
 }
 
 export async function fetchSettingData(
-  spreadsheetId: string
+  spreadsheetId: string,
+  serverLabel: string
 ): Promise<SettingRow[]> {
   await initializeGoogleAPI();
 
@@ -41,7 +45,7 @@ export async function fetchSettingData(
   const fetchRange = () =>
     sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: buildSheetRange('Setting', 'B3:H1000'),
+      range: buildSheetRange('Setting', 'B3:J1000'),
     });
 
   let response;
@@ -70,15 +74,22 @@ export async function fetchSettingData(
   const values = response.result.values ?? [];
   if (values.length === 0) return [];
 
+  const normalizedServerLabel = normalizeText(serverLabel);
+
   return values
     .map((row: string[]) => ({
-      고객사: String(row[0] ?? '').trim(),
-      OEM: String(row[1] ?? '').trim(),
-      DEVICE: String(row[2] ?? '').trim(),
-      국가코드: String(row[3] ?? '').trim(),
-      해상도: String(row[4] ?? '').trim(),
-      Orientation: String(row[5] ?? '').trim(),
-      Version: String(row[6] ?? '').trim(),
+      서버: String(row[0] ?? '').trim(),
+      시트명: String(row[1] ?? '').trim(),
+      고객사: String(row[2] ?? '').trim(),
+      OEM: String(row[3] ?? '').trim(),
+      DEVICE: String(row[4] ?? '').trim(),
+      국가코드: String(row[5] ?? '').trim(),
+      해상도: String(row[6] ?? '').trim(),
+      Orientation: String(row[7] ?? '').trim(),
+      Version: String(row[8] ?? '').trim(),
     }))
-    .filter((row) => row.고객사 !== '');
+    .filter((row) => row.고객사 !== '')
+    .filter(
+      (row) => row.서버 === '' || normalizeText(row.서버) === normalizedServerLabel
+    );
 }
