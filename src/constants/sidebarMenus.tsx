@@ -125,8 +125,8 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     id: 'RSS-maker',
     label: 'RSS 생성기',
     icon: <img src={rssFillSvg} width={24} height={24} alt='RSS 생성기' />,
-    to: 'https://rss-fe.vercel.app/',
-    openInNewTab: true,
+    to: '/pickle/rss-generator',
+    openInNewTab: false,
   },
   {
     id: 'thumbnail-generator',
@@ -134,8 +134,8 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     icon: (
       <img src={imageGeneratorSvg} width={24} height={24} alt='썸네일 생성기' />
     ),
-    to: 'https://thumbnail-studio-kohl.vercel.app/',
-    openInNewTab: true,
+    to: '/pickle/thumbnail-generator',
+    openInNewTab: false,
   },
 ];
 
