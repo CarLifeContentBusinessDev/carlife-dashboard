@@ -20,7 +20,7 @@ const ENTRY_MENU: Record<
   pickle: {
     logo: pickleLogo,
     title: 'Pickle',
-    description: '상용 & 데모 콘텐츠 관리',
+    description: '콘텐츠 관리 및 RSS/썸네일 생성',
   },
   picknow: {
     logo: picknowLogo,

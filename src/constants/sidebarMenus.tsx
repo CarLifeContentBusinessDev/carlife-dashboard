@@ -3,6 +3,8 @@ import radioFillSvg from '@/assets/radio-fill.svg';
 import adminLineSvg from '@/assets/admin-line.svg';
 import adminFillSvg from '@/assets/admin-fill.svg';
 import excelSvg from '@/assets/excel.svg';
+import rssFillSvg from '@/assets/rss-fill.svg';
+import imageGeneratorSvg from '@/assets/image-ai-fill.svg';
 
 export interface MenuChild {
   id: string;
@@ -117,6 +119,22 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
       />
     ),
     to: import.meta.env.VITE_ADMIN_EPI_URL_STG,
+    openInNewTab: true,
+  },
+  {
+    id: 'RSS-maker',
+    label: 'RSS 생성기',
+    icon: <img src={rssFillSvg} width={24} height={24} alt='RSS 생성기' />,
+    to: 'https://rss-fe.vercel.app/',
+    openInNewTab: true,
+  },
+  {
+    id: 'thumbnail-generator',
+    label: '썸네일 생성기',
+    icon: (
+      <img src={imageGeneratorSvg} width={24} height={24} alt='썸네일 생성기' />
+    ),
+    to: 'https://thumbnail-studio-kohl.vercel.app/',
     openInNewTab: true,
   },
 ];
