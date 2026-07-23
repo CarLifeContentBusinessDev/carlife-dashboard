@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
-import AuthGuard from './shared/components/common/AuthGuard';
-import PageTitle from './shared/components/common/PageTitle';
 import Layout from './layout/Layout';
 import { supabase } from './lib/supabase';
+import AuthGuard from './shared/components/common/AuthGuard';
+import PageTitle from './shared/components/common/PageTitle';
 import { useAccessTokenStore } from './shared/store/useAccessTokenStore';
 
 const ServiceEntryPage = lazy(
@@ -105,6 +105,9 @@ const PickSeriesWeeklyData = lazy(
 );
 const PickSeriesOEMData = lazy(
   () => import('./feature/pickseries/PickSeriesOEMData')
+);
+const ExternalSite = lazy(
+  () => import('./shared/components/common/ExternalSite')
 );
 
 const LOGOUT_EVENT_NAME = 'app:logout';
@@ -254,6 +257,35 @@ function App() {
                     <Route path='new' element={<DemoBroadcastingAdd />} />
                   </Route>
                 </Route>
+
+                {/* 기타 */}
+                <Route
+                  path='rss-generator'
+                  element={
+                    <ExternalSite
+                      src='https://rss-fe.vercel.app/'
+                      title='RSS Generator'
+                    />
+                  }
+                />
+                <Route
+                  path='streaming-rss-generator'
+                  element={
+                    <ExternalSite
+                      src='https://rss-maker.vercel.app/'
+                      title='스트리밍 RSS Generator'
+                    />
+                  }
+                />
+                <Route
+                  path='thumbnail-generator'
+                  element={
+                    <ExternalSite
+                      src='https://thumbnail-studio-kohl.vercel.app/'
+                      title='썸네일 생성기'
+                    />
+                  }
+                />
               </Route>
 
               {/* Picknow */}

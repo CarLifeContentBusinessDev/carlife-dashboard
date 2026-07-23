@@ -9,6 +9,7 @@ interface MenuGroupItemProps {
   isSidebarOpen: boolean;
   isActive: boolean;
   items: MenuChild[];
+  isFirstGroup?: boolean;
 }
 
 const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
@@ -31,8 +32,9 @@ const MenuGroupItem = ({
   isSidebarOpen,
   isActive,
   items,
+  isFirstGroup = false,
 }: MenuGroupItemProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [floatingMenuPos, setFloatingMenuPos] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -46,6 +48,12 @@ const MenuGroupItem = ({
       });
     }
   }, [isSidebarOpen, isHovered]);
+
+  useEffect(() => {
+    if (isFirstGroup) {
+      setIsExpanded(true);
+    }
+  }, [isFirstGroup]);
 
   return (
     <div
