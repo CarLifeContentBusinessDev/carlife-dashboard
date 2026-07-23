@@ -69,6 +69,7 @@ const Sidebar = () => {
                   isSidebarOpen={isOpen}
                   isActive={isActive}
                   items={group.children}
+                  isFirstGroup={index === 0}
                 />
               ) : (
                 <MenuButton
