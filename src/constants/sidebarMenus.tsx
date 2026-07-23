@@ -1,10 +1,10 @@
-import radioSvg from '@/assets/radio.svg';
-import radioFillSvg from '@/assets/radio-fill.svg';
-import adminLineSvg from '@/assets/admin-line.svg';
 import adminFillSvg from '@/assets/admin-fill.svg';
 import excelSvg from '@/assets/excel.svg';
-import rssFillSvg from '@/assets/rss-fill.svg';
 import imageGeneratorSvg from '@/assets/image-ai-fill.svg';
+import radarFillSvg from '@/assets/radar-fill.svg';
+import radioFillSvg from '@/assets/radio-fill.svg';
+import radioSvg from '@/assets/radio.svg';
+import rssFillSvg from '@/assets/rss-fill.svg';
 
 export interface MenuChild {
   id: string;
@@ -94,38 +94,43 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    id: 'prod-admin',
-    label: '상용 어드민 바로가기',
+    id: 'pickle-admin-links',
+    label: '어드민 바로가기',
     icon: (
-      <img
-        src={adminLineSvg}
-        width={24}
-        height={24}
-        alt='상용 어드민 바로가기'
-      />
+      <img src={adminFillSvg} width={24} height={24} alt='어드민 바로가기' />
     ),
-    to: import.meta.env.VITE_ADMIN_EPI_URL,
-    openInNewTab: true,
-  },
-  {
-    id: 'stg-admin',
-    label: '검증 어드민 바로가기',
-    icon: (
-      <img
-        src={adminFillSvg}
-        width={24}
-        height={24}
-        alt='검증 어드민 바로가기'
-      />
-    ),
-    to: import.meta.env.VITE_ADMIN_EPI_URL_STG,
-    openInNewTab: true,
+    children: [
+      {
+        id: 'prod-admin',
+        to: import.meta.env.VITE_ADMIN_EPI_URL,
+        label: '상용 어드민 바로가기',
+      },
+      {
+        id: 'stg-admin',
+        to: import.meta.env.VITE_ADMIN_EPI_URL_STG,
+        label: '검증 어드민 바로가기',
+      },
+    ],
   },
   {
     id: 'RSS-maker',
     label: 'RSS 생성기',
     icon: <img src={rssFillSvg} width={24} height={24} alt='RSS 생성기' />,
     to: '/pickle/rss-generator',
+    openInNewTab: false,
+  },
+  {
+    id: 'streaming-RSS-maker',
+    label: '스트리밍 RSS 생성기',
+    icon: (
+      <img
+        src={radarFillSvg}
+        width={24}
+        height={24}
+        alt='스트리밍 RSS 생성기'
+      />
+    ),
+    to: '/pickle/streaming-rss-generator',
     openInNewTab: false,
   },
   {

@@ -269,6 +269,15 @@ function App() {
                   }
                 />
                 <Route
+                  path='streaming-rss-generator'
+                  element={
+                    <ExternalSite
+                      src='https://rss-maker.vercel.app/'
+                      title='스트리밍 RSS Generator'
+                    />
+                  }
+                />
+                <Route
                   path='thumbnail-generator'
                   element={
                     <ExternalSite
