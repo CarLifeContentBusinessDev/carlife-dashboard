@@ -39,35 +39,70 @@ export const picknowTokenKey = (id: string) => `picknow_token_${id}`;
 export const picknowRefreshKey = (id: string) => `picknow_refresh_${id}`;
 
 export const PICKNOW_SERVERS: PicknowServer[] = [
+  // 검증서버
   {
-    id: 'picknow-stg',
-    label: 'STG',
+    id: 'picknow-stg-kr',
+    label: '한국',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_STG as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_STG as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
-    id: 'picknow-kr-demo',
-    label: 'KR Demo',
+    id: 'picknow-stg-in',
+    label: '인도',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_STG_IN as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_STG as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  // 데모 서버
+  {
+    id: 'picknow-demo-kr',
+    label: '한국',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_DEMO as string,
-    spreadsheetId: import.meta.env
-      .VITE_PICKNOW_SPREADSHEET_ID_KR_DEMO as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
-    id: 'picknow-kr-prod-kia',
-    label: '상용 한국 - KIA',
+    id: 'picknow-demo-us',
+    label: '북미',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_US_DEMO as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  {
+    id: 'picknow-demo-sg',
+    label: '싱가폴(인도)',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_SG_DEMO as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  {
+    id: 'picknow-demo-eu',
+    label: '유럽',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_EU_DEMO as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  {
+    id: 'picknow-demo-au',
+    label: '호주',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_AU_DEMO as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+  },
+  // 상용 서버
+  {
+    id: 'picknow-prod-kr-kia',
+    label: '한국 PV5',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD_KIA as string,
-    spreadsheetId: import.meta.env
-      .VITE_PICKNOW_SPREADSHEET_ID_KR_PROD_KIA as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_PROD as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   {
-    id: 'picknow-kr-prod',
-    label: '상용 한국 - MOTREX, KGM',
+    id: 'picknow-prod-kr',
+    label: '한국',
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD as string,
-    spreadsheetId: import.meta.env
-      .VITE_PICKNOW_SPREADSHEET_ID_KR_PROD as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_PROD as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
   },
   // {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 interface ServerBase {
   id: string;
   label: string;
+  isActive?: boolean;
 }
 
 interface ServerConnectionDropdownProps<T extends ServerBase> {
@@ -76,7 +77,7 @@ const ServerConnectionDropdown = <T extends ServerBase>({
             return (
               <div
                 key={server.id}
-                className='flex items-center gap-3 px-4 py-3 hover:bg-gray-50'
+                className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 `}
               >
                 <span
                   className={`w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
@@ -85,12 +86,16 @@ const ServerConnectionDropdown = <T extends ServerBase>({
                   {server.label}
                 </span>
                 <span
-                  className={`text-xs ${connected ? 'text-green-600' : 'text-gray-400'}`}
+                  className={`text-xs ${connected ? 'text-green-600' : 'hidden'}`}
                 >
-                  {connected ? '연결됨' : '미연결'}
+                  {connected ? '연결됨' : server.isActive ? '미연결' : '연동전'}
                 </span>
                 <button
                   onClick={() => {
+                    if (server.isActive === false) {
+                      return;
+                    }
+
                     if (connected) {
                       clearServerToken(server.id);
                     } else {
@@ -101,10 +106,16 @@ const ServerConnectionDropdown = <T extends ServerBase>({
                   className={`text-xs px-3 py-1 rounded-full border cursor-pointer transition-colors ${
                     connected
                       ? 'border-red-200 text-red-500 hover:bg-red-50'
-                      : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                      : server.isActive
+                        ? 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                        : 'border-gray-200 text-gray-400 hover:bg-gray-50'
                   }`}
                 >
-                  {connected ? connectedActionLabel : disconnectedActionLabel}
+                  {connected
+                    ? connectedActionLabel
+                    : server.isActive
+                      ? disconnectedActionLabel
+                      : '연동 전'}
                 </button>
               </div>
             );
