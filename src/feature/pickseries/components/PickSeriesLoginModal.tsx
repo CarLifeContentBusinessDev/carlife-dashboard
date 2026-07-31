@@ -11,7 +11,10 @@ interface Props {
 
 const REMEMBER_ID_KEY = 'pickSeriesRememberId';
 
-export default function PickSeriesLoginModal({ onClose, setServerToken }: Props) {
+export default function PickSeriesLoginModal({
+  onClose,
+  setServerToken,
+}: Props) {
   const [id, setId] = useState(
     () => localStorage.getItem(REMEMBER_ID_KEY) ?? ''
   );
@@ -31,9 +34,19 @@ export default function PickSeriesLoginModal({ onClose, setServerToken }: Props)
     setError('');
 
     const results = await Promise.all(
-      PICKSERIES_SERVERS.map((server) =>
-        loginPickSeriesServer(server, id, password)
-      )
+      PICKSERIES_SERVERS.map((server) => {
+        if (!server.isActive) {
+          return Promise.resolve({
+            server,
+            success: false,
+            message: '아직 연동되지 않은 서버입니다.',
+            accessToken: '',
+            refreshToken: '',
+          });
+        }
+
+        return loginPickSeriesServer(server, id, password);
+      })
     );
 
     let successCount = 0;
@@ -45,6 +58,8 @@ export default function PickSeriesLoginModal({ onClose, setServerToken }: Props)
           result.accessToken,
           result.refreshToken
         );
+      } else if (result.message === '아직 연동되지 않은 서버입니다.') {
+        console.log(`${result.server.label} 서버는 아직 연동되지 않았습니다.`);
       } else {
         toast.error(`${result.server.label} 로그인 실패: ${result.message}`);
       }
@@ -59,9 +74,7 @@ export default function PickSeriesLoginModal({ onClose, setServerToken }: Props)
     setLoading(false);
 
     if (successCount > 0) {
-      toast.success(
-        `${successCount}/${PICKSERIES_SERVERS.length} 서버 로그인 성공`
-      );
+      toast.success(`픽시리즈 서버 로그인 성공`);
       onClose();
     } else {
       setError('모든 서버 로그인에 실패했습니다.');
@@ -89,7 +102,9 @@ export default function PickSeriesLoginModal({ onClose, setServerToken }: Props)
             height={40}
             className='mx-auto mb-3'
           />
-          <h2 className='text-xl font-bold text-[#1B1E2F]'>PickSeries 로그인</h2>
+          <h2 className='text-xl font-bold text-[#1B1E2F]'>
+            PickSeries 로그인
+          </h2>
           <p className='text-sm text-gray-500 mt-1'>
             관리자 계정으로 전체 서버에 한 번에 로그인합니다
           </p>

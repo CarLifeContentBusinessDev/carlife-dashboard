@@ -373,6 +373,7 @@ export default function PickSeriesWeeklyData() {
                 const selectedCount = items.filter((item) =>
                   selected.has(item)
                 ).length;
+                const isActive = product.id === 'pickjoy' ? true : false;
 
                 return (
                   <WeeklyCard
@@ -388,6 +389,7 @@ export default function PickSeriesWeeklyData() {
                     onClick={toggleProductAll}
                     getItemExistingDates={getItemExistingDates}
                     toggleItem={toggleItem}
+                    isActive={isActive}
                   />
                 );
               })}

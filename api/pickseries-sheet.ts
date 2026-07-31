@@ -12,9 +12,9 @@ type SheetRequestBody =
 function getAuth() {
   const clientEmail = process.env.PICKSERIES_GOOGLE_CLIENT_EMAIL;
   const privateKey = process.env.PICKSERIES_GOOGLE_PRIVATE_KEY?.replace(
-    /\\n/g,
-    '\n'
-  );
+    /^"(.*)"$/,
+    '$1'
+  )?.replace(/\\n/g, '\n');
 
   if (!clientEmail || !privateKey) {
     throw new Error(
@@ -29,7 +29,6 @@ function getAuth() {
   });
 }
 
-// 배포 도메인 외부에서의 직접 호출을 걸러내는 최소한의 방어(완전한 인증은 아님)
 function isAllowedOrigin(req: VercelRequest): boolean {
   const host = req.headers.host;
   const originHeader = req.headers.origin ?? req.headers.referer;
@@ -42,10 +41,7 @@ function isAllowedOrigin(req: VercelRequest): boolean {
   }
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
