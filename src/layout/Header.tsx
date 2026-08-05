@@ -240,8 +240,8 @@ const Header = () => {
           </>
         )}
 
-        {/* 구글 로그인 버튼 (PickSeries는 서비스 계정으로 대체되어 불필요) */}
-        {selectedService !== 'pickseries' &&
+        {/* 구글 로그인 버튼  */}
+        {selectedService == 'pickle' &&
           (googleInitialized && loginToken ? (
             <Button
               onClick={handleGoogleLogout}

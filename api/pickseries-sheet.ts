@@ -10,15 +10,15 @@ type SheetRequestBody =
     };
 
 function getAuth() {
-  const clientEmail = process.env.PICKSERIES_GOOGLE_CLIENT_EMAIL;
-  const privateKey = process.env.PICKSERIES_GOOGLE_PRIVATE_KEY?.replace(
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(
     /^"(.*)"$/,
     '$1'
   )?.replace(/\\n/g, '\n');
 
   if (!clientEmail || !privateKey) {
     throw new Error(
-      'PICKSERIES_GOOGLE_CLIENT_EMAIL / PICKSERIES_GOOGLE_PRIVATE_KEY 환경변수가 설정되지 않았습니다.'
+      'GOOGLE_CLIENT_EMAIL / GOOGLE_PRIVATE_KEY 환경변수가 설정되지 않았습니다.'
     );
   }
 

@@ -495,7 +495,6 @@ export default function Configuration() {
       />
 
       <ConfigurationStatus
-        loginToken={loginToken}
         loggedInSelectedServers={loggedInSelectedServers}
         loading={loading}
         error={error}

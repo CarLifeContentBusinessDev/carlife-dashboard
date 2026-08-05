@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import type { PicknowServer } from '@/constants/servers';
 
 interface ConfigurationStatusProps {
-  loginToken: string;
   loggedInSelectedServers: PicknowServer[];
   loading: boolean;
   error: string | null;
@@ -10,21 +9,11 @@ interface ConfigurationStatusProps {
 }
 
 export default function ConfigurationStatus({
-  loginToken,
   loggedInSelectedServers,
   loading,
   error,
   children,
 }: ConfigurationStatusProps) {
-  if (!loginToken) {
-    return (
-      <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3'>
-        <p className='text-gray-600 text-sm'>
-          Google Sheets 로그인이 필요합니다.
-        </p>
-      </div>
-    );
-  }
   if (loggedInSelectedServers.length === 0) {
     return (
       <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 flex flex-col gap-3'>
