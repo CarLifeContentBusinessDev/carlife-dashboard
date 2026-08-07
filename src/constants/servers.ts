@@ -33,6 +33,7 @@ export interface PicknowServer {
   apiUrl: string;
   spreadsheetId?: string;
   publicKey?: string;
+  isActive?: boolean;
 }
 
 export const picknowTokenKey = (id: string) => `picknow_token_${id}`;
@@ -43,9 +44,10 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
   {
     id: 'picknow-stg-kr',
     label: '한국',
-    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_STG as string,
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_STG_KR as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_STG as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
   {
     id: 'picknow-stg-in',
@@ -53,6 +55,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_STG_IN as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_STG as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
   // 데모 서버
   {
@@ -61,6 +64,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_DEMO as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
   {
     id: 'picknow-demo-us',
@@ -68,13 +72,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_US_DEMO as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
-  },
-  {
-    id: 'picknow-demo-sg',
-    label: '싱가폴(인도)',
-    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_SG_DEMO as string,
-    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
-    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
   {
     id: 'picknow-demo-eu',
@@ -82,6 +80,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_EU_DEMO as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
   {
     id: 'picknow-demo-au',
@@ -89,7 +88,17 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_AU_DEMO as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
+  {
+    id: 'picknow-demo-sg',
+    label: '싱가폴(인도)',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_SG_DEMO as string,
+    spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_DEMO as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: false,
+  },
+
   // 상용 서버
   {
     id: 'picknow-prod-kr-kia',
@@ -97,6 +106,7 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD_KIA as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_PROD as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
   {
     id: 'picknow-prod-kr',
@@ -104,15 +114,26 @@ export const PICKNOW_SERVERS: PicknowServer[] = [
     apiUrl: import.meta.env.VITE_PICKNOW_API_URL_KR_PROD as string,
     spreadsheetId: import.meta.env.VITE_PICKNOW_SPREADSHEET_ID_PROD as string,
     publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: true,
   },
-  // {
-  //   id: 'picknow-us-prod',
-  //   label: '상용 북미 - MOTREX',
-  //   apiUrl: import.meta.env.VITE_PICKNOW_API_URL_US as string,
-  //   spreadsheetId: import.meta.env
-  //     .VITE_PICKNOW_SPREADSHEET_ID_US_PROD as string,
-  //   publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
-  // },
+  {
+    id: 'picknow-prod-us',
+    label: '상용 북미 - MOTREX',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_US_PROD as string,
+    spreadsheetId: import.meta.env
+      .VITE_PICKNOW_SPREADSHEET_ID_US_PROD as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: false,
+  },
+  {
+    id: 'picknow-prod-sg',
+    label: '상용 싱가포르(인도)',
+    apiUrl: import.meta.env.VITE_PICKNOW_API_URL_SG_PROD as string,
+    spreadsheetId: import.meta.env
+      .VITE_PICKNOW_SPREADSHEET_ID_SG_PROD as string,
+    publicKey: `-----BEGIN PUBLIC KEY-----\n${import.meta.env.VITE_PICKNOW_PUBLIC_KEY as string}\n-----END PUBLIC KEY-----`,
+    isActive: false,
+  },
 ];
 
 // 픽시리즈

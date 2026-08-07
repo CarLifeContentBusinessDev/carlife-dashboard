@@ -74,6 +74,13 @@ const ServerConnectionDropdown = <T extends ServerBase>({
         >
           {servers.map((server) => {
             const connected = !!serverTokens[server.id];
+
+            const serverEnv = server.id.includes('stg')
+              ? 'STG'
+              : server.id.includes('demo')
+                ? 'DEMO'
+                : '상용';
+
             return (
               <div
                 key={server.id}
@@ -83,6 +90,7 @@ const ServerConnectionDropdown = <T extends ServerBase>({
                   className={`w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
                 />
                 <span className='flex-1 text-sm font-medium text-gray-700'>
+                  {`[${serverEnv}] `}
                   {server.label}
                 </span>
                 <span

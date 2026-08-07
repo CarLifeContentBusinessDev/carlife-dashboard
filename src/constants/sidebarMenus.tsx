@@ -152,7 +152,7 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
     to: '/picknow/excel-sync',
   },
   {
-    id: 'picknow-admin-router',
+    id: 'picknow-admin-router-stg',
     label: '어드민 바로가기 (STG)',
     icon: (
       <img src={adminFillSvg} width={24} height={24} alt='어드민 바로가기' />
@@ -191,7 +191,7 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
     })(),
   },
   {
-    id: 'picknow-admin-router',
+    id: 'picknow-admin-router-demo',
     label: '어드민 바로가기 (DEMO)',
     icon: (
       <img src={adminFillSvg} width={24} height={24} alt='어드민 바로가기' />
@@ -251,7 +251,7 @@ export const PICKNOW_MENU_GROUPS: MenuGroup[] = [
     })(),
   },
   {
-    id: 'picknow-admin-router',
+    id: 'picknow-admin-router-prod',
     label: '어드민 바로가기 (상용)',
     icon: (
       <img src={adminFillSvg} width={24} height={24} alt='어드민 바로가기' />

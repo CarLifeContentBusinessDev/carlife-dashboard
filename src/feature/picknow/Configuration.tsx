@@ -105,7 +105,7 @@ export default function Configuration() {
     const loggedIn = PICKNOW_SERVERS.filter(
       (s) => selectedServerIds.includes(s.id) && isServerLoggedIn(s.id)
     );
-    if (!loginToken || loggedIn.length === 0) return;
+    if (loggedIn.length === 0) return;
 
     if (
       !activeTabServerId ||
@@ -506,6 +506,11 @@ export default function Configuration() {
               {loggedInSelectedServers.map((server) => {
                 const count = selectedDevicesByServer[server.id]?.size ?? 0;
                 const isActive = activeServer?.id === server.id;
+                const serverEnv = server.id.includes('stg')
+                  ? 'STG'
+                  : server.id.includes('demo')
+                    ? 'DEMO'
+                    : '상용';
                 return (
                   <button
                     key={server.id}
@@ -516,6 +521,7 @@ export default function Configuration() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
+                    {`[${serverEnv}] `}
                     {server.label}
                     {count > 0 && (
                       <span

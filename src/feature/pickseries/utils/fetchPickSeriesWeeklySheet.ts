@@ -5,9 +5,7 @@ export interface WeeklySheetData {
   dates: string[];
   items: string[];
   existingData: Record<string, Set<string>>;
-  // date → 0-based column index (A=0, B=1, C=2, D=3, ...)
   dateColMap: Record<string, number>;
-  // itemName → 1-based sheet row number
   itemRowMap: Record<string, number>;
 }
 

@@ -34,7 +34,7 @@ export default function ServerLoginModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  console.log('ServerLoginModal rendered with server:', server);
+  // console.log('ServerLoginModal rendered with server:', server);
 
   const logoSrc = server.id.startsWith('pickle')
     ? pickleLogo
