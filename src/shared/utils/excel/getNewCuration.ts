@@ -10,14 +10,12 @@ import { mapCurationStatus } from '@/shared/utils/format/statusMapper';
 import { getCurationExcelData } from './updateCuration';
 
 export async function getNewCurationData(
-  token: string,
   setProgress: (message: string) => void,
   apiInstance: AxiosInstance = api,
   spreadsheetId?: string,
   sheetName?: string
 ): Promise<usingCurationExcelProps[]> {
   const excelData = await getCurationExcelData(
-    token,
     spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
     sheetName
   );

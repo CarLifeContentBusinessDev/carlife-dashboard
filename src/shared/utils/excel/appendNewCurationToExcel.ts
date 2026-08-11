@@ -1,10 +1,9 @@
 import { toast } from 'react-toastify';
-import type { usingCurationExcelProps } from '@/shared/types/pickleProdContents';
 import {
-  getGoogleApiErrorMessage,
-  getGoogleToken,
-  getSheetsClient,
-} from '@/shared/utils/auth/auth';
+  appendSheetValues,
+  getSheetValues,
+} from '@/feature/pickle-prod/utils/pickleProdSheetApi';
+import type { usingCurationExcelProps } from '@/shared/types/pickleProdContents';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { formatPlayTime } from '@/shared/utils/format/formatPlayTime';
 
@@ -35,10 +34,6 @@ export async function appendNewCurationToExcel(
   try {
     setLoading(true);
 
-    // 작업 시작 전 토큰 갱신
-    await getGoogleToken();
-    const sheets = getSheetsClient();
-
     const sortedData = [...newData].sort((a, b) => {
       const createdA = new Date(a.curationCreatedAt).getTime();
       const createdB = new Date(b.curationCreatedAt).getTime();
@@ -48,22 +43,19 @@ export async function appendNewCurationToExcel(
       return dispStartB - dispStartA;
     });
 
-    // 기존 데이터 읽기 전 토큰 체크
-    await getGoogleToken();
-    const response = await sheets.spreadsheets.values.get({
+    const existingData = await getSheetValues(
       spreadsheetId,
-      range: `${sheetName}!B${STARTROW}:W`,
-    });
+      `${sheetName}!B${STARTROW}:W`
+    );
 
-    const existingData = response.result.values || [];
-    const existingRows = response.result.values?.length || 0;
+    const existingRows = existingData.length;
     let nextRow = Math.max(existingRows + STARTROW, STARTROW);
 
     const existingTitles = new Set(
       existingData.map((row) => row[0]?.toString()).filter(Boolean)
     );
     const filteredData = sortedData.filter(
-      (item) => !existingTitles.has(item.thumbnailTitle)
+      (item) => !existingTitles.has(item.thumbnailTitle ?? '')
     );
 
     if (filteredData.length === 0) {
@@ -76,9 +68,6 @@ export async function appendNewCurationToExcel(
     const batches = Math.ceil(filteredData.length / batchSize);
 
     for (let batchIdx = 0; batchIdx < batches; batchIdx++) {
-      // 배치 추가 직전마다 토큰 자동 갱신
-      await getGoogleToken();
-
       const batchStart = batchIdx * batchSize;
       const batchEnd = Math.min(
         (batchIdx + 1) * batchSize,
@@ -115,12 +104,7 @@ export async function appendNewCurationToExcel(
         row.uploader,
       ]);
 
-      await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: `${sheetName}!B${nextRow}`,
-        valueInputOption: 'RAW',
-        resource: { values },
-      });
+      await appendSheetValues(spreadsheetId, `${sheetName}!B${nextRow}`, values);
 
       nextRow += batchData.length;
       await delay(100);
@@ -132,7 +116,7 @@ export async function appendNewCurationToExcel(
   } catch (err: unknown) {
     setLoading(false);
     setProgress('');
-    toast.error(`데이터 추가에 실패했습니다: ${getGoogleApiErrorMessage(err)}`);
+    toast.error('데이터 추가에 실패했습니다');
     throw err;
   }
 }

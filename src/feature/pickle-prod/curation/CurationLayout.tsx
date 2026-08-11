@@ -1,21 +1,20 @@
-import LoadingOverlay from '@/shared/components/common/LoadingOverlay';
-import Pagination from '@/shared/components/common/Pagination';
-import SheetSelector from '@/feature/pickseries/components/SheetSelector';
 import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout';
-import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio';
 import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader';
 import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState';
 import SyncToolbar from '@/feature/pickle-prod/components/SyncToolbar';
-import SortControls from '@/shared/components/table/SortControls';
-import useListSort from '@/shared/hooks/useListSort';
+import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio';
+import SheetSelector from '@/feature/pickseries/components/SheetSelector';
 import { useSheetSelection } from '@/feature/pickseries/hooks/useSheetSelection';
-import { useStagingEnv } from '@/shared/hooks/useStagingEnv';
 import {
   SYNC_PAGE_SIZE,
   useSyncState,
 } from '@/feature/pickseries/hooks/useSyncState';
+import LoadingOverlay from '@/shared/components/common/LoadingOverlay';
+import Pagination from '@/shared/components/common/Pagination';
+import SortControls from '@/shared/components/table/SortControls';
+import useListSort from '@/shared/hooks/useListSort';
+import { useStagingEnv } from '@/shared/hooks/useStagingEnv';
 import { useCurationStore } from '@/shared/store/useCurationStore';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
 import type {
   curationListItemProps,
@@ -120,13 +119,12 @@ async function loadAllCurationList(
 
 const CurationLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
-  const { loginToken } = useLoginTokenStore();
   const { isServerLoggedIn } = usePickleServerStore();
   const isPickleLoggedIn = isServerLoggedIn(
     isStaging ? 'pickle-stg' : 'pickle-prod'
   );
 
-  // ── 데이터 탭 ──────────────────────────────────────────────────────────────
+  // 데이터 탭
   const [allCurationData, setAllCurationData] = useState<ProdCurationRow[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataKeyword, setDataKeyword] = useState('');
@@ -226,7 +224,7 @@ const CurationLayout = () => {
           dataPage * dataPageSize
         );
 
-  // ── 동기화 탭 ─────────────────────────────────────────────────────────────
+  // 동기화 탭
   const [newCurations, setNewCurations] = useState<ProdCurationRow[]>([]);
   const [allCurations, setAllCurations] = useState<ProdCurationRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -249,14 +247,12 @@ const CurationLayout = () => {
     : 'sheetName:curation:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
-    loginToken,
     spreadsheetId,
     defaultSheetName,
     storageKey,
   });
 
   const handleLoadAllCurations = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
@@ -293,7 +289,6 @@ const CurationLayout = () => {
   };
 
   const handleSearchNew = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
@@ -305,7 +300,6 @@ const CurationLayout = () => {
       setSyncPage(1);
 
       const newList = await getNewCurationData(
-        loginToken,
         setProgress,
         apiInstance,
         spreadsheetId,
@@ -331,7 +325,6 @@ const CurationLayout = () => {
   };
 
   const handleSyncExcel = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
     if (!syncPreviewMode)
@@ -364,7 +357,6 @@ const CurationLayout = () => {
       } else {
         await overwriteCurationExcelData(
           previewData,
-          loginToken,
           currentSheet,
           spreadsheetId
         );
@@ -430,7 +422,7 @@ const CurationLayout = () => {
                     }
                   />
                 </div>
-                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-[220px]'>
+                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-55'>
                   <input
                     type='text'
                     value={dataKeyword}

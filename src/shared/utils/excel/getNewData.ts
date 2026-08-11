@@ -3,13 +3,12 @@ import type {
   usingChannelProps,
   usingDataProps,
 } from '@/shared/types/pickleProdContents';
+import { getSheetValues } from '@/feature/pickle-prod/utils/pickleProdSheetApi';
 import { api } from '@/shared/utils/api/api';
-import { getGoogleToken, getSheetsClient } from '@/shared/utils/auth/auth';
 import { buildSheetRange } from './sheetRange';
 import { getExcelData } from './updateExcel';
 
 export async function getNewData(
-  token: string,
   accessToken: string,
   setProgress: (message: string) => void,
   category: 'channel',
@@ -17,7 +16,6 @@ export async function getNewData(
   spreadsheetId?: string
 ): Promise<usingChannelProps[]>;
 export async function getNewData(
-  token: string,
   accessToken: string,
   setProgress: (message: string) => void,
   category: 'episode',
@@ -26,7 +24,6 @@ export async function getNewData(
 ): Promise<usingDataProps[]>;
 
 export async function getNewData(
-  token: string,
   accessToken: string,
   setProgress: (message: string) => void,
   category: 'episode' | 'channel',
@@ -35,12 +32,7 @@ export async function getNewData(
 ): Promise<(usingDataProps | usingChannelProps)[]> {
   const EPISODE_FETCH_CONCURRENCY = 10;
 
-  const excelData = await getExcelData(
-    token,
-    category,
-    undefined,
-    spreadsheetId
-  );
+  const excelData = await getExcelData(category, undefined, spreadsheetId);
 
   const size = 1000;
   const firstRes = await apiInstance.get(
@@ -155,14 +147,12 @@ export async function getNewDataWithExcel(
 
   // 1. 엑셀 B2 셀에서 총 개수 읽기 ("총 284168개" → 284168)
   setProgress?.('개수 비교 중...');
-  await getGoogleToken();
-  const sheets = getSheetsClient();
-  const countRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: targetSpreadsheetId,
-    range: buildSheetRange(sheetName || 'Sheet1', 'B2'),
-  });
+  const countValues = await getSheetValues(
+    targetSpreadsheetId,
+    buildSheetRange(sheetName || 'Sheet1', 'B2')
+  );
 
-  const rawCount = countRes.result.values?.[0]?.[0] as string | undefined;
+  const rawCount = countValues?.[0]?.[0] as string | undefined;
   const excelCount = rawCount ? Number(rawCount.replace(/[^0-9]/g, '')) : 0;
 
   // 2. API 총 개수

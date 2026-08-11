@@ -9,7 +9,14 @@ type SheetRequestBody =
       spreadsheetId: string;
       range: string;
       valueInputOption: 'RAW' | 'USER_ENTERED';
-      values: (string | number)[][];
+      values: (string | number | undefined)[][];
+    }
+  | {
+      action: 'valuesAppend';
+      spreadsheetId: string;
+      range: string;
+      valueInputOption: 'RAW' | 'USER_ENTERED';
+      values: (string | number | undefined)[][];
     }
   | { action: 'valuesClear'; spreadsheetId: string; range: string }
   | { action: 'spreadsheetsGet'; spreadsheetId: string }
@@ -55,6 +62,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.status(200).json({ ok: true });
         return;
       }
+      case 'valuesAppend': {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: body.spreadsheetId,
+          range: body.range,
+          valueInputOption: body.valueInputOption,
+          requestBody: { values: body.values },
+        });
+        res.status(200).json({ ok: true });
+        return;
+      }
       case 'valuesClear': {
         await sheets.spreadsheets.values.clear({
           spreadsheetId: body.spreadsheetId,
@@ -83,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : '알 수 없는 오류';
-    console.error('[picknow-sheet] error: ', err);
+    console.error('[pickle-sheet] error: ', err);
     res.status(500).json({ error: message });
   }
 }
