@@ -1,7 +1,7 @@
 import type { ExtractionProgress } from './extractPickjoyOEMData';
 import {
   createPickjoyApi,
-  fetchServiceStats,
+  fetchTotalClicksStat,
   fetchContentsStats,
   fetchCombinedTopContent,
   fetchCombinedRegisteredVinCount,
@@ -110,7 +110,7 @@ export async function extractPickjoyWeeklyData(params: {
     return buildOemParamsList(activeNames, oemParamsMap);
   }
 
-  // 해당 주차만의 신규 가입 VIN (7일치 DAILY 합산)
+  // 해당 주차만의 신규 가입 VIN
   async function fetchWeeklyNewVin(sheetDate: string): Promise<number> {
     const oemParamsList = oemParamsListForDate(sheetDate);
     if (oemParamsList.length === 0) return 0;
@@ -119,11 +119,11 @@ export async function extractPickjoyWeeklyData(params: {
       api,
       { startDate, endDate },
       oemParamsList,
-      'DAILY'
+      'WEEKLY'
     );
   }
 
-  // 누적 사용자 수 : 해당 주차가 속한 달 이전은 MONTHLY로 한 번에 합산하고, 해당 달(주차 포함)은 DAILY로 합산
+  // 누적 사용자 수 : 해당 주차가 속한 달 이전은 MONTHLY로 한 번에 합산하고, 해당 달(주차 포함)은 DAILY로 합산 (WEEKLY로 하면 전달과 겹치는 주차의 날짜가 중복 합산됨)
   async function computeAbsoluteRegisteredVin(
     sheetDate: string
   ): Promise<number> {
@@ -217,7 +217,7 @@ export async function extractPickjoyWeeklyData(params: {
       onProgress({
         completed,
         total,
-        currentLabel: `${sheetDate} — WAU`,
+        currentLabel: `${sheetDate} — ${keys.wau}`,
       });
       const oemParamsList = oemParamsListForDate(sheetDate);
       results[sheetDate][keys.wau] =
@@ -235,9 +235,9 @@ export async function extractPickjoyWeeklyData(params: {
       onProgress({
         completed,
         total,
-        currentLabel: `${sheetDate} — 총 클릭 수`,
+        currentLabel: `${sheetDate} — ${keys.totalClicks}`,
       });
-      const { totalClicks } = await fetchServiceStats(api, {
+      const { totalClicks } = await fetchTotalClicksStat(api, {
         startDate,
         endDate,
       });

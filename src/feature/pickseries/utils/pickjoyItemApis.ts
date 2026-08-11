@@ -108,7 +108,7 @@ export async function fetchCompanies(
 
 type DateRange = { startDate: string; endDate: string };
 type DailyStat = Record<string, number>;
-export type StatisticsSearchType = 'DAILY' | 'MONTHLY';
+export type StatisticsSearchType = 'DAILY' | 'MONTHLY' | 'WEEKLY';
 
 function sumDaily(stats: DailyStat[], key: string): number {
   return stats.reduce((sum, day) => sum + (Number(day[key]) || 0), 0);
@@ -138,7 +138,7 @@ export async function fetchCombinedRegisteredVinCount(
   api: AxiosInstance,
   range: DateRange,
   oemParamsList: PickjoyOEMParams[],
-  searchType: StatisticsSearchType = 'DAILY'
+  searchType: StatisticsSearchType = 'WEEKLY'
 ): Promise<number> {
   const expectedRows = countExpectedRows(range, searchType);
   const promises = oemParamsList.map(async (oemParams) => {
@@ -157,21 +157,43 @@ export async function fetchCombinedRegisteredVinCount(
   return results.reduce((sum, val) => sum + val, 0);
 }
 
-// 주간지표 - WAU, 총 클릭 수
-export async function fetchServiceStats(
+// 주간지표 - 총 클릭 수
+export async function fetchTotalClicksStat(
   api: AxiosInstance,
   range: DateRange
-): Promise<{ wau: number; totalClicks: number }> {
+): Promise<{ totalClicks: number }> {
   const res = await api.get<{
     data: { dailyWeeklyMonthlyStatistics: DailyStat[] };
   }>('/api/admin/v1/statistics/service-status', {
-    params: { statisticsSearchType: 'DAILY', ...range },
+    params: { statisticsSearchType: 'WEEKLY', ...range },
   });
   const stats = res.data?.data?.dailyWeeklyMonthlyStatistics ?? [];
   return {
-    wau: sumDaily(stats, 'firstRunCount'),
     totalClicks: sumDaily(stats, 'gameListPageAccessCount'),
   };
+}
+
+// 주간지표 - 활성 사용자 수 (OEM별 '서비스 통계' 내보내기 합산, OEM 지표와 동일한 산출 방식)
+export async function fetchCombinedActiveUsers(
+  api: AxiosInstance,
+  range: DateRange,
+  oemParamsList: PickjoyOEMParams[]
+): Promise<number> {
+  const expectedRows = countExpectedRows(range, 'WEEKLY');
+  const promises = oemParamsList.map(async (oemParams) => {
+    const res = await api.get('/api/admin/v1/statistics/export', {
+      params: { statisticsSearchType: 'WEEKLY', ...range, ...oemParams },
+      responseType: 'arraybuffer',
+    });
+    const { activeUsers } = parseServiceStats(
+      res.data as ArrayBuffer,
+      expectedRows
+    );
+    return activeUsers;
+  });
+
+  const results = await Promise.all(promises);
+  return results.reduce((sum, val) => sum + val, 0);
 }
 
 // 주간지표 - 총 콘텐츠 클릭 수, 사용시간
@@ -182,7 +204,7 @@ export async function fetchContentsStats(
   const res = await api.get<{
     data: { dailyWeeklyMonthlyStatistics: DailyStat[] };
   }>('/api/admin/v1/statistics/contents-status', {
-    params: { statisticsSearchType: 'DAILY', ...range },
+    params: { statisticsSearchType: 'WEEKLY', ...range },
   });
   const stats = res.data?.data?.dailyWeeklyMonthlyStatistics ?? [];
   return {
@@ -285,12 +307,12 @@ export async function fetchServiceStatsFromExport(
   oemParams: PickjoyOEMParams
 ): Promise<{ registeredVin: number; activeUsers: number }> {
   const res = await api.get('/api/admin/v1/statistics/export', {
-    params: { statisticsSearchType: 'DAILY', ...range, ...oemParams },
+    params: { statisticsSearchType: 'WEEKLY', ...range, ...oemParams },
     responseType: 'arraybuffer',
   });
   return parseServiceStats(
     res.data as ArrayBuffer,
-    countExpectedRows(range, 'DAILY')
+    countExpectedRows(range, 'WEEKLY')
   );
 }
 
@@ -315,7 +337,7 @@ export async function fetchTopContent(
   oemParams: PickjoyOEMParams
 ): Promise<string> {
   const res = await api.get('/api/admin/v1/statistics/export', {
-    params: { statisticsSearchType: 'DAILY', ...range, ...oemParams },
+    params: { statisticsSearchType: 'WEEKLY', ...range, ...oemParams },
     responseType: 'arraybuffer',
   });
   return topGameFromCounts(parseGameCounts(res.data as ArrayBuffer));
@@ -331,7 +353,7 @@ export async function fetchCombinedTopContent(
 
   for (const oemParams of oemParamsList) {
     const res = await api.get('/api/admin/v1/statistics/export', {
-      params: { statisticsSearchType: 'DAILY', ...range, ...oemParams },
+      params: { statisticsSearchType: 'WEEKLY', ...range, ...oemParams },
       responseType: 'arraybuffer',
     });
     const counts = parseGameCounts(res.data as ArrayBuffer);

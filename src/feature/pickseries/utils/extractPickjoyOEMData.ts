@@ -122,6 +122,7 @@ export async function extractPickjoyOEMData(params: {
               { startDate, endDate },
               { manufacturerSeq, deviceSeq, companySeq }
             );
+            
             completed++;
             onProgress({
               completed,
@@ -174,7 +175,7 @@ export async function extractPickjoyOEMData(params: {
         apiInstance,
         { startDate, endDate },
         oemParamsList,
-        'DAILY'
+        'WEEKLY'
       );
     }
 
