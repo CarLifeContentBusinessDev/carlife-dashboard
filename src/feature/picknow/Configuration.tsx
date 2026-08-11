@@ -5,6 +5,7 @@ import DeviceChip from '@/feature/picknow/components/DeviceChip';
 import OemCheckbox from '@/feature/picknow/components/OemCheckBox';
 import ServerSelector from '@/feature/picknow/components/ServerSelector';
 import SpreadSheetLinkButton from '@/feature/picknow/components/SpreadSheetLinkButton';
+import Message from '@/shared/components/common/Message';
 import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
 import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
@@ -482,10 +483,12 @@ export default function Configuration() {
         />
       </div>
 
-      <div className='mb-5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-800'>
-        하단 목록은 Setting 시트에 기입된 항목만 노출됩니다. 추가를 원하시면
-        Setting 시트에 기입 후 새로고침 해주세요.
-      </div>
+      <Message
+        message='하단 목록은 Setting 시트에 기입된 항목만 노출됩니다. 추가를 원하시면
+        Setting 시트에 기입 후 새로고침 해주세요'
+        type='info'
+        className='mb-5'
+      />
 
       <ServerSelector
         isServerLoggedIn={isServerLoggedIn}

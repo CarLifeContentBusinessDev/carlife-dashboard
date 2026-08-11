@@ -20,6 +20,7 @@ import { extractPickjoyWeeklyData } from '@/feature/pickseries/utils/extractPick
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { WEEKLY_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
+import Message from '@/shared/components/common/Message';
 
 export default function PickSeriesWeeklyData() {
   const { serverTokens } = usePickSeriesServerStore();
@@ -339,11 +340,10 @@ export default function PickSeriesWeeklyData() {
         />
 
         {!hasAnyLoggedIn ? (
-          <div className='rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5'>
-            <p className='text-gray-600 text-sm'>
-              PickSeries 서버 로그인이 필요합니다.
-            </p>
-          </div>
+          <Message
+            message='PickSeries 서버 로그인이 필요합니다.'
+            type='warning'
+          />
         ) : (
           <>
             {/* 주차 선택 */}
