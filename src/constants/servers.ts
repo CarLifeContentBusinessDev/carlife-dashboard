@@ -3,6 +3,7 @@ export interface PickleServer {
   id: string;
   label: string;
   apiUrl: string;
+  isActive?: boolean;
 }
 
 export const pickleTokenKey = (id: string) => `pickle_token_${id}`;
@@ -13,16 +14,19 @@ export const PICKLE_SERVERS: PickleServer[] = [
     id: 'pickle-prod',
     label: '상용',
     apiUrl: import.meta.env.VITE_PROD_API_URL as string,
+    isActive: true,
   },
   {
     id: 'pickle-stg',
     label: 'STG',
     apiUrl: import.meta.env.VITE_STG_API_URL as string,
+    isActive: true,
   },
   {
     id: 'pickle-web-demo',
     label: '웹데모',
     apiUrl: '',
+    isActive: true,
   },
 ];
 

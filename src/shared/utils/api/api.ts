@@ -18,8 +18,7 @@ export function setTestMode(value: boolean) {
 
 export function setGoogleLoginInProgress(_value: boolean) {}
 
-// ── Pickle 다중 서버 지원 ──────────────────────────────────────────────────
-
+// Pickle 다중 서버 지원
 const pickleServerApiCache = new Map<string, ReturnType<typeof axios.create>>();
 
 export function getPickleServerApi(server: PickleServer) {
@@ -131,8 +130,7 @@ function doPickleServerLogout(server: PickleServer) {
 export const api = getPickleServerApi(PICKLE_SERVERS[0]);
 export const stgApi = getPickleServerApi(PICKLE_SERVERS[1]);
 
-// ── Picknow 다중 서버 지원 ─────────────────────────────────────────────────
-
+// Picknow 다중 서버 지원
 const picknowServerApiCache = new Map<
   string,
   ReturnType<typeof axios.create>
@@ -232,7 +230,6 @@ function createPicknowServerInstance(server: PicknowServer) {
 }
 
 function doPicknowServerLogout(server: PicknowServer) {
-  // store import를 지연해서 순환 참조 방지
   import('@/shared/store/usePicknowServerStore').then(
     ({ usePicknowServerStore }) => {
       usePicknowServerStore.getState().clearServerToken(server.id);

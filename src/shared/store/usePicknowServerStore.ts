@@ -4,6 +4,7 @@ import {
   picknowTokenKey,
   picknowRefreshKey,
 } from '@/constants/servers';
+import { isJwtExpired } from '@/shared/utils/jwt';
 
 const SELECTED_SERVERS_KEY = 'picknow_selected_servers';
 
@@ -24,7 +25,14 @@ function loadServerTokens(): Record<string, string> {
   const tokens: Record<string, string> = {};
   PICKNOW_SERVERS.forEach((server) => {
     const token = localStorage.getItem(picknowTokenKey(server.id));
-    if (token) tokens[server.id] = token;
+    if (token) {
+      if (isJwtExpired(token)) {
+        localStorage.removeItem(picknowTokenKey(server.id));
+        localStorage.removeItem(picknowRefreshKey(server.id));
+        return;
+      }
+      tokens[server.id] = token;
+    }
   });
   return tokens;
 }
@@ -73,7 +81,10 @@ export const usePicknowServerStore = create<PicknowServerState>()(
       });
     },
 
-    isServerLoggedIn: (id) => !!get().serverTokens[id],
+    isServerLoggedIn(id) {
+      const token = get().serverTokens[id];
+      return !!token && !isJwtExpired(token);
+    },
     getServerToken: (id) => get().serverTokens[id] ?? null,
   })
 );
