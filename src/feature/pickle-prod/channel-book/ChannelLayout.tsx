@@ -16,7 +16,6 @@ import {
   SYNC_PAGE_SIZE,
   useSyncState,
 } from '@/feature/pickseries/hooks/useSyncState.ts';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore.ts';
 import { useChannelStore } from '@/shared/store/useChannelStore.ts';
 import { usePickleServerStore } from '@/shared/store/usePickleServerStore.ts';
 import type { usingChannelProps } from '@/shared/types/pickleProdContents.ts';
@@ -56,7 +55,6 @@ const sortChannels = (channels: usingChannelProps[]) =>
 
 const ChannelLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
-  const { loginToken } = useLoginTokenStore();
   const { getServerToken, isServerLoggedIn } = usePickleServerStore();
   const accessToken =
     getServerToken(isStaging ? 'pickle-stg' : 'pickle-prod') ?? '';
@@ -177,14 +175,12 @@ const ChannelLayout = () => {
     : 'sheetName:channel:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
-    loginToken,
     spreadsheetId,
     defaultSheetName,
     storageKey,
   });
 
   const handleLoadAllChannels = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
@@ -226,7 +222,6 @@ const ChannelLayout = () => {
   };
 
   const handleSearchNew = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
@@ -238,7 +233,6 @@ const ChannelLayout = () => {
       setSyncPage(1);
 
       const newList = await getNewData(
-        loginToken,
         accessToken,
         setProgress,
         CATEGORY,
@@ -266,7 +260,6 @@ const ChannelLayout = () => {
   };
 
   const handleSyncExcel = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
     if (!syncPreviewMode)
@@ -302,7 +295,6 @@ const ChannelLayout = () => {
       } else {
         await overwriteExcelData(
           previewData,
-          loginToken,
           CATEGORY,
           currentSheet,
           spreadsheetId

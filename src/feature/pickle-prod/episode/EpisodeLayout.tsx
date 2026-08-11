@@ -15,7 +15,6 @@ import {
   useSyncState,
 } from '@/feature/pickseries/hooks/useSyncState';
 import { useEpisodeStore } from '@/shared/store/useEpisodeStore';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
 import type { usingDataProps } from '@/shared/types/pickleProdContents';
 import { fetchAllData } from '@/shared/utils/api/fetchAllData';
@@ -54,13 +53,12 @@ const EPISODE_SORT_OPTIONS: Array<{ value: EpisodeSortKey; label: string }> = [
 
 const EpisodeLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
-  const { loginToken } = useLoginTokenStore();
   const { isServerLoggedIn } = usePickleServerStore();
   const isPickleLoggedIn = isServerLoggedIn(
     isStaging ? 'pickle-stg' : 'pickle-prod'
   );
 
-  // ── 데이터 탭 ──────────────────────────────────────────────────────────────
+  // 데이터 탭
   const [allEpiData, setAllEpiData] = useState<usingDataProps[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataProgress, setDataProgress] = useState('');
@@ -147,7 +145,7 @@ const EpisodeLayout = () => {
           dataPage * dataPageSize
         );
 
-  // ── 동기화 탭 ─────────────────────────────────────────────────────────────
+  // 동기화 탭
   const [newEpi, setNewEpi] = useState<usingDataProps[]>([]);
   const [duplicateNewEpi, setDuplicateNewEpi] = useState<usingDataProps[]>([]);
   const [allEpisodes, setAllEpisodes] = useState<usingDataProps[]>([]);
@@ -173,7 +171,6 @@ const EpisodeLayout = () => {
     : 'sheetName:episode:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
-    loginToken,
     spreadsheetId,
     defaultSheetName,
     storageKey,
@@ -232,7 +229,6 @@ const EpisodeLayout = () => {
   };
 
   const handleSyncExcel = async () => {
-    if (!loginToken) return toast.warn('로그인을 먼저 해주세요!');
     if (!syncPreviewMode)
       return toast.warn('신규/전체 조회를 먼저 실행해주세요!');
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
@@ -273,7 +269,6 @@ const EpisodeLayout = () => {
       } else {
         await overwriteExcelData(
           enrichedDataToSync,
-          loginToken,
           CATEGORY,
           currentSheet,
           spreadsheetId,
@@ -355,7 +350,7 @@ const EpisodeLayout = () => {
                     onChange={(v) => setDataUsageFilter(v)}
                   />
                 </div>
-                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-[220px]'>
+                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-55'>
                   <input
                     type='text'
                     value={dataKeyword}

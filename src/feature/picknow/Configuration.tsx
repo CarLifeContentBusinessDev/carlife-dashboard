@@ -5,6 +5,7 @@ import DeviceChip from '@/feature/picknow/components/DeviceChip';
 import OemCheckbox from '@/feature/picknow/components/OemCheckBox';
 import ServerSelector from '@/feature/picknow/components/ServerSelector';
 import SpreadSheetLinkButton from '@/feature/picknow/components/SpreadSheetLinkButton';
+import Message from '@/shared/components/common/Message';
 import ServerLoginModal from '@/shared/components/common/ServerLoginModal';
 import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
 import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
@@ -105,7 +106,7 @@ export default function Configuration() {
     const loggedIn = PICKNOW_SERVERS.filter(
       (s) => selectedServerIds.includes(s.id) && isServerLoggedIn(s.id)
     );
-    if (!loginToken || loggedIn.length === 0) return;
+    if (loggedIn.length === 0) return;
 
     if (
       !activeTabServerId ||
@@ -482,10 +483,12 @@ export default function Configuration() {
         />
       </div>
 
-      <div className='mb-5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-800'>
-        하단 목록은 Setting 시트에 기입된 항목만 노출됩니다. 추가를 원하시면
-        Setting 시트에 기입 후 새로고침 해주세요.
-      </div>
+      <Message
+        message='하단 목록은 Setting 시트에 기입된 항목만 노출됩니다. 추가를 원하시면
+        Setting 시트에 기입 후 새로고침 해주세요'
+        type='info'
+        className='mb-5'
+      />
 
       <ServerSelector
         isServerLoggedIn={isServerLoggedIn}
@@ -495,7 +498,6 @@ export default function Configuration() {
       />
 
       <ConfigurationStatus
-        loginToken={loginToken}
         loggedInSelectedServers={loggedInSelectedServers}
         loading={loading}
         error={error}
@@ -507,6 +509,11 @@ export default function Configuration() {
               {loggedInSelectedServers.map((server) => {
                 const count = selectedDevicesByServer[server.id]?.size ?? 0;
                 const isActive = activeServer?.id === server.id;
+                const serverEnv = server.id.includes('stg')
+                  ? 'STG'
+                  : server.id.includes('demo')
+                    ? 'DEMO'
+                    : '상용';
                 return (
                   <button
                     key={server.id}
@@ -517,6 +524,7 @@ export default function Configuration() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
+                    {`[${serverEnv}] `}
                     {server.label}
                     {count > 0 && (
                       <span

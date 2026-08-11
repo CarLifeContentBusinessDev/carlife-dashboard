@@ -48,10 +48,7 @@ export async function findUpdateData(
 
   updateProgress(0);
 
-  const excelData = (await getExcelData(
-    localStorage.getItem('googleAccessToken')!,
-    'episode'
-  )) as usingDataProps[];
+  const excelData = (await getExcelData('episode')) as usingDataProps[];
 
   const excelTitleMap = new Map<string, usingDataProps>();
   for (const item of excelData) {

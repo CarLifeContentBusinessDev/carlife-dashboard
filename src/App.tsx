@@ -5,6 +5,14 @@ import { supabase } from './lib/supabase';
 import AuthGuard from './shared/components/common/AuthGuard';
 import PageTitle from './shared/components/common/PageTitle';
 import { useAccessTokenStore } from './shared/store/useAccessTokenStore';
+import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
+import {
+  PICKLE_SERVERS,
+  PICKNOW_SERVERS,
+  PICKSERIES_SERVERS,
+} from '@/constants/servers';
+import { usePicknowServerStore } from '@/shared/store/usePicknowServerStore';
+import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
 
 const ServiceEntryPage = lazy(
   () => import('./feature/service-entry/ServiceEntryPage')
@@ -106,6 +114,7 @@ const PickSeriesWeeklyData = lazy(
 const PickSeriesOEMData = lazy(
   () => import('./feature/pickseries/PickSeriesOEMData')
 );
+const LoginPage = lazy(() => import('./feature/login/LoginPage'));
 const ExternalSite = lazy(
   () => import('./shared/components/common/ExternalSite')
 );
@@ -124,6 +133,46 @@ function LogoutRedirectListener() {
     return () => window.removeEventListener(LOGOUT_EVENT_NAME, handleLogout);
   }, [navigate]);
 
+  return null;
+}
+
+function TokenExpiryWatcher() {
+  useEffect(() => {
+    const checkExpiry = () => {
+      let loggedOutAny = false;
+
+      PICKLE_SERVERS.forEach((s) => {
+        const store = usePickleServerStore.getState();
+        if (store.serverTokens[s.id] && !store.isServerLoggedIn(s.id)) {
+          store.clearServerToken(s.id);
+          loggedOutAny = true;
+        }
+      });
+      PICKNOW_SERVERS.forEach((s) => {
+        const store = usePicknowServerStore.getState();
+        if (store.serverTokens[s.id] && !store.isServerLoggedIn(s.id)) {
+          store.clearServerToken(s.id);
+          loggedOutAny = true;
+        }
+      });
+      PICKSERIES_SERVERS.forEach((s) => {
+        const store = usePickSeriesServerStore.getState();
+        if (store.serverTokens[s.id] && !store.isServerLoggedIn(s.id)) {
+          store.clearServerToken(s.id);
+          loggedOutAny = true;
+        }
+      });
+
+      if (loggedOutAny) {
+        const event = new Event(LOGOUT_EVENT_NAME);
+        window.dispatchEvent(event);
+      }
+    };
+
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
   return null;
 }
 
@@ -152,10 +201,12 @@ function App() {
     <BrowserRouter>
       <PageTitle />
       <LogoutRedirectListener />
+      <TokenExpiryWatcher />
       <Suspense fallback={<div className='h-full w-full bg-white' />}>
         <Routes>
           {/* 서비스 선택 및 로그인 (Layout 없음) */}
           <Route path='' element={<ServiceEntryPage />} />
+          <Route path='pickseries/login' element={<LoginPage />} />
 
           {/* 인증된 어드민 페이지 */}
           <Route element={<AuthGuard />}>

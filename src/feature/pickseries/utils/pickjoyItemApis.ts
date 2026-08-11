@@ -213,7 +213,7 @@ export async function fetchContentsStats(
   };
 }
 
-// OEM 지표 - 단일 OEM '서비스 통계' 탭 → 누적 사용자 수 + 활성 사용자 수
+// OEM 지표 - 누적 사용자 수, 활성 사용자 수(WAU)
 function parseServiceStats(
   buffer: ArrayBuffer,
   expectedRows: number
@@ -314,6 +314,20 @@ export async function fetchServiceStatsFromExport(
     res.data as ArrayBuffer,
     countExpectedRows(range, 'WEEKLY')
   );
+}
+
+// 주간지표 - WAU
+export async function fetchCombinedActiveUsers(
+  api: AxiosInstance,
+  range: DateRange,
+  oemParamsList: PickjoyOEMParams[]
+): Promise<number> {
+  const results = await Promise.all(
+    oemParamsList.map((oemParams) =>
+      fetchServiceStatsFromExport(api, range, oemParams)
+    )
+  );
+  return results.reduce((sum, { activeUsers }) => sum + activeUsers, 0);
 }
 
 // OEM 지표용: 단일 OEM 기준 인기 콘텐츠

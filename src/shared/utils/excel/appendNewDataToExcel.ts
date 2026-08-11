@@ -1,13 +1,14 @@
 import { toast } from 'react-toastify';
+import {
+  batchUpdateSpreadsheet,
+  getSheetValues,
+  getSpreadsheetMeta,
+  updateSheetValues,
+} from '@/feature/pickle-prod/utils/pickleProdSheetApi';
 import type {
   usingChannelProps,
   usingDataProps,
 } from '@/shared/types/pickleProdContents';
-import {
-  getGoogleApiErrorMessage,
-  getGoogleToken,
-  getSheetsClient,
-} from '@/shared/utils/auth/auth';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { formatPlayTime } from '@/shared/utils/format/formatPlayTime';
 import { buildSheetRange } from './sheetRange';
@@ -41,10 +42,6 @@ export async function appendNewDataToTop(
   try {
     setLoading(true);
 
-    // 시작 전 토큰 체크 및 유효화
-    await getGoogleToken();
-    const sheets = getSheetsClient();
-
     const sortedData = [...newData].sort((a, b) => {
       if (category === 'episode') {
         const dispDateA = new Date(a.dispDtime).getTime();
@@ -67,20 +64,12 @@ export async function appendNewDataToTop(
 
     const filteredData = sortedData;
 
-    // Step 1: 시트 ID 가져오기 (내부에서 getSheetsClient 사용)
+    // Step 1: 시트 ID 가져오기
     const sheetId = await getSheetId(sheetName, spreadsheetId);
 
     // 중복 방지: 실제 쓰기 직전에 현재 시트에 있는 ID들을 다시 조회해서 제거
-    const tokenForCheck = await getGoogleToken();
-    if (!tokenForCheck) throw new Error('Google 인증 토큰이 없습니다.');
-    // getExcelData를 동기화하는 모듈에서 사용해 현재 시트에 있는 항목을 읽어옴
     const { getExcelData } = await import('./updateExcel');
-    const existingRows = await getExcelData(
-      tokenForCheck,
-      category,
-      sheetName,
-      spreadsheetId
-    );
+    const existingRows = await getExcelData(category, sheetName, spreadsheetId);
     const existingIds = new Set(
       existingRows.map((item) =>
         'episodeId' in item ? item.episodeId : item.channelId
@@ -108,48 +97,35 @@ export async function appendNewDataToTop(
     if (isEmpty) {
       const neededRows = STARTROW - 1 + filteredData.length + 100;
       setProgress(`시트 크기 확장 중... (${neededRows}행)`);
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        resource: {
-          requests: [
-            {
-              updateSheetProperties: {
-                properties: {
-                  sheetId,
-                  gridProperties: { rowCount: neededRows },
-                },
-                fields: 'gridProperties.rowCount',
-              },
+      await batchUpdateSpreadsheet(spreadsheetId, [
+        {
+          updateSheetProperties: {
+            properties: {
+              sheetId,
+              gridProperties: { rowCount: neededRows },
             },
-          ],
+            fields: 'gridProperties.rowCount',
+          },
         },
-      });
+      ]);
     } else {
       const INSERT_BATCH_SIZE = 10000;
       for (let i = 0; i < filteredData.length; i += INSERT_BATCH_SIZE) {
-        // 대량 행 삽입 중 토큰 만료 방지
-        await getGoogleToken();
-
         const batchCount = Math.min(INSERT_BATCH_SIZE, filteredData.length - i);
         const startIndex = STARTROW - 1 + i;
-        await sheets.spreadsheets.batchUpdate({
-          spreadsheetId,
-          resource: {
-            requests: [
-              {
-                insertDimension: {
-                  range: {
-                    sheetId,
-                    dimension: 'ROWS',
-                    startIndex,
-                    endIndex: startIndex + batchCount,
-                  },
-                  inheritFromBefore: false,
-                },
+        await batchUpdateSpreadsheet(spreadsheetId, [
+          {
+            insertDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex,
+                endIndex: startIndex + batchCount,
               },
-            ],
+              inheritFromBefore: false,
+            },
           },
-        });
+        ]);
         setProgress(
           `행 삽입 중... (${Math.min(i + INSERT_BATCH_SIZE, filteredData.length)}/${filteredData.length})`
         );
@@ -197,9 +173,6 @@ export async function appendNewDataToTop(
     let totalWritten = 0;
 
     for (let batchIdx = 0; batchIdx < batches; batchIdx++) {
-      // 실제 API 쓰기 직전에 항상 토큰 체크/갱신
-      await getGoogleToken();
-
       const batchStart = batchIdx * batchSize;
       const batchEnd = Math.min(
         (batchIdx + 1) * batchSize,
@@ -209,12 +182,7 @@ export async function appendNewDataToTop(
       const startRow = STARTROW + batchStart;
       const range = buildSheetRange(sheetName, `B${startRow}`);
 
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range,
-        valueInputOption: 'RAW',
-        resource: { values: batchData },
-      });
+      await updateSheetValues(spreadsheetId, range, batchData);
 
       totalWritten += batchData.length;
       const percentage = Math.round((totalWritten / allNewValues.length) * 100);
@@ -231,7 +199,7 @@ export async function appendNewDataToTop(
   } catch (err: unknown) {
     setLoading(false);
     setProgress('');
-    toast.error(`데이터 추가에 실패했습니다: ${getGoogleApiErrorMessage(err)}`);
+    toast.error(`데이터 추가에 실패했습니다`);
     throw err;
   }
 }
@@ -242,17 +210,12 @@ async function getSheetId(
   spreadsheetId: string
 ): Promise<number> {
   try {
-    // API 호출 전 토큰 체크
-    await getGoogleToken();
-    const sheets = getSheetsClient();
-    const response = await sheets.spreadsheets.get({
-      spreadsheetId,
-    });
+    const meta = await getSpreadsheetMeta(spreadsheetId);
 
     const availableSheets =
-      response.result.sheets?.map((s) => s.properties?.title) || [];
+      meta.sheets?.map((s) => s.properties?.title) || [];
 
-    const sheet = response.result.sheets?.find((s) => {
+    const sheet = meta.sheets?.find((s) => {
       const title = s.properties?.title;
       // trim으로 양쪽 공백 제거 후 비교
       return title?.trim() === sheetName.trim();
@@ -277,13 +240,10 @@ async function isSheetEmpty(
   spreadsheetId: string
 ): Promise<boolean> {
   try {
-    await getGoogleToken();
-    const sheets = getSheetsClient();
-    const response = await sheets.spreadsheets.values.get({
+    const values = await getSheetValues(
       spreadsheetId,
-      range: buildSheetRange(sheetName, `B${STARTROW}:B${STARTROW}`),
-    });
-    const values = response.result.values;
+      buildSheetRange(sheetName, `B${STARTROW}:B${STARTROW}`)
+    );
     return !values || values.length === 0;
   } catch (err) {
     console.error('시트 빈 상태 확인 실패:', err);

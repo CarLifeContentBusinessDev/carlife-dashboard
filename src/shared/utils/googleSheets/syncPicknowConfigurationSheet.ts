@@ -1,20 +1,24 @@
 import {
+  batchUpdateSpreadsheet,
+  updateSheetValues,
+} from '@/feature/picknow/utils/picknowSheetApi';
+import {
   extractList,
   fetchAllPagedList,
 } from '@/shared/utils/api/fetchAllPagedList';
 import { executeWithConcurrencyLimit } from '@/shared/utils/api/requestPool';
-import {
-  getGoogleToken,
-  getSheetsClient,
-  initializeGoogleAPI,
-} from '@/shared/utils/auth/auth';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
+import {
+  fetchSettingData,
+  type SettingRow,
+} from '@/shared/utils/googleSheets/fetchSettingData';
 import {
   compactText,
   groupRowRecords,
   normalizeText,
   resolveSelectedSeqs,
 } from '@/shared/utils/googleSheets/oemDeviceMatching';
+import { preparePicknowConfigurationSheet } from '@/shared/utils/googleSheets/preparePicknowConfigurationSheet';
 import {
   formatBinaryCodes,
   formatBlackListForSheet,
@@ -35,9 +39,6 @@ import type {
   SyncPicknowConfigurationResult,
 } from '@/shared/utils/googleSheets/syncPicknowConfigurationSheet.types';
 import type { AxiosInstance } from 'axios';
-import type { SettingRow } from './fetchSettingData';
-import { fetchSettingData } from './fetchSettingData';
-import { preparePicknowConfigurationSheet } from './preparePicknowConfigurationSheet';
 
 const isYes = (value: unknown): boolean => {
   if (typeof value === 'boolean') return value;
@@ -47,10 +48,6 @@ const isYes = (value: unknown): boolean => {
   return false;
 };
 
-// urlConfig는 버전(웹뷰 버전 등) 키로 감싸져 있다.
-// Setting 시트의 Version 값이 있으면 해당 버전 키를 우선 사용하고,
-// 비어있거나 'default'이거나 urlConfig에 해당 버전 키가 없으면 공통 설정인 'default'로 폴백한다.
-// 옛 방식(버전 키 없이 필드가 바로 있는 경우)으로 남아있는 데이터도 대비해 그대로 폴백한다.
 const resolveUrlConfigVersion = (
   urlConfig: Record<string, PicknowUrlConfigVersion> | undefined,
   version: string | undefined
@@ -162,17 +159,6 @@ export async function syncPicknowConfigurationSheet(
     throw new Error('선택된 OEM/DEVICE가 없습니다.');
   }
 
-  await initializeGoogleAPI();
-
-  const token = await getGoogleToken();
-  if (!token) {
-    throw new Error(
-      'Google 인증 토큰이 없습니다. 로그인 후 다시 시도해주세요.'
-    );
-  }
-
-  gapi.client.setToken({ access_token: token });
-
   const settingRows: SettingRow[] = await fetchSettingData(
     spreadsheetId,
     serverLabel
@@ -182,9 +168,7 @@ export async function syncPicknowConfigurationSheet(
   const matchedSettingRow = settingRows.find(
     (row) => normalizeText(row.고객사) === normalizedCustomerName
   );
-  const rawSheetName = (
-    matchedSettingRow?.시트명 || targetCustomerName
-  ).trim();
+  const rawSheetName = (matchedSettingRow?.시트명 || targetCustomerName).trim();
   const serverPrefix = matchedSettingRow?.서버?.trim();
   const targetSheetName = serverPrefix
     ? `[${serverPrefix}] ${rawSheetName}`
@@ -223,8 +207,6 @@ export async function syncPicknowConfigurationSheet(
     }
     return undefined;
   };
-
-  const sheets = getSheetsClient();
 
   let supportsOemDevice = true;
   let oemDevices: PicknowOemDevice[] = [];
@@ -488,47 +470,41 @@ export async function syncPicknowConfigurationSheet(
   }
 
   const rowCount = Math.max(rows.length + 2, 3);
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    resource: {
-      requests: [
-        {
-          updateSheetProperties: {
-            properties: {
-              sheetId,
-              gridProperties: {
-                rowCount,
-              },
-            },
-            fields: 'gridProperties.rowCount',
-          },
-        },
-        { clearBasicFilter: { sheetId } },
-        {
-          setBasicFilter: {
-            filter: {
-              range: {
-                sheetId,
-                startRowIndex: 1,
-                endRowIndex: rowCount,
-                startColumnIndex: 1,
-                endColumnIndex: 25,
-              },
-            },
-          },
-        },
-      ],
-    },
-  });
 
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range: buildSheetRange(targetSheetName, 'B3'),
-    valueInputOption: 'RAW',
-    resource: {
-      values: rows,
+  await batchUpdateSpreadsheet(spreadsheetId, [
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId,
+          gridProperties: {
+            rowCount,
+          },
+        },
+        fields: 'gridProperties.rowCount',
+      },
     },
-  });
+    { clearBasicFilter: { sheetId } },
+    {
+      setBasicFilter: {
+        filter: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            endRowIndex: rowCount,
+            startColumnIndex: 1,
+            endColumnIndex: 25,
+          },
+        },
+      },
+    },
+  ]);
+
+  await updateSheetValues(
+    spreadsheetId,
+    buildSheetRange(targetSheetName, 'B3'),
+    rows,
+    'RAW'
+  );
 
   return {
     sheetName: targetSheetName,

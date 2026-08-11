@@ -1,6 +1,5 @@
 import type { OEMExtractionResult } from '@/feature/pickseries/utils/extractPickjoyOEMData';
-import { useLoginTokenStore } from '@/shared/store/useLoginTokenStore';
-import { getSheetsClient, initializeGoogleAPI } from '@/shared/utils/auth/auth';
+import { batchUpdateSheetValues } from '@/feature/pickseries/utils/pickSeriesSheetApi';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
 import type { OEMSheetData } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
 
@@ -21,13 +20,6 @@ export async function writePickSeriesOEMSheet(
 ): Promise<void> {
   const spreadsheetId = import.meta.env
     .VITE_PICKSERIES_SPREADSHEET_ID as string;
-
-  await initializeGoogleAPI();
-  const token = useLoginTokenStore.getState().loginToken;
-  if (!token) throw new Error('Google 인증 토큰이 없습니다.');
-  gapi.client.setToken({ access_token: token });
-
-  const sheets = getSheetsClient();
 
   const data: Array<{ range: string; values: (string | number)[][] }> = [];
 
@@ -51,9 +43,5 @@ export async function writePickSeriesOEMSheet(
 
   if (data.length === 0) return;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (sheets.spreadsheets.values as any).batchUpdate({
-    spreadsheetId,
-    resource: { valueInputOption: 'USER_ENTERED', data },
-  });
+  await batchUpdateSheetValues(spreadsheetId, data);
 }

@@ -1,4 +1,4 @@
-import { getGoogleToken, getSheetsClient } from '@/shared/utils/auth/auth';
+import { updateSheetValues } from '@/feature/pickle-prod/utils/pickleProdSheetApi';
 
 const formatSyncTime = (date: Date) => {
   const yy = String(date.getFullYear() % 100).padStart(2, '0');
@@ -15,17 +15,9 @@ export async function updateSheetSyncTime(
   spreadsheetId: string
 ): Promise<boolean> {
   try {
-    await getGoogleToken();
-    const sheets = getSheetsClient();
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `${sheetName}!C2`,
-      valueInputOption: 'RAW',
-      resource: {
-        values: [[formatSyncTime(new Date())]],
-      },
-    });
+    await updateSheetValues(spreadsheetId, `${sheetName}!C2`, [
+      [formatSyncTime(new Date())],
+    ]);
 
     return true;
   } catch (error) {

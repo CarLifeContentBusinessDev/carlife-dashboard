@@ -1,10 +1,12 @@
 import { toast } from 'react-toastify';
-import type { usingCurationExcelProps } from '@/shared/types/pickleProdContents';
 import {
-  getGoogleApiErrorStatus,
-  getGoogleToken,
-  getSheetsClient,
-} from '@/shared/utils/auth/auth';
+  batchUpdateSpreadsheet,
+  clearSheetValues,
+  getSheetValues,
+  getSpreadsheetMeta,
+  updateSheetValues,
+} from '@/feature/pickle-prod/utils/pickleProdSheetApi';
+import type { usingCurationExcelProps } from '@/shared/types/pickleProdContents';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import {
   formatPlayTime,
@@ -13,7 +15,6 @@ import {
 import { getUsedRange } from './updateExcel';
 
 export async function getCurationExcelData(
-  _token: string,
   spreadsheetId: string,
   sheetName?: string
 ): Promise<usingCurationExcelProps[]> {
@@ -28,7 +29,6 @@ export async function getCurationExcelData(
   }
 
   const totalBatches = Math.ceil(totalRows / batchSize);
-  const sheets = getSheetsClient();
 
   for (let i = 0; i < totalBatches; i++) {
     const startRow = i * batchSize + 4;
@@ -37,32 +37,10 @@ export async function getCurationExcelData(
     const range = `${targetSheetName}!B${startRow}:W${endRow}`;
 
     try {
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-      });
-      const values = response.result.values as (string | number)[][];
+      const values = await getSheetValues(spreadsheetId, range);
       if (values && values.length > 0) allRows.push(...values);
     } catch (err: unknown) {
-      if (getGoogleApiErrorStatus(err) === 401) {
-        const refreshedToken = await getGoogleToken();
-        if (!refreshedToken)
-          throw new Error('토큰 재발급 실패, 엑셀 조회 중단');
-
-        localStorage.setItem('googleAccessToken', refreshedToken);
-
-        const retryResponse = await sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range,
-        });
-
-        const retryValues = retryResponse.result.values as (
-          string | number
-        )[][];
-        if (retryValues && retryValues.length > 0) allRows.push(...retryValues);
-      } else {
-        console.error('엑셀 조회 실패:', err);
-      }
+      console.error('엑셀 조회 실패:', err);
     }
   }
 
@@ -101,7 +79,6 @@ export async function getCurationExcelData(
 
 export async function overwriteCurationExcelData(
   data: usingCurationExcelProps[],
-  _token: string,
   sheetName?: string,
   spreadsheetId?: string
 ): Promise<void> {
@@ -110,7 +87,6 @@ export async function overwriteCurationExcelData(
       spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID;
     const targetSheet =
       sheetName || localStorage.getItem('sheetName') || 'Sheet1';
-    const sheets = getSheetsClient();
 
     const values = (data as usingCurationExcelProps[]).map((row) => [
       row.thumbnailTitle,
@@ -145,170 +121,49 @@ export async function overwriteCurationExcelData(
     const range = `${targetSheet}!B${STARTROW}:${lastColumn}${STARTROW + values.length - 1}`;
     const clearRange = `${targetSheet}!B${STARTROW}:${lastColumn}${MAX_ROWS}`;
 
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId: targetSpreadsheetId,
-      range: clearRange,
-      resource: {},
-    });
+    await clearSheetValues(targetSpreadsheetId, clearRange);
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: targetSpreadsheetId,
-      range,
-      valueInputOption: 'RAW',
-      resource: { values },
-    });
+    await updateSheetValues(targetSpreadsheetId, range, values);
 
     // rowCount를 데이터 수에 맞게 정확히 조정하고 필터 범위 갱신
-    const meta = await sheets.spreadsheets.get({
-      spreadsheetId: targetSpreadsheetId,
-    });
-    const sheetMeta = meta.result.sheets?.find(
+    const meta = await getSpreadsheetMeta(targetSpreadsheetId);
+    const sheetMeta = meta.sheets?.find(
       (s) => s.properties?.title === targetSheet
     );
     const sheetId = sheetMeta?.properties?.sheetId;
 
     if (sheetId !== undefined && sheetId !== null) {
       const exactRowCount = STARTROW - 1 + values.length + 1;
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: targetSpreadsheetId,
-        resource: {
-          requests: [
-            {
-              updateSheetProperties: {
-                properties: {
-                  sheetId,
-                  gridProperties: { rowCount: exactRowCount },
-                },
-                fields: 'gridProperties.rowCount',
-              },
+      await batchUpdateSpreadsheet(targetSpreadsheetId, [
+        {
+          updateSheetProperties: {
+            properties: {
+              sheetId,
+              gridProperties: { rowCount: exactRowCount },
             },
-            {
-              setBasicFilter: {
-                filter: {
-                  range: {
-                    sheetId,
-                    startRowIndex: STARTROW - 2,
-                    endRowIndex: exactRowCount - 1,
-                    startColumnIndex: 1,
-                    endColumnIndex: 23,
-                  },
-                },
-              },
-            },
-          ],
+            fields: 'gridProperties.rowCount',
+          },
         },
-      });
+        {
+          setBasicFilter: {
+            filter: {
+              range: {
+                sheetId,
+                startRowIndex: STARTROW - 2,
+                endRowIndex: exactRowCount - 1,
+                startColumnIndex: 1,
+                endColumnIndex: 23,
+              },
+            },
+          },
+        },
+      ]);
     }
 
     toast.success('큐레이션 데이터 덮어쓰기 완료!');
   } catch (err) {
     console.error('큐레이션 데이터 덮어쓰기 실패:', err);
     toast.error('큐레이션 데이터 덮어쓰기 실패!');
-
-    if (getGoogleApiErrorStatus(err) === 401) {
-      const newToken = await getGoogleToken();
-      if (newToken) {
-        return overwriteCurationExcelData(
-          data,
-          newToken,
-          sheetName,
-          spreadsheetId
-        );
-      }
-    }
-
     throw err;
   }
-}
-
-export async function addMissingCurationRows(
-  allData: usingCurationExcelProps[],
-  token: string,
-  setProgress: (message: string) => void,
-  spreadsheetId?: string
-) {
-  const existingData = await getCurationExcelData(
-    token,
-    spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID
-  );
-
-  const missingRows = allData.filter(
-    (item) => !existingData.some((row) => row.episodeId === item.episodeId)
-  );
-
-  if (missingRows.length === 0) {
-    toast.success('추가할 누락 데이터가 없습니다!');
-    return;
-  }
-
-  const batchSize = 100;
-  const sheets = getSheetsClient();
-
-  for (let i = 0; i < missingRows.length; i += batchSize) {
-    const batch = missingRows.slice(
-      i,
-      i + batchSize
-    ) as usingCurationExcelProps[];
-
-    const sheetName = localStorage.getItem('sheetName');
-    const values = (batch as usingCurationExcelProps[]).map((row) => [
-      row.thumbnailTitle,
-      row.curationType,
-      row.curationName,
-      row.curationDesc,
-      row.activeState,
-      row.exhibitionState,
-      row.field,
-      row.section,
-      formatDateString(row.dispStartDtime),
-      formatDateString(row.dispEndDtime),
-      formatDateString(row.curationCreatedAt),
-      row.channelId,
-      row.episodeId,
-      row.usageYn,
-      row.channelName,
-      row.episodeName,
-      formatDateString(row.dispDtime),
-      formatDateString(row.createdAt),
-      formatPlayTime(row.playTime ?? 0),
-      row.likeCnt,
-      row.listenCnt,
-      row.uploader,
-      '',
-    ]);
-
-    const startRow = existingData.length + i + 4;
-    const endRow = startRow + batch.length - 1;
-    const range = `${sheetName}!B${startRow}:X${endRow}`;
-
-    try {
-      setProgress(`${Math.round((i / missingRows.length) * 100)}%`);
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
-        range,
-        valueInputOption: 'RAW',
-        resource: { values },
-      });
-    } catch (err: unknown) {
-      if (getGoogleApiErrorStatus(err) === 401) {
-        const refreshedToken = await getGoogleToken();
-        if (!refreshedToken)
-          throw new Error('토큰 재발급 실패, 엑셀 업데이트 중단');
-
-        token = refreshedToken;
-        localStorage.setItem('googleAccessToken', token);
-
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID,
-          range,
-          valueInputOption: 'RAW',
-          resource: { values },
-        });
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  toast.success('엑셀 업데이트 완료!');
 }

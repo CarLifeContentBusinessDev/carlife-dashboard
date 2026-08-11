@@ -77,7 +77,7 @@ export async function extractPickjoyWeeklyData(params: {
   const keys = PICKJOY_WEEKLY_ITEM_KEYS;
 
   const needsUserStatus = selectedItems.has(keys.registeredVinCount);
-  const needsWau = selectedItems.has(keys.wau);
+  const needsWAU = selectedItems.has(keys.wau);
   const needsTotalClicks = selectedItems.has(keys.totalClicks);
   const needsContentsStatus =
     selectedItems.has(keys.contentClicks) ||
@@ -86,7 +86,7 @@ export async function extractPickjoyWeeklyData(params: {
     selectedItems.has(itemName)
   );
   const needsOEMParams =
-    needsUserStatus || needsWau || topContentItems.length > 0;
+    needsUserStatus || needsWAU || topContentItems.length > 0;
 
   const oemParamsMap = needsOEMParams
     ? await buildOEMParamsMap(
@@ -178,7 +178,7 @@ export async function extractPickjoyWeeklyData(params: {
 
   const callsPerDate =
     (needsUserStatus ? 1 : 0) +
-    (needsWau ? 1 : 0) +
+    (needsWAU ? 1 : 0) +
     (needsTotalClicks ? 1 : 0) +
     (needsContentsStatus ? 1 : 0) +
     topContentItems.length;
@@ -213,7 +213,7 @@ export async function extractPickjoyWeeklyData(params: {
   for (const sheetDate of dates) {
     const { startDate, endDate } = sheetDateToApiDates(sheetDate);
 
-    if (needsWau) {
+    if (needsWAU) {
       onProgress({
         completed,
         total,

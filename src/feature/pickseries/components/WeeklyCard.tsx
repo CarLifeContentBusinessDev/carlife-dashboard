@@ -17,6 +17,7 @@ interface WeeklyCardProps {
   onClick: (productId: string) => void;
   getItemExistingDates: (productId: string, item: string) => string[];
   toggleItem: (productId: string, item: string) => void;
+  isActive?: boolean;
 }
 
 const WeeklyCard = ({
@@ -31,6 +32,7 @@ const WeeklyCard = ({
   onClick,
   getItemExistingDates,
   toggleItem,
+  isActive = true,
 }: WeeklyCardProps) => {
   return (
     <div className='rounded-xl border border-gray-200 bg-white overflow-hidden'>
@@ -40,45 +42,55 @@ const WeeklyCard = ({
         selectedCount={selectedCount}
         totalCount={items.length}
         onClick={() => onClick(productId)}
+        isActive={isActive}
       />
 
-      <div className='overflow-y-auto max-h-[420px] scrollbar-hide'>
-        <CardBodyStatus
-          isConnected={isConnected}
-          state={state}
-          isEmpty={items.length === 0}
-        >
-          {items.map((item) => {
-            const isSelected = selected.has(item);
-            const existingDates = getItemExistingDates(productId, item);
-            return (
-              <label
-                key={item}
-                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
-                }`}
-              >
-                <input
-                  type='checkbox'
-                  checked={isSelected}
-                  onChange={() => toggleItem(productId, item)}
-                  className='w-4 h-4 accent-indigo-600 shrink-0'
-                />
-                <span
-                  className={`text-sm flex-1 ${
-                    isSelected ? 'text-indigo-800 font-medium' : 'text-gray-700'
+      <div className='overflow-y-auto max-h-105 scrollbar-hide'>
+        {isActive && (
+          <CardBodyStatus
+            isConnected={isConnected}
+            state={state}
+            isEmpty={items.length === 0}
+          >
+            {items.map((item) => {
+              const isSelected = selected.has(item);
+              const existingDates = getItemExistingDates(productId, item);
+              return (
+                <label
+                  key={item}
+                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                    isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
                   }`}
                 >
-                  {item}
-                </span>
-                <ExistingDatesBadge
-                  existingDates={existingDates}
-                  selectedDateCount={selectedDateCount}
-                />
-              </label>
-            );
-          })}
-        </CardBodyStatus>
+                  <input
+                    type='checkbox'
+                    checked={isSelected}
+                    onChange={() => toggleItem(productId, item)}
+                    className='w-4 h-4 accent-indigo-600 shrink-0'
+                  />
+                  <span
+                    className={`text-sm flex-1 ${
+                      isSelected
+                        ? 'text-indigo-800 font-medium'
+                        : 'text-gray-700'
+                    }`}
+                  >
+                    {item}
+                  </span>
+                  <ExistingDatesBadge
+                    existingDates={existingDates}
+                    selectedDateCount={selectedDateCount}
+                  />
+                </label>
+              );
+            })}
+          </CardBodyStatus>
+        )}
+        {!isActive && (
+          <div className='flex items-center justify-center h-32 text-gray-400 text-sm'>
+            아직 연동되지 않은 서비스입니다.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,6 @@ import getSheetList from '@/shared/utils/api/getSheetList';
 
 interface UseSheetSelectionParams {
   isStaging: boolean;
-  loginToken: string;
   spreadsheetId: string;
   defaultSheetName: string;
   storageKey: string;
@@ -11,7 +10,6 @@ interface UseSheetSelectionParams {
 
 export function useSheetSelection({
   isStaging,
-  loginToken,
   spreadsheetId,
   defaultSheetName,
   storageKey,
@@ -24,38 +22,36 @@ export function useSheetSelection({
   );
 
   useEffect(() => {
-    if (loginToken) {
-      getSheetList(spreadsheetId).then((list) => {
-        setSheetList(list);
+    getSheetList(spreadsheetId).then((list) => {
+      setSheetList(list);
 
-        const filteredSheets = list.filter((sheet) =>
-          isStaging
-            ? sheet.name.startsWith('stg_')
-            : !sheet.name.startsWith('stg_')
-        );
-        const savedSheet = localStorage.getItem(storageKey);
-        const isSavedSheetValid = filteredSheets.some(
-          (sheet) => sheet.name === savedSheet
-        );
-        const hasDefaultSheet = filteredSheets.some(
-          (sheet) => sheet.name === defaultSheetName
-        );
+      const filteredSheets = list.filter((sheet) =>
+        isStaging
+          ? sheet.name.startsWith('stg_')
+          : !sheet.name.startsWith('stg_')
+      );
+      const savedSheet = localStorage.getItem(storageKey);
+      const isSavedSheetValid = filteredSheets.some(
+        (sheet) => sheet.name === savedSheet
+      );
+      const hasDefaultSheet = filteredSheets.some(
+        (sheet) => sheet.name === defaultSheetName
+      );
 
-        const nextSheet = isSavedSheetValid
-          ? savedSheet!
-          : hasDefaultSheet
-            ? defaultSheetName
-            : '';
+      const nextSheet = isSavedSheetValid
+        ? savedSheet!
+        : hasDefaultSheet
+          ? defaultSheetName
+          : '';
 
-        setSelectedSheet(nextSheet);
-        if (nextSheet) {
-          localStorage.setItem(storageKey, nextSheet);
-        } else {
-          localStorage.removeItem(storageKey);
-        }
-      });
-    }
-  }, [defaultSheetName, isStaging, loginToken, storageKey, spreadsheetId]);
+      setSelectedSheet(nextSheet);
+      if (nextSheet) {
+        localStorage.setItem(storageKey, nextSheet);
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+    });
+  }, [defaultSheetName, isStaging, storageKey, spreadsheetId]);
 
   const handleSelectSheet = (value: string) => {
     setSelectedSheet(value);

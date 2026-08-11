@@ -6,6 +6,7 @@ interface CardHeaderProps {
   selectedCount?: number;
   totalCount?: number;
   onClick: () => void;
+  isActive?: boolean;
 }
 
 export const CardHeader = ({
@@ -14,6 +15,7 @@ export const CardHeader = ({
   selectedCount,
   totalCount,
   onClick,
+  isActive = true,
 }: CardHeaderProps) => {
   return (
     <div className='flex items-center justify-between px-4 py-3 border-b border-gray-100'>
@@ -23,7 +25,7 @@ export const CardHeader = ({
         />
         <span className='font-semibold text-gray-800'>{label}</span>
       </div>
-      {isConnected && !!totalCount && (
+      {isConnected && !!totalCount && isActive && (
         <button
           onClick={() => onClick()}
           className='text-xs text-gray-400 hover:text-indigo-600 transition-colors cursor-pointer'

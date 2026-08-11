@@ -4,12 +4,22 @@ import {
   pickleTokenKey,
   pickleRefreshKey,
 } from '@/constants/servers';
+import { isJwtExpired } from '@/shared/utils/jwt';
 
 function loadServerTokens(): Record<string, string> {
   const tokens: Record<string, string> = {};
   PICKLE_SERVERS.forEach((server) => {
     const token = localStorage.getItem(pickleTokenKey(server.id));
-    if (token) tokens[server.id] = token;
+
+    if (token) {
+      if (isJwtExpired(token)) {
+        localStorage.removeItem(pickleTokenKey(server.id));
+        localStorage.removeItem(pickleRefreshKey(server.id));
+        return;
+      }
+
+      tokens[server.id] = token;
+    }
   });
   return tokens;
 }
@@ -41,6 +51,9 @@ export const usePickleServerStore = create<PickleServerState>()((set, get) => ({
     });
   },
 
-  isServerLoggedIn: (id) => !!get().serverTokens[id],
+  isServerLoggedIn(id) {
+    const token = get().serverTokens[id];
+    return !!token && !isJwtExpired(token);
+  },
   getServerToken: (id) => get().serverTokens[id] ?? null,
 }));

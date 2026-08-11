@@ -16,12 +16,17 @@ const SERVER_GROUP_LABELS: Record<string, string> = {
 const getServerGroupKey = (server: PicknowServer): string =>
   server.id.split('-')[1] ?? '';
 
-const SERVER_GROUPS: { key: string; label: string; servers: PicknowServer[] }[] =
-  Object.entries(SERVER_GROUP_LABELS).map(([key, label]) => ({
-    key,
-    label,
-    servers: PICKNOW_SERVERS.filter((server) => getServerGroupKey(server) === key),
-  }));
+const SERVER_GROUPS: {
+  key: string;
+  label: string;
+  servers: PicknowServer[];
+}[] = Object.entries(SERVER_GROUP_LABELS).map(([key, label]) => ({
+  key,
+  label,
+  servers: PICKNOW_SERVERS.filter(
+    (server) => getServerGroupKey(server) === key
+  ),
+}));
 
 export default function ServerSelector({
   isServerLoggedIn,
@@ -46,13 +51,16 @@ export default function ServerSelector({
                   <button
                     key={server.id}
                     onClick={() => {
+                      if (!server.isActive) {
+                        return;
+                      }
                       if (!connected) {
                         setLoginModalServer(server);
                       } else {
                         toggleSelectedServer(server.id);
                       }
                     }}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${server.isActive ? 'cursor-pointer' : ''} ${
                       isSelected && connected
                         ? 'bg-indigo-600 border-indigo-600 text-white'
                         : connected
@@ -64,8 +72,11 @@ export default function ServerSelector({
                       className={`w-1.5 h-1.5 rounded-full shrink-0 ${connected ? (isSelected ? 'bg-white' : 'bg-green-500') : 'bg-gray-300'}`}
                     />
                     {server.label}
-                    {!connected && (
+                    {!connected && server.isActive && (
                       <span className='text-xs text-gray-400'>(미연결)</span>
+                    )}
+                    {!server.isActive && (
+                      <span className='text-xs text-gray-400'>(연동 전)</span>
                     )}
                   </button>
                 );

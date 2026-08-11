@@ -4,12 +4,21 @@ import {
   pickSeriesTokenKey,
   pickSeriesRefreshKey,
 } from '@/constants/servers';
+import { isJwtExpired } from '@/shared/utils/jwt';
 
 function loadServerTokens(): Record<string, string> {
   const tokens: Record<string, string> = {};
   PICKSERIES_SERVERS.forEach((server) => {
     const token = localStorage.getItem(pickSeriesTokenKey(server.id));
-    if (token) tokens[server.id] = token;
+
+    if (token) {
+      if (isJwtExpired(token)) {
+        localStorage.removeItem(pickSeriesTokenKey(server.id));
+        localStorage.removeItem(pickSeriesRefreshKey(server.id));
+        return;
+      }
+      tokens[server.id] = token;
+    }
   });
   return tokens;
 }
@@ -45,7 +54,10 @@ export const usePickSeriesServerStore = create<PickSeriesServerState>()(
       });
     },
 
-    isServerLoggedIn: (id) => !!get().serverTokens[id],
+    isServerLoggedIn(id) {
+      const token = get().serverTokens[id];
+      return !!token && !isJwtExpired(token);
+    },
     getServerToken: (id) => get().serverTokens[id] ?? null,
   })
 );

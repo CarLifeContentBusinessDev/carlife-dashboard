@@ -4,10 +4,11 @@ import {
   PICKNOW_CONFIGURATION_HEADERS,
 } from '@/constants/picknowExcel';
 import {
-  getGoogleToken,
-  getSheetsClient,
-  initializeGoogleAPI,
-} from '@/shared/utils/auth/auth';
+  batchUpdateSpreadsheet,
+  clearSheetValues,
+  getSpreadsheetMeta,
+  updateSheetValues,
+} from '@/feature/picknow/utils/picknowSheetApi';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
 
 export async function preparePicknowConfigurationSheet(
@@ -21,255 +22,219 @@ export async function preparePicknowConfigurationSheet(
     throw new Error('시트명이 비어 있습니다.');
   }
 
-  await initializeGoogleAPI();
-
-  const token = await getGoogleToken();
-  if (!token) {
-    throw new Error(
-      'Google 인증 토큰이 없습니다. 로그인 후 다시 시도해주세요.'
-    );
-  }
-
-  gapi.client.setToken({ access_token: token });
-
-  const sheets = getSheetsClient();
-  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-  const existingSheet = spreadsheet.result.sheets?.find((sheet) => {
+  const spreadsheet = await getSpreadsheetMeta(spreadsheetId);
+  const existingSheet = spreadsheet.sheets?.find((sheet) => {
     const title = sheet.properties?.title ?? '';
     return title.trim() === targetSheetName;
   });
 
   let sheetId: number;
   if (!existingSheet) {
-    const addSheetResponse = await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      resource: {
-        requests: [
-          {
-            addSheet: {
-              properties: {
-                title: targetSheetName,
-              },
-            },
-          },
-        ],
-      },
-    });
-    sheetId =
-      addSheetResponse.result.replies?.[0]?.addSheet?.properties?.sheetId ?? 0;
+    const addSheetResponse = await batchUpdateSpreadsheet(spreadsheetId, [
+      { addSheet: { properties: { title: targetSheetName } } },
+    ]);
+    sheetId = addSheetResponse[0]?.addSheet?.properties?.sheetId ?? 0;
   } else {
     sheetId = existingSheet.properties?.sheetId ?? 0;
   }
 
-  await sheets.spreadsheets.values.clear({
+  await clearSheetValues(
     spreadsheetId,
-    range: buildSheetRange(targetSheetName, PICKNOW_CONFIGURATION_DATA_RANGE),
-    resource: {},
-  });
+    buildSheetRange(targetSheetName, PICKNOW_CONFIGURATION_DATA_RANGE)
+  );
 
   if (!existingSheet) {
-    await sheets.spreadsheets.values.update({
+    await updateSheetValues(
       spreadsheetId,
-      range: buildSheetRange(
-        targetSheetName,
-        PICKNOW_CONFIGURATION_HEADER_RANGE
-      ),
-      valueInputOption: 'RAW',
-      resource: {
-        values: [PICKNOW_CONFIGURATION_HEADERS],
-      },
-    });
+      buildSheetRange(targetSheetName, PICKNOW_CONFIGURATION_HEADER_RANGE),
+      [PICKNOW_CONFIGURATION_HEADERS],
+      'RAW'
+    );
 
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      resource: {
-        requests: [
-          {
-            updateCells: {
-              range: {
-                sheetId,
-                startRowIndex: 1,
-                endRowIndex: 2,
-                startColumnIndex: 1,
-                endColumnIndex: 26,
-              },
-              rows: [
-                {
-                  values: PICKNOW_CONFIGURATION_HEADERS.map(() => ({
-                    userEnteredFormat: {
-                      backgroundColor: {
-                        red: 0.93,
-                        green: 0.93,
-                        blue: 0.93,
-                      },
-                      horizontalAlignment: 'CENTER',
-                      textFormat: {
-                        bold: true,
-                      },
-                    },
-                  })),
-                },
-              ],
-              fields:
-                'userEnteredFormat.backgroundColor,userEnteredFormat.horizontalAlignment,userEnteredFormat.textFormat.bold',
-            },
+    await batchUpdateSpreadsheet(spreadsheetId, [
+      {
+        updateCells: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            endRowIndex: 2,
+            startColumnIndex: 1,
+            endColumnIndex: 26,
           },
-          // 텍스트 정렬 및 줄바꿈 설정
-          {
-            repeatCell: {
-              range: {
-                sheetId,
-                startRowIndex: 2,
-                endRowIndex: 1000,
-                startColumnIndex: 0,
-                endColumnIndex: 25,
-              },
-              cell: {
+          rows: [
+            {
+              values: PICKNOW_CONFIGURATION_HEADERS.map(() => ({
                 userEnteredFormat: {
-                  horizontalAlignment: 'LEFT',
-                  verticalAlignment: 'MIDDLE',
-                  wrapStrategy: 'WRAP',
+                  backgroundColor: {
+                    red: 0.93,
+                    green: 0.93,
+                    blue: 0.93,
+                  },
+                  horizontalAlignment: 'CENTER',
+                  textFormat: {
+                    bold: true,
+                  },
                 },
-              },
-              fields:
-                'userEnteredFormat(horizontalAlignment,verticalAlignment,wrapStrategy)',
+              })),
             },
-          },
-          // 열 너비 설정
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 0,
-                endIndex: 1,
-              },
-              properties: {
-                pixelSize: 20,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 1,
-                endIndex: 2,
-              },
-              properties: {
-                pixelSize: 60,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 2,
-                endIndex: 4,
-              },
-              properties: {
-                pixelSize: 180,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 6,
-                endIndex: 8,
-              },
-              properties: {
-                pixelSize: 180,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 8,
-                endIndex: 12,
-              },
-              properties: {
-                pixelSize: 80,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 16,
-                endIndex: 21,
-              },
-              properties: {
-                pixelSize: 200,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 21,
-                endIndex: 25,
-              },
-              properties: {
-                pixelSize: 140,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId,
-                dimension: 'COLUMNS',
-                startIndex: 25,
-                endIndex: 26,
-              },
-              properties: {
-                pixelSize: 20,
-              },
-              fields: 'pixelSize',
-            },
-          },
-          {
-            updateSheetProperties: {
-              properties: {
-                sheetId,
-                gridProperties: {
-                  columnCount: 26,
-                  frozenRowCount: 2,
-                },
-              },
-              fields:
-                'gridProperties.columnCount,gridProperties.frozenRowCount',
-            },
-          },
-        ],
+          ],
+          fields:
+            'userEnteredFormat.backgroundColor,userEnteredFormat.horizontalAlignment,userEnteredFormat.textFormat.bold',
+        },
       },
-    });
+      // 텍스트 정렬 및 줄바꿈 설정
+      {
+        repeatCell: {
+          range: {
+            sheetId,
+            startRowIndex: 2,
+            endRowIndex: 1000,
+            startColumnIndex: 0,
+            endColumnIndex: 25,
+          },
+          cell: {
+            userEnteredFormat: {
+              horizontalAlignment: 'LEFT',
+              verticalAlignment: 'MIDDLE',
+              wrapStrategy: 'WRAP',
+            },
+          },
+          fields:
+            'userEnteredFormat(horizontalAlignment,verticalAlignment,wrapStrategy)',
+        },
+      },
+      // 열 너비 설정
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 0,
+            endIndex: 1,
+          },
+          properties: {
+            pixelSize: 20,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 1,
+            endIndex: 2,
+          },
+          properties: {
+            pixelSize: 60,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 2,
+            endIndex: 4,
+          },
+          properties: {
+            pixelSize: 180,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 6,
+            endIndex: 8,
+          },
+          properties: {
+            pixelSize: 180,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 8,
+            endIndex: 12,
+          },
+          properties: {
+            pixelSize: 80,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 16,
+            endIndex: 21,
+          },
+          properties: {
+            pixelSize: 200,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 21,
+            endIndex: 25,
+          },
+          properties: {
+            pixelSize: 140,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 25,
+            endIndex: 26,
+          },
+          properties: {
+            pixelSize: 20,
+          },
+          fields: 'pixelSize',
+        },
+      },
+      {
+        updateSheetProperties: {
+          properties: {
+            sheetId,
+            gridProperties: {
+              columnCount: 26,
+              frozenRowCount: 2,
+            },
+          },
+          fields: 'gridProperties.columnCount,gridProperties.frozenRowCount',
+        },
+      },
+    ]);
   }
 
   // 기본 필터(setBasicFilter)는 데이터를 쓴 뒤 syncPicknowConfigurationSheet에서 설정
   try {
-    const latestSpreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-    const targetSheet = latestSpreadsheet.result.sheets?.find(
+    const latestSpreadsheet = await getSpreadsheetMeta(spreadsheetId);
+    const targetSheet = latestSpreadsheet.sheets?.find(
       (s) => s.properties?.sheetId === sheetId
     );
 
@@ -284,10 +249,7 @@ export async function preparePicknowConfigurationSheet(
     requests.push({ clearBasicFilter: { sheetId } });
 
     if (requests.length > 0) {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        resource: { requests },
-      });
+      await batchUpdateSpreadsheet(spreadsheetId, requests);
     }
   } catch (err) {
     console.warn('필터뷰 삭제 실패:', err);
@@ -307,14 +269,12 @@ export async function preparePicknowConfigurationSheet(
     '="총 " & SUBTOTAL(103, B3:B) & "개 (' + timestamp + ')"';
 
   try {
-    await sheets.spreadsheets.values.update({
+    await updateSheetValues(
       spreadsheetId,
-      range: buildSheetRange(targetSheetName, 'B1'),
-      valueInputOption: 'USER_ENTERED',
-      resource: {
-        values: [[countFormula]],
-      },
-    });
+      buildSheetRange(targetSheetName, 'B1'),
+      [[countFormula]],
+      'USER_ENTERED'
+    );
   } catch (err) {
     console.warn('B1 업데이트 실패:', err);
   }
