@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
-import { getAuth, isAllowedOrigin } from './getGoogleAuth';
+import { getAuth, isAllowedOrigin } from './getGoogleAuth.js';
 
 type SheetRequestBody =
   | { action: 'get'; spreadsheetId: string; range: string }
