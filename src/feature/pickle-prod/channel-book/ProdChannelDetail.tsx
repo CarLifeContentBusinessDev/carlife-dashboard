@@ -20,7 +20,7 @@ const CHANNEL_FIELD_DEFS: Array<{
   { key: 'channelName', label: '채널명' },
   { key: 'vendorName', label: '제작사명' },
   { key: 'usageYn', label: '활성 상태' },
-  { key: 'categoryName', label: '카테고리' },
+  { key: 'categoryList', label: '카테고리' },
   { key: 'channelTypeName', label: '채널 타입' },
   { key: 'createdAt', label: '등록일' },
   { key: 'likeCnt', label: '좋아요수' },
@@ -54,8 +54,13 @@ const isImageUrl = (url: string) =>
 
 const formatFieldValue = (
   key: keyof usingChannelProps,
-  value: string | number
+  value: usingChannelProps[keyof usingChannelProps]
 ): React.ReactNode => {
+  if (key === 'categoryList') {
+    const categoryList = value as usingChannelProps['categoryList'];
+    return categoryList?.map((c) => c.categoryName).join(', ') || '-';
+  }
+
   if (key === 'dispDtime' || key === 'createdAt') {
     return formatDateString(String(value));
   }
@@ -245,14 +250,11 @@ const ProdChannelDetail = () => {
                   <div
                     className={`px-4 text-sm bg-white break-all ${
                       isThumbnailField
-                        ? 'py-4 min-h-[180px] flex items-start'
+                        ? 'py-4 min-h-45 flex items-start'
                         : 'py-3'
                     }`}
                   >
-                    {formatFieldValue(
-                      field.key,
-                      channel[field.key] as string | number
-                    )}
+                    {formatFieldValue(field.key, channel[field.key])}
                   </div>
                 </div>
               );
@@ -289,7 +291,7 @@ const ProdChannelDetail = () => {
                     <p
                       key={col.key}
                       className={`px-2 text-sm ${
-                        col.isFlex ? 'flex-1 min-w-[280px]' : 'shrink-0'
+                        col.isFlex ? 'flex-1 min-w-70' : 'shrink-0'
                       }`}
                       style={
                         col.isFlex
@@ -321,7 +323,7 @@ const ProdChannelDetail = () => {
                         key={col.key}
                         className={`px-2 text-sm ${
                           col.isFlex
-                            ? 'flex-1 min-w-[280px] truncate'
+                            ? 'flex-1 min-w-70 truncate'
                             : 'shrink-0 truncate'
                         }`}
                         style={

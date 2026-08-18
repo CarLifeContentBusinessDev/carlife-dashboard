@@ -137,7 +137,15 @@ export async function getExcelData(
             usageYn: String(row[1] ?? ''),
             channelName: String(row[2] ?? ''),
             vendorName: String(row[3] ?? ''),
-            categoryName: String(row[4] ?? ''),
+            categoryList: row[4]
+              ? [
+                  {
+                    categoryId: 0,
+                    categoryName: String(row[4]),
+                    displayOrder: null,
+                  },
+                ]
+              : [],
             episodeCount: Number(row[5] ?? 0),
             dispDtime: String(row[6] ?? ''),
             channelTypeName: String(row[7] ?? ''),
@@ -223,7 +231,7 @@ export async function overwriteExcelData(
         row.usageYn,
         row.channelName,
         row.vendorName,
-        row.categoryName,
+        row.categoryList?.map((c) => c.categoryName).join(', ') ?? '',
         row.episodeCount ?? 0,
         formatDateString(row.dispDtime),
         row.channelTypeName,

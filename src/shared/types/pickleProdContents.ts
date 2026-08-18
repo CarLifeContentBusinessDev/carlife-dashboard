@@ -13,6 +13,11 @@ export interface usingDataProps {
   channelId: number;
 }
 
+interface caegoryListType {
+  categoryId: number;
+  categoryName: string;
+  displayOrder: number | null;
+}
 export interface usingChannelProps {
   channelId: number;
   interfaceUrl: string;
@@ -20,8 +25,7 @@ export interface usingChannelProps {
   channelName: string;
   channelTypeName: string;
   interfaceType: string;
-  categoryId: number;
-  categoryName: string;
+  categoryList: caegoryListType[];
   episodeCount?: number;
   vendorName: string;
   likeCnt: number;

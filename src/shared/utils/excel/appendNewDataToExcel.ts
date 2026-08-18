@@ -155,7 +155,7 @@ export async function appendNewDataToTop(
         row.usageYn,
         row.channelName,
         row.vendorName,
-        row.categoryName,
+        row.categoryList?.map((c) => c.categoryName).join(', ') ?? '',
         row.episodeCount ?? 0,
         excelDateTime(row.dispDtime),
         row.channelTypeName,

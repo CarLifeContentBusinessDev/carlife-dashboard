@@ -1,21 +1,19 @@
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { toast } from 'react-toastify';
-import LoadingOverlay from '@/shared/components/common/LoadingOverlay.tsx';
-import Pagination from '@/shared/components/common/Pagination.tsx';
-import SheetSelector from '@/feature/pickseries/components/SheetSelector.tsx';
 import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout.tsx';
-import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio.tsx';
 import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader.tsx';
 import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState.tsx';
 import SyncToolbar from '@/feature/pickle-prod/components/SyncToolbar.tsx';
-import SortControls from '@/shared/components/table/SortControls';
-import useListSort from '@/shared/hooks/useListSort.ts';
+import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio.tsx';
+import SheetSelector from '@/feature/pickseries/components/SheetSelector.tsx';
 import { useSheetSelection } from '@/feature/pickseries/hooks/useSheetSelection.ts';
-import { useStagingEnv } from '@/shared/hooks/useStagingEnv.ts';
 import {
   SYNC_PAGE_SIZE,
   useSyncState,
 } from '@/feature/pickseries/hooks/useSyncState.ts';
+import LoadingOverlay from '@/shared/components/common/LoadingOverlay.tsx';
+import Pagination from '@/shared/components/common/Pagination.tsx';
+import SortControls from '@/shared/components/table/SortControls';
+import useListSort from '@/shared/hooks/useListSort.ts';
+import { useStagingEnv } from '@/shared/hooks/useStagingEnv.ts';
 import { useChannelStore } from '@/shared/store/useChannelStore.ts';
 import { usePickleServerStore } from '@/shared/store/usePickleServerStore.ts';
 import type { usingChannelProps } from '@/shared/types/pickleProdContents.ts';
@@ -24,6 +22,8 @@ import { appendNewDataToTop } from '@/shared/utils/excel/appendNewDataToExcel.ts
 import { getNewData } from '@/shared/utils/excel/getNewData.ts';
 import { overwriteExcelData } from '@/shared/utils/excel/updateExcel.ts';
 import { updateSheetSyncTime } from '@/shared/utils/excel/updateSheetSyncTime.ts';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'react-toastify';
 import ProdChannelList from './ProdChannelList.tsx';
 
 const CATEGORY = 'channel';
@@ -41,8 +41,8 @@ const CHANNEL_SORT_OPTIONS: Array<{ value: ChannelSortKey; label: string }> = [
 
 const sortChannels = (channels: usingChannelProps[]) =>
   [...channels].sort((a, b) => {
-    const catA = (a.categoryName ?? '').toLowerCase();
-    const catB = (b.categoryName ?? '').toLowerCase();
+    const catA = (a.categoryList?.[0]?.categoryName ?? '').toLowerCase();
+    const catB = (b.categoryList?.[0]?.categoryName ?? '').toLowerCase();
     const catCompare = catA.localeCompare(catB, undefined, {
       sensitivity: 'base',
     });
@@ -62,7 +62,7 @@ const ChannelLayout = () => {
     isStaging ? 'pickle-stg' : 'pickle-prod'
   );
 
-  // ── 데이터 탭 ──────────────────────────────────────────────────────────────
+  // 데이터 탭
   const [allChannelData, setAllChannelData] = useState<usingChannelProps[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataProgress, setDataProgress] = useState('');
@@ -150,7 +150,7 @@ const ChannelLayout = () => {
           dataPage * dataPageSize
         );
 
-  // ── 동기화 탭 ─────────────────────────────────────────────────────────────
+  // 동기화 탭
   const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
     null
   );
@@ -352,7 +352,7 @@ const ChannelLayout = () => {
                     onChange={(v) => setDataUsageFilter(v)}
                   />
                 </div>
-                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-[220px]'>
+                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-55'>
                   <input
                     type='text'
                     value={dataKeyword}

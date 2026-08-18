@@ -58,6 +58,8 @@ const getCellContent = (
       );
     case 'createdAt':
       return formatDateString(channel.createdAt);
+    case 'categoryName':
+      return channel.categoryList?.map((c) => c.categoryName).join(', ') || '-';
     case 'episodeCount': {
       if (episodeCountByChannelId[channel.channelId] !== undefined) {
         return episodeCountByChannelId[channel.channelId];

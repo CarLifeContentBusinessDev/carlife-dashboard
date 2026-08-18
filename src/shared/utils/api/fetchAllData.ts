@@ -43,12 +43,14 @@ export async function fetchAllData(
       return [];
     }
 
-    const firstRes = await apiInstance.get(
-      `/admin/${category}?page=1&size=${SIZE}`,
-      {
-        signal,
-      }
-    );
+    const firstRes = await apiInstance.get(`/admin/${category}`, {
+      params: {
+        page: 1,
+        size: SIZE,
+        ...(category === 'channel' && { channelType: 'CHANNEL' }),
+      },
+      signal,
+    });
 
     const totalCount = firstRes.data.data.pageInfo.totalCount;
     const totalPages = Math.ceil(totalCount / SIZE);
@@ -61,10 +63,14 @@ export async function fetchAllData(
       }
 
       setProgress(`${Math.round((page / totalPages / 2) * 100)}%`);
-      const res = await apiInstance.get(
-        `/admin/${category}?page=${page}&size=${SIZE}`,
-        { signal }
-      );
+      const res = await apiInstance.get(`/admin/${category}`, {
+        params: {
+          page,
+          size: SIZE,
+          ...(category === 'channel' && { channelType: 'CHANNEL' }),
+        },
+        signal,
+      });
 
       const dataList = res.data.data.dataList;
 
