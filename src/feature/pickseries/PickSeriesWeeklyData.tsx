@@ -373,7 +373,7 @@ export default function PickSeriesWeeklyData() {
                 const selectedCount = items.filter((item) =>
                   selected.has(item)
                 ).length;
-                const isActive = product.id === 'pickjoy' ? true : false;
+                const isActive = product.id === 'picknow' ? false : true;
 
                 return (
                   <WeeklyCard
