@@ -12,3 +12,18 @@ export function mapCurationStatus(status: string): string {
       return status;
   }
 }
+
+export function mapFastHlsStatus(status: string): string {
+  switch (status) {
+    case 'QUEUED':
+      return '생성 대기';
+    case 'IN_PROGRESS':
+      return '생성중';
+    case 'COMPLETED':
+      return '생성완료';
+    case 'CANCELED':
+      return '생성취소';
+    default:
+      return status;
+  }
+}

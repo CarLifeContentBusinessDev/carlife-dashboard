@@ -24,6 +24,8 @@ const ChannelLayout = lazy(
 const CurationLayout = lazy(
   () => import('./feature/pickle-prod/curation/CurationLayout')
 );
+const FastLayout = lazy(() => import('./feature/pickle-prod/fast/FastLayout'));
+const FastDetail = lazy(() => import('./feature/pickle-prod/fast/FastDetail'));
 const DemoCategoryLayout = lazy(
   () => import('./feature/pickle-demo/category/DemoCategoryLayout')
 );
@@ -237,6 +239,14 @@ function App() {
                   />
                 </Route>
 
+                <Route path='fast'>
+                  <Route path='' element={<FastLayout key='prod' />} />
+                  <Route
+                    path='detail/:id'
+                    element={<FastDetail key='prod' />}
+                  />
+                </Route>
+
                 <Route path='stg'>
                   <Route path='episodes'>
                     <Route path='' element={<EpisodeLayout key='stg' />} />
@@ -257,6 +267,13 @@ function App() {
                     <Route
                       path='detail/:id'
                       element={<ProdCurationDetail key='stg' />}
+                    />
+                  </Route>
+                  <Route path='fast'>
+                    <Route path='' element={<FastLayout key='stg' />} />
+                    <Route
+                      path='detail/:id'
+                      element={<FastDetail key='stg' />}
                     />
                   </Route>
                 </Route>

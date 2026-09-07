@@ -107,7 +107,7 @@ const CurationList = ({ data }: { data: usingCurationExcelProps[] }) => {
 
   return (
     <div
-      className={`w-full flex flex-col min-h-0 ${hasData ? 'flex-[2]' : 'flex-[1]'}`}
+      className={`w-full flex flex-col min-h-0 ${hasData ? 'flex-2' : 'flex-1'}`}
     >
       <div ref={parentRef} className='w-full flex-1 overflow-auto'>
         <div style={{ minWidth: hasData ? 'max-content' : 'auto' }}>
