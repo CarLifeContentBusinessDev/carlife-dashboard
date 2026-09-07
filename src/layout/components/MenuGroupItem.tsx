@@ -89,7 +89,7 @@ const MenuGroupItem = ({
       {isSidebarOpen && (
         <div
           className={`overflow-hidden transition-all duration-300 ${
-            isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            isExpanded ? 'opacity-100' : 'max-h-0 opacity-0'
           } bg-[#000c17]`}
         >
           <div>

@@ -54,6 +54,11 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
         label: '큐레이션 관리',
       },
       {
+        id: 'fast',
+        to: '/pickle/fast',
+        label: 'FAST 관리',
+      },
+      {
         id: 'stg_episodes',
         to: '/pickle/stg/episodes',
         label: '에피소드 관리 (stg)',
@@ -67,6 +72,11 @@ export const PICKLE_MENU_GROUPS: MenuGroup[] = [
         id: 'stg_curations',
         to: '/pickle/stg/curations',
         label: '큐레이션 관리 (stg)',
+      },
+      {
+        id: 'stg_fast',
+        to: '/pickle/stg/fast',
+        label: 'FAST 관리 (stg)',
       },
     ],
   },
