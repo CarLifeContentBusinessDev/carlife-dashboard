@@ -5,7 +5,8 @@ import type {
   fastStatsProps,
   ProdFastRow,
 } from '@/shared/types/pickleProdContents';
-import { executeWithConcurrencyLimit } from '@/shared/utils/api/requestPool';
+import { api } from './api';
+import { executeWithConcurrencyLimit } from './requestPool';
 
 const LIST_SIZE = 100;
 const LIST_BASE_PARAMS = `usageFilter=ALL&hlsStatus=ALL&sortBy=CREATED_AT&sortDirection=DESC&size=${LIST_SIZE}`;
@@ -41,8 +42,8 @@ export function mapFastToRow(
   };
 }
 
-async function fetchFastListItems(
-  apiInstance: AxiosInstance,
+export async function fetchFastListItems(
+  apiInstance: AxiosInstance = api,
   signal?: AbortSignal
 ): Promise<fastListItemProps[]> {
   const firstRes = await apiInstance.get(
@@ -74,13 +75,20 @@ async function fetchFastListItems(
   return listItems;
 }
 
-export async function loadAllFastRows(
-  apiInstance: AxiosInstance,
-  signal?: AbortSignal
+/**
+ * 목록 아이템별로 상세(/admin/fast/:id)와 통계(/admin/fast/:id/stats)를
+ * 호출해 표시용 행으로 변환한다. (동시 요청 5개 제한)
+ */
+export async function enrichFastRows(
+  items: fastListItemProps[],
+  apiInstance: AxiosInstance = api,
+  signal?: AbortSignal,
+  setProgress?: (message: string) => void
 ): Promise<ProdFastRow[]> {
-  const listItems = await fetchFastListItems(apiInstance, signal);
+  let done = 0;
+  const total = items.length;
 
-  const tasks = listItems.map((item) => async (): Promise<ProdFastRow> => {
+  const tasks = items.map((item) => async (): Promise<ProdFastRow> => {
     const [detailRes, statsRes] = await Promise.allSettled([
       apiInstance.get(`/admin/fast/${item.fastId}`, { signal }),
       apiInstance.get(`/admin/fast/${item.fastId}/stats`, { signal }),
@@ -95,6 +103,11 @@ export async function loadAllFastRows(
         ? (statsRes.value.data.data as fastStatsProps)
         : null;
 
+    done += 1;
+    if (setProgress && total > 0) {
+      setProgress(`${Math.min(100, Math.round((done / total) * 100))}%`);
+    }
+
     return mapFastToRow(item, detail, stats);
   });
 
@@ -105,4 +118,16 @@ export async function loadAllFastRows(
       (r): r is PromiseFulfilledResult<ProdFastRow> => r.status === 'fulfilled'
     )
     .map((r) => r.value);
+}
+
+/**
+ * FAST 전체 목록 + 건별 상세/통계를 조회해 표시용 행 배열로 반환한다.
+ */
+export async function fetchAllFastData(
+  apiInstance: AxiosInstance = api,
+  signal?: AbortSignal,
+  setProgress?: (message: string) => void
+): Promise<ProdFastRow[]> {
+  const listItems = await fetchFastListItems(apiInstance, signal);
+  return enrichFastRows(listItems, apiInstance, signal, setProgress);
 }

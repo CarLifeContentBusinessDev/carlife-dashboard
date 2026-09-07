@@ -243,7 +243,7 @@ const ProdEpisodeDetail = () => {
                   <div
                     className={`px-4 text-sm bg-white break-all ${
                       isThumbnailField
-                        ? 'py-4 min-h-[180px] flex items-start'
+                        ? 'py-4 min-h-45 flex items-start'
                         : isAudioField
                           ? 'py-4'
                           : 'py-3'

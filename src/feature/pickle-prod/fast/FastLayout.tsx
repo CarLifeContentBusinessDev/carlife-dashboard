@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'react-toastify';
 import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout';
+import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader';
+import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState';
+import SyncToolbar from '@/feature/pickle-prod/components/SyncToolbar';
 import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio';
+import SheetSelector from '@/feature/pickseries/components/SheetSelector';
+import { useSheetSelection } from '@/feature/pickseries/hooks/useSheetSelection';
+import {
+  SYNC_PAGE_SIZE,
+  useSyncState,
+} from '@/feature/pickseries/hooks/useSyncState';
 import LoadingOverlay from '@/shared/components/common/LoadingOverlay';
 import Pagination from '@/shared/components/common/Pagination';
 import SortControls from '@/shared/components/table/SortControls';
@@ -9,14 +19,14 @@ import { useStagingEnv } from '@/shared/hooks/useStagingEnv';
 import { useFastStore } from '@/shared/store/useFastStore';
 import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
 import type { ProdFastRow } from '@/shared/types/pickleProdContents';
-import { loadAllFastRows } from './fastApi';
+import { fetchAllFastData } from '@/shared/utils/api/fetchAllFastData';
+import { appendNewFastToExcel } from '@/shared/utils/excel/appendNewFast';
+import { getNewFastData } from '@/shared/utils/excel/getNewFast';
+import { overwriteFastExcelData } from '@/shared/utils/excel/updateFast';
+import { updateSheetSyncTime } from '@/shared/utils/excel/updateSheetSyncTime';
 import ProdFastList from './ProdFastList';
 
-type FastSortKey =
-  | 'createdAt'
-  | 'fastName'
-  | 'dispStartDtime'
-  | 'dispEndDtime';
+type FastSortKey = 'createdAt' | 'fastName' | 'dispStartDtime' | 'dispEndDtime';
 
 const FAST_SORT_OPTIONS: Array<{ value: FastSortKey; label: string }> = [
   { value: 'createdAt', label: '등록 일시' },
@@ -44,12 +54,13 @@ const FAST_STATUS_FILTER_TO_CODE: Record<FastStatusFilter, string> = {
 };
 
 const FastLayout = () => {
-  const { isStaging, apiInstance } = useStagingEnv();
+  const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
   const { isServerLoggedIn } = usePickleServerStore();
   const isPickleLoggedIn = isServerLoggedIn(
     isStaging ? 'pickle-stg' : 'pickle-prod'
   );
 
+  // 데이터 탭
   const [allFastData, setAllFastData] = useState<ProdFastRow[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataKeyword, setDataKeyword] = useState('');
@@ -63,6 +74,7 @@ const FastLayout = () => {
   const [isPageSizeChanging, startPageSizeTransition] = useTransition();
   const dataAbortRef = useRef<AbortController | null>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const syncScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isPickleLoggedIn) {
@@ -81,7 +93,7 @@ const FastLayout = () => {
     setDataLoading(true);
     setAllFastData([]);
     setDataPage(1);
-    loadAllFastRows(apiInstance, controller.signal)
+    fetchAllFastData(apiInstance, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) {
           setAllFastData(data);
@@ -147,6 +159,157 @@ const FastLayout = () => {
           (dataPage - 1) * dataPageSize,
           dataPage * dataPageSize
         );
+
+  // 동기화 탭
+  const [newFasts, setNewFasts] = useState<ProdFastRow[]>([]);
+  const [allFasts, setAllFasts] = useState<ProdFastRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [excelLoading, setExcelLoading] = useState(false);
+  const [progress, setProgress] = useState('');
+
+  const {
+    syncPreviewMode,
+    setSyncPreviewMode,
+    syncPage,
+    syncTotalPages,
+    setSyncTotalPages,
+    setSyncPage,
+    handleSyncPageChange,
+  } = useSyncState();
+
+  const defaultSheetName = isStaging ? 'stg_FAST DB' : 'FAST DB';
+  const storageKey = isStaging
+    ? 'sheetName:fast:stg'
+    : 'sheetName:fast:prod';
+  const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
+    isStaging,
+    spreadsheetId,
+    defaultSheetName,
+    storageKey,
+  });
+
+  const handleLoadAllFasts = async () => {
+    const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
+    if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
+
+    try {
+      setLoading(true);
+      setAllFasts([]);
+      setNewFasts([]);
+      setSyncPreviewMode(null);
+      setSyncPage(1);
+
+      const env = isStaging ? 'stg' : 'prod';
+      const { cache, isStale, setCache } = useFastStore.getState();
+
+      let allData: ProdFastRow[];
+      if (!isStale(env) && cache[env]?.data.length) {
+        allData = cache[env]!.data;
+      } else {
+        allData = await fetchAllFastData(apiInstance, undefined, setProgress);
+        if (allData.length > 0) setCache(env, allData);
+      }
+      setAllFasts(allData);
+      setSyncTotalPages(Math.ceil(allData.length / SYNC_PAGE_SIZE));
+      setSyncPreviewMode('all');
+      toast.info(
+        `${allData.length}개의 전체 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
+      );
+    } catch (error) {
+      console.error('전체 FAST 조회 실패:', error);
+    } finally {
+      setLoading(false);
+      setProgress('');
+    }
+  };
+
+  const handleSearchNew = async () => {
+    const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
+    if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
+
+    try {
+      setLoading(true);
+      setNewFasts([]);
+      setAllFasts([]);
+      setSyncPreviewMode(null);
+      setSyncPage(1);
+
+      const newList = await getNewFastData(
+        setProgress,
+        apiInstance,
+        spreadsheetId,
+        currentSheet
+      );
+      setNewFasts(newList);
+      setSyncTotalPages(Math.ceil(newList.length / SYNC_PAGE_SIZE));
+      setSyncPreviewMode('new');
+
+      if (newList.length === 0) {
+        toast.info('추가할 신규 FAST가 없습니다.');
+      } else {
+        toast.info(
+          `${newList.length}개의 신규 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
+        );
+      }
+    } catch (error) {
+      console.error('신규 FAST 탐지 실패:', error);
+    } finally {
+      setLoading(false);
+      setProgress('');
+    }
+  };
+
+  const handleSyncExcel = async () => {
+    const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
+    if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
+    if (!syncPreviewMode)
+      return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
+
+    const previewData = syncPreviewMode === 'new' ? newFasts : allFasts;
+
+    if (syncPreviewMode === 'new' && previewData.length === 0) {
+      return toast.info('동기화할 신규 데이터가 없습니다.');
+    }
+
+    const confirmMessage =
+      syncPreviewMode === 'new'
+        ? `${currentSheet} 시트에 신규 ${previewData.length}건을 추가합니다. 계속하시겠습니까?`
+        : `${currentSheet} 시트의 기존 데이터를 삭제하고 ${previewData.length}건으로 전체 재적재합니다. 계속하시겠습니까?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      setExcelLoading(true);
+
+      if (syncPreviewMode === 'new') {
+        await appendNewFastToExcel(
+          previewData,
+          setProgress,
+          setExcelLoading,
+          currentSheet,
+          spreadsheetId
+        );
+      } else {
+        await overwriteFastExcelData(previewData, currentSheet, spreadsheetId);
+      }
+
+      await updateSheetSyncTime(defaultSheetName, spreadsheetId);
+    } catch (error) {
+      console.error('Excel 동기화 실패:', error);
+    } finally {
+      setExcelLoading(false);
+      setProgress('');
+    }
+  };
+
+  const selectedSheetGid = sheetList.find(
+    (sheet) => sheet.name === selectedSheet
+  )?.id;
+  const excelHref = selectedSheetGid
+    ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit?gid=${selectedSheetGid}#gid=${selectedSheetGid}`
+    : `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+
+  const syncDisplayData = syncPreviewMode === 'new' ? newFasts : allFasts;
 
   return (
     <ProdTabLayout
@@ -234,10 +397,7 @@ const FastLayout = () => {
                     ref={tableScrollRef}
                     className='overflow-auto episode-table-scroll h-full pb-1'
                   >
-                    <ProdFastList
-                      data={displayFastData}
-                      isStaging={isStaging}
-                    />
+                    <ProdFastList data={displayFastData} isStaging={isStaging} />
                   </div>
                 </div>
               )}
@@ -254,8 +414,64 @@ const FastLayout = () => {
           )}
 
           {activeTab === 'sync' && (
-            <div className='flex-1 p-8 flex items-center justify-center text-gray-400'>
-              Excel 동기화는 준비 중입니다.
+            <div className='flex-1 p-8 flex flex-col min-h-0'>
+              <SyncToolbar
+                onSearchNew={handleSearchNew}
+                onLoadAll={handleLoadAllFasts}
+                excelHref={excelHref}
+                onSync={handleSyncExcel}
+                loading={loading}
+                excelLoading={excelLoading}
+                progress={progress}
+                syncPreviewMode={syncPreviewMode}
+              />
+              <div className='flex justify-between items-center shrink-0'>
+                <SyncCountHeader
+                  syncPreviewMode={syncPreviewMode}
+                  newCount={newFasts.length}
+                  allCount={allFasts.length}
+                />
+                <div className='flex gap-8 items-center'>
+                  <SheetSelector
+                    sheetList={sheetList}
+                    selectedSheet={selectedSheet}
+                    isStaging={isStaging}
+                    onChange={handleSelectSheet}
+                  />
+                </div>
+              </div>
+              <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
+                <LoadingOverlay progress={progress} loading={loading}>
+                  FAST 목록을 불러오는 중입니다.
+                  <br />
+                  잠시만 기다려주세요!
+                </LoadingOverlay>
+                {!loading && syncPreviewMode && (
+                  <>
+                    <div
+                      ref={syncScrollRef}
+                      className='overflow-x-scroll episode-table-scroll pb-1 flex-1'
+                    >
+                      <ProdFastList
+                        data={syncDisplayData.slice(
+                          (syncPage - 1) * SYNC_PAGE_SIZE,
+                          syncPage * SYNC_PAGE_SIZE
+                        )}
+                        isStaging={isStaging}
+                      />
+                    </div>
+                    <Pagination
+                      page={syncPage}
+                      totalPages={syncTotalPages}
+                      onChange={handleSyncPageChange}
+                    />
+                  </>
+                )}
+                <SyncEmptyState
+                  loading={loading}
+                  syncPreviewMode={!!syncPreviewMode}
+                />
+              </div>
             </div>
           )}
         </>
