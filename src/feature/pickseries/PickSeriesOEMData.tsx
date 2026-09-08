@@ -1,29 +1,29 @@
 import { BottomBar } from '@/feature/pickseries/components/BottomBar';
-import OEMCard from '@/feature/pickseries/components/OEMCard';
-import ExtractionOverlay from '@/feature/pickseries/components/ExtractionOverlay';
 import { DatePickerSection } from '@/feature/pickseries/components/DatePickerSection';
+import ExtractionOverlay from '@/feature/pickseries/components/ExtractionOverlay';
+import OEMCard from '@/feature/pickseries/components/OEMCard';
 import PickSeriesPageHeader from '@/feature/pickseries/components/PickSeriesPageHeader';
+import { OEM_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
+import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
 import type {
   ExtractionStatus,
   OEMSelection,
   ProductGroup,
   ProductState,
 } from '@/feature/pickseries/types/pickSeriesTypes';
-import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
-import {
-  fetchPickSeriesOEMSheet,
-  type OEMSheetData,
-} from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
-import { writePickSeriesOEMSheet } from '@/feature/pickseries/utils/writePickSeriesOEMSheet';
 import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
 import {
   extractPickjoyOEMData,
   type ExtractionProgress,
 } from '@/feature/pickseries/utils/extractPickjoyOEMData';
+import {
+  fetchPickSeriesOEMSheet,
+  type OEMSheetData,
+} from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
+import { writePickSeriesOEMSheet } from '@/feature/pickseries/utils/writePickSeriesOEMSheet';
+import Message from '@/shared/components/common/Message';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { OEM_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
-import Message from '@/shared/components/common/Message';
 
 export default function PickSeriesOEMData() {
   const { serverTokens } = usePickSeriesServerStore();
@@ -200,7 +200,10 @@ export default function PickSeriesOEMData() {
       loggedInProducts.length > 0 &&
       loggedInProducts.every((pg) => {
         const data = productStates[pg.id]?.data;
-        if (!data || data.oems.length === 0) return false;
+        if (!data) return false;
+        // 그 서비스 시트에 해당 주차가 없으면(운영 시작 전) 담당이 아니므로 통과
+        if (!data.existingData[date]) return true;
+        if (data.oems.length === 0) return false;
         return data.oems.every((oem) =>
           oem.items.every((item) =>
             data.existingData[date]?.[oem.name]?.has(item)
@@ -356,6 +359,15 @@ export default function PickSeriesOEMData() {
     refreshProduct,
   ]);
 
+  // 그 서비스가 담당하는(시트에 주차가 있는) 선택된 주차 수
+  const coveredSelectedCount = useCallback(
+    (productId: string): number =>
+      activeSelectedDates.filter(
+        (d) => productStates[productId]?.data?.existingData[d]
+      ).length,
+    [activeSelectedDates, productStates]
+  );
+
   const getItemExistingDates = useCallback(
     (productId: string, oemName: string, item: string): string[] => {
       if (activeSelectedDates.length === 0) return [];
@@ -446,7 +458,8 @@ export default function PickSeriesOEMData() {
                     onToggleAll={toggleProductAll}
                     onToggleOEMAll={toggleOEMAll}
                     onToggleOEMItem={toggleOEMItem}
-                    selectedDateCount={activeSelectedDates.length}
+                    selectedDateCount={coveredSelectedCount(product.id)}
+                    operatingSince={data?.dates[0]}
                     getItemExistingDates={getItemExistingDates}
                   />
                 );

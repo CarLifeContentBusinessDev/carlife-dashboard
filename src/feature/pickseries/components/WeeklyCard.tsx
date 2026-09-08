@@ -18,6 +18,7 @@ interface WeeklyCardProps {
   getItemExistingDates: (productId: string, item: string) => string[];
   toggleItem: (productId: string, item: string) => void;
   isActive?: boolean;
+  operatingSince?: string;
 }
 
 const WeeklyCard = ({
@@ -33,6 +34,7 @@ const WeeklyCard = ({
   getItemExistingDates,
   toggleItem,
   isActive = true,
+  operatingSince,
 }: WeeklyCardProps) => {
   return (
     <div className='rounded-xl border border-gray-200 bg-white overflow-hidden'>
@@ -43,6 +45,7 @@ const WeeklyCard = ({
         totalCount={items.length}
         onClick={() => onClick(productId)}
         isActive={isActive}
+        operatingSince={operatingSince}
       />
 
       <div className='overflow-y-auto max-h-105 scrollbar-hide'>

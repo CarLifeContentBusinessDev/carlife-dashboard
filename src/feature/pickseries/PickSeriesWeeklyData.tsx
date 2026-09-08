@@ -1,26 +1,26 @@
 import { BottomBar } from '@/feature/pickseries/components/BottomBar';
-import WeeklyCard from '@/feature/pickseries/components/WeeklyCard';
-import ExtractionOverlay from '@/feature/pickseries/components/ExtractionOverlay';
 import { DatePickerSection } from '@/feature/pickseries/components/DatePickerSection';
+import ExtractionOverlay from '@/feature/pickseries/components/ExtractionOverlay';
 import PickSeriesPageHeader from '@/feature/pickseries/components/PickSeriesPageHeader';
+import WeeklyCard from '@/feature/pickseries/components/WeeklyCard';
+import { WEEKLY_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
+import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
 import type {
   ExtractionStatus,
   ProductGroup,
   ProductState,
 } from '@/feature/pickseries/types/pickSeriesTypes';
-import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
+import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
+import type { ExtractionProgress } from '@/feature/pickseries/utils/extractPickjoyOEMData';
+import { extractPickjoyWeeklyData } from '@/feature/pickseries/utils/extractPickjoyWeeklyData';
 import {
   fetchPickSeriesWeeklySheet,
   type WeeklySheetData,
 } from '@/feature/pickseries/utils/fetchPickSeriesWeeklySheet';
 import { writePickSeriesWeeklySheet } from '@/feature/pickseries/utils/writePickSeriesWeeklySheet';
-import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
-import type { ExtractionProgress } from '@/feature/pickseries/utils/extractPickjoyOEMData';
-import { extractPickjoyWeeklyData } from '@/feature/pickseries/utils/extractPickjoyWeeklyData';
+import Message from '@/shared/components/common/Message';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { WEEKLY_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
-import Message from '@/shared/components/common/Message';
 
 export default function PickSeriesWeeklyData() {
   const { serverTokens } = usePickSeriesServerStore();
@@ -150,7 +150,10 @@ export default function PickSeriesWeeklyData() {
       loggedInProducts.length > 0 &&
       loggedInProducts.every((pg) => {
         const data = productStates[pg.id]?.data;
-        if (!data || data.items.length === 0) return false;
+        if (!data) return false;
+        // 그 서비스 시트에 해당 주차가 없으면(운영 시작 전) 담당이 아니므로 통과
+        if (!data.existingData[date]) return true;
+        if (data.items.length === 0) return false;
         return data.items.every((item) => data.existingData[date]?.has(item));
       }),
     [loggedInProducts, productStates]
@@ -216,6 +219,15 @@ export default function PickSeriesWeeklyData() {
         (d) => isDateSelectable(d) && selectedDates.has(d)
       ),
     [incompleteDates, selectedDates]
+  );
+
+  // 그 서비스가 담당하는(시트에 주차 컬럼이 있는) 선택된 주차 수
+  const coveredSelectedCount = useCallback(
+    (productId: string): number =>
+      activeSelectedDates.filter(
+        (d) => productStates[productId]?.data?.existingData[d]
+      ).length,
+    [activeSelectedDates, productStates]
   );
 
   const getItemExistingDates = useCallback(
@@ -384,7 +396,8 @@ export default function PickSeriesWeeklyData() {
                     items={items}
                     selected={selected}
                     selectedCount={selectedCount}
-                    selectedDateCount={activeSelectedDates.length}
+                    selectedDateCount={coveredSelectedCount(product.id)}
+                    operatingSince={state?.data?.dates[0]}
                     state={state ?? { data: null, loading: false, error: null }}
                     onClick={toggleProductAll}
                     getItemExistingDates={getItemExistingDates}

@@ -18,6 +18,7 @@ interface OEMCardProps {
   onToggleOEMAll: (productId: string, oemName: string) => void;
   onToggleOEMItem: (productId: string, oemName: string, item: string) => void;
   selectedDateCount: number;
+  operatingSince?: string;
   getItemExistingDates: (
     productId: string,
     oemName: string,
@@ -38,6 +39,7 @@ const OEMCard = ({
   onToggleOEMAll,
   onToggleOEMItem,
   selectedDateCount,
+  operatingSince,
   getItemExistingDates,
 }: OEMCardProps) => {
   const [expandedOEMs, setExpandedOEMs] = useState<Set<string>>(new Set());
@@ -67,9 +69,10 @@ const OEMCard = ({
         selectedCount={selectedCount}
         totalCount={totalCount}
         onClick={() => onToggleAll(productId)}
+        operatingSince={operatingSince}
       />
 
-      <div className='overflow-y-auto max-h-[420px] scrollbar-hide'>
+      <div className='overflow-y-auto max-h-105 scrollbar-hide'>
         <CardBodyStatus
           isConnected={isConnected}
           state={state}
