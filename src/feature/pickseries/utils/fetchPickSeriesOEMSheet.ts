@@ -3,7 +3,7 @@ import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
 
 export interface OEMGroup {
   name: string;
-  colIndex: number; // 시트에서 OEM 헤더가 위치한 0-based 열 인덱스
+  colIndex: number;
   items: string[];
 }
 
@@ -12,9 +12,7 @@ export interface OEMSheetData {
   oems: OEMGroup[];
   allItems: string[];
   existingData: Record<string, Record<string, Set<string>>>;
-  // oemName → itemName → 0-based column index (from 'A')
   oemItemColMap: Record<string, Record<string, number>>;
-  // normalized date → actual 1-based sheet row number
   dateRowMap: Record<string, number>;
 }
 
@@ -53,7 +51,7 @@ export async function fetchPickSeriesOEMSheet(
     );
   }
 
-  const range = buildSheetRange(tabName, 'A4:AJ200');
+  const range = buildSheetRange(tabName, 'A4:BZ200');
   console.log('[OEMSheet] fetch 시작:', { tabName, spreadsheetId, range });
 
   const rawValues = await getSheetValues(spreadsheetId, range);

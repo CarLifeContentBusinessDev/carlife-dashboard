@@ -3,7 +3,7 @@ import {
   fetchManufacturers,
   fetchDevicesByManufacturer,
   fetchCompanies,
-} from './pickjoyItemApis';
+} from './pickjoy/pickjoyItemApis';
 
 export interface OEMApiParams {
   manufacturerSeq: number;
