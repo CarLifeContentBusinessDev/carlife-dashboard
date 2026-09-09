@@ -2,6 +2,7 @@ import type {
   ExtractionProgress,
   WeeklyExtractionResult,
 } from '@/feature/pickseries/utils/extractionTypes';
+import { weekKeyOf } from '@/feature/pickseries/utils/weekKey';
 import {
   createPickleApi,
   fetchHitHomeTab,
@@ -56,7 +57,8 @@ export async function extractPickleWeeklyData(params: {
 
   for (const sheetDate of dates) {
     results[sheetDate] = {};
-    const range = weekRange(sheetDate);
+    // 시트별 주차 시작일 표기가 달라도(월/일) API 조회 창은 정규 주차(월~일)로 고정
+    const range = weekRange(weekKeyOf(sheetDate));
     const lastDay = range.toDate;
 
     if (needsDaily) {

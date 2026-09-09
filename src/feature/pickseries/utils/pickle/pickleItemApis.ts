@@ -27,6 +27,8 @@ export interface DateRange {
 
 interface UserDailyRow {
   date: string;
+  oem: string;
+  headUnit: string;
   memberCnt: number;
   guestCnt: number;
   newMemberCnt: number;
@@ -34,10 +36,11 @@ interface UserDailyRow {
 }
 export async function fetchUserDaily(
   api: AxiosInstance,
-  range: DateRange
+  range: DateRange,
+  oem?: string
 ): Promise<UserDailyRow[]> {
   const res = await api.get('/admin/stats/user-daily/search', {
-    params: range,
+    params: oem ? { ...range, oem } : range,
   });
   return (res.data?.data ?? []) as UserDailyRow[];
 }
