@@ -12,18 +12,33 @@ import type {
   ProductState,
 } from '@/feature/pickseries/types/pickSeriesTypes';
 import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
-import {
-  extractPickjoyOEMData,
-  type ExtractionProgress,
-} from '@/feature/pickseries/utils/extractPickjoyOEMData';
+import type {
+  ExtractionProgress,
+  OEMExtractionResult,
+} from '@/feature/pickseries/utils/extractionTypes';
 import {
   fetchPickSeriesOEMSheet,
+  type OEMGroup,
   type OEMSheetData,
 } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
+import { extractPickjoyOEMData } from '@/feature/pickseries/utils/pickjoy/extractPickjoyOEMData';
 import { writePickSeriesOEMSheet } from '@/feature/pickseries/utils/writePickSeriesOEMSheet';
 import Message from '@/shared/components/common/Message';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+
+type OEMExtractor = (p: {
+  token: string;
+  oems: OEMGroup[];
+  selectedItemsByOEM: Record<string, Set<string>>;
+  dates: string[];
+  onProgress: (p: ExtractionProgress) => void;
+}) => Promise<OEMExtractionResult>;
+
+const OEM_EXTRACTORS: Record<string, OEMExtractor> = {
+  pickjoy: extractPickjoyOEMData,
+  // pickle: 주간지표 먼저. OEM API 연동 후 활성화.
+};
 
 export default function PickSeriesOEMData() {
   const { serverTokens } = usePickSeriesServerStore();
@@ -306,49 +321,61 @@ export default function PickSeriesOEMData() {
   }, []);
 
   const handleExtract = useCallback(async () => {
-    const pickjoyProduct = loggedInProducts.find((p) => p.id === 'pickjoy');
-    const pickjoyData = productStates['pickjoy']?.data;
-    const pickjoyToken = serverTokens['pickjoy'];
+    const targets = loggedInProducts.filter((p) => {
+      const data = productStates[p.id]?.data;
+      const token = serverTokens[p.serverIds[0]];
+      return OEM_EXTRACTORS[p.id] && data && token;
+    });
 
-    if (!pickjoyProduct) {
+    if (targets.length === 0) {
       toast.error(
-        '픽조이 서버가 연결되지 않았습니다. 서버 연결 후 다시 시도해주세요.'
+        '추출 가능한 서버가 없습니다. 로그인·데이터 로드를 확인해주세요.'
       );
       return;
     }
-    if (!pickjoyData || !pickjoyToken) {
-      toast.error(
-        '픽조이 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.'
-      );
+    if (activeSelectedDates.length === 0) {
+      toast.warn('추출할 주차를 선택해주세요.');
       return;
     }
-
-    const selectedItemsByOEM = selectedItemsByProduct['pickjoy'] ?? {};
 
     setExtractionStatus('running');
     setExtractionProgress(null);
     setExtractionError(null);
 
-    try {
-      const results = await extractPickjoyOEMData({
-        token: pickjoyToken,
-        oems: pickjoyData.oems,
-        selectedItemsByOEM,
-        dates: activeSelectedDates,
-        onProgress: setExtractionProgress,
-      });
-      await writePickSeriesOEMSheet(
-        pickjoyProduct.tabName,
-        pickjoyData,
-        results
+    const failed: string[] = [];
+
+    for (const product of targets) {
+      const data = productStates[product.id]!.data!;
+      const token = serverTokens[product.serverIds[0]]!;
+      const selectedItemsByOEM = selectedItemsByProduct[product.id] ?? {};
+      const hasSelection = Object.values(selectedItemsByOEM).some(
+        (set) => set.size > 0
       );
-      refreshProduct(pickjoyProduct);
-      setExtractionStatus('done');
-    } catch (err) {
-      setExtractionError(
-        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
-      );
+      if (!hasSelection) continue;
+
+      try {
+        const results = await OEM_EXTRACTORS[product.id]({
+          token,
+          oems: data.oems,
+          selectedItemsByOEM,
+          dates: activeSelectedDates,
+          onProgress: setExtractionProgress,
+        });
+        await writePickSeriesOEMSheet(product.tabName, data, results);
+        refreshProduct(product);
+      } catch (err) {
+        console.error(`[OEM지표] ${product.label} 추출 실패:`, err);
+        failed.push(
+          `${product.label}: ${err instanceof Error ? err.message : '알 수 없는 오류'}`
+        );
+      }
+    }
+
+    if (failed.length > 0) {
+      setExtractionError(failed.join('\n'));
       setExtractionStatus('error');
+    } else {
+      setExtractionStatus('done');
     }
   }, [
     loggedInProducts,

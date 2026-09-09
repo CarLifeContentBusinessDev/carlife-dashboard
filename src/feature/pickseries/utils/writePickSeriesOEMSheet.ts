@@ -1,7 +1,7 @@
-import type { OEMExtractionResult } from '@/feature/pickseries/utils/extractPickjoyOEMData';
 import { batchUpdateSheetValues } from '@/feature/pickseries/utils/pickSeriesSheetApi';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
 import type { OEMSheetData } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
+import type { OEMExtractionResult } from '@/feature/pickseries/utils/extractionTypes';
 
 function colIndexToLetter(index: number): string {
   let letter = '';
