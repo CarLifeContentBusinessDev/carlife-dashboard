@@ -38,7 +38,7 @@ export function fastRowToSheetValues(row: ProdFastRow): (string | number)[] {
     row.totalGenerationSeconds > 0
       ? formatPlayTime(row.totalGenerationSeconds)
       : '',
-    '', // 좋아요수 (미연동)
+    row.touchCount, // 터치 수
     row.playRequestCount,
     row.streamUrl,
     '', // thumbnail_url (미연동)

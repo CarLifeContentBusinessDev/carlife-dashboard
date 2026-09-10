@@ -39,14 +39,12 @@ const CHANNEL_SORT_OPTIONS: Array<{ value: ChannelSortKey; label: string }> = [
   { value: 'listenCnt', label: '재생 요청 수' },
 ];
 
+// 시트 적재 순서와 동일하게 등록일(createdAt) 내림차순으로 정렬한다.
 const sortChannels = (channels: usingChannelProps[]) =>
   [...channels].sort((a, b) => {
-    const catA = (a.categoryName ?? '').toLowerCase();
-    const catB = (b.categoryName ?? '').toLowerCase();
-    const catCompare = catA.localeCompare(catB, undefined, {
-      sensitivity: 'base',
-    });
-    if (catCompare !== 0) return catCompare;
+    const createdA = new Date(a.createdAt).getTime() || 0;
+    const createdB = new Date(b.createdAt).getTime() || 0;
+    if (createdB !== createdA) return createdB - createdA;
 
     const nameA = (a.channelName ?? '').toLowerCase();
     const nameB = (b.channelName ?? '').toLowerCase();
@@ -352,7 +350,7 @@ const ChannelLayout = () => {
                     onChange={(v) => setDataUsageFilter(v)}
                   />
                 </div>
-                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-[220px]'>
+                <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-55'>
                   <input
                     type='text'
                     value={dataKeyword}

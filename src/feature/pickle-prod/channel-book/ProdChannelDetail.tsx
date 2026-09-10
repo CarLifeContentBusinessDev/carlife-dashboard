@@ -54,7 +54,8 @@ const isImageUrl = (url: string) =>
 
 const formatFieldValue = (
   key: keyof usingChannelProps,
-  value: string | number
+  value: string | number,
+  channel?: usingChannelProps
 ): React.ReactNode => {
   if (key === 'dispDtime' || key === 'createdAt') {
     return formatDateString(String(value));
@@ -89,6 +90,31 @@ const formatFieldValue = (
             />
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (key === 'categoryName') {
+    const categories =
+      channel?.categoryList && channel.categoryList.length > 0
+        ? channel.categoryList.map((c) => c.categoryName)
+        : String(value ?? '')
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean);
+
+    if (categories.length === 0) return '-';
+
+    return (
+      <div className='flex flex-wrap gap-1'>
+        {categories.map((category) => (
+          <span
+            key={category}
+            className='px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-xs whitespace-nowrap'
+          >
+            {category}
+          </span>
+        ))}
       </div>
     );
   }
@@ -251,7 +277,8 @@ const ProdChannelDetail = () => {
                   >
                     {formatFieldValue(
                       field.key,
-                      channel[field.key] as string | number
+                      channel[field.key] as string | number,
+                      channel
                     )}
                   </div>
                 </div>

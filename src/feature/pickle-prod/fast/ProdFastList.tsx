@@ -42,7 +42,7 @@ const COLUMNS = [
   { key: 'generationStartedAt', label: '생성 시작 시간', width: '160px' },
   { key: 'generationEndedAt', label: '생성 종료 시간', width: '160px' },
   { key: 'totalGenerationSeconds', label: '총 생성 시간', width: '140px' },
-  { key: 'likeCnt', label: '좋아요 수', width: '90px' },
+  { key: 'touchCount', label: '터치 수', width: '90px' },
   { key: 'playRequestCount', label: '재생 요청 수', width: '100px' },
   { key: 'streamUrl', label: 'streamUrl', width: '220px' },
   { key: 'thumbnailUrl', label: 'thumbnail_url', width: '220px' },
@@ -87,7 +87,8 @@ const getCellContent = (
       return row.totalGenerationSeconds > 0
         ? formatPlayTime(row.totalGenerationSeconds)
         : '-';
-    case 'likeCnt':
+    case 'touchCount':
+      return row.touchCount > 0 ? row.touchCount : '0';
     case 'thumbnailUrl':
       return '-';
     default:

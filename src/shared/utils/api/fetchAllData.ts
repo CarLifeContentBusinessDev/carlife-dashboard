@@ -8,6 +8,10 @@ import type {
   usingDataProps,
 } from '@/shared/types/pickleProdContents';
 import { mapCurationStatus } from '@/shared/utils/format/statusMapper';
+import {
+  CHANNEL_LIST_QUERY,
+  normalizeChannel,
+} from '@/shared/utils/format/normalizeChannel';
 import { api } from './api';
 
 const SIZE = 10000;
@@ -43,11 +47,11 @@ export async function fetchAllData(
       return [];
     }
 
+    const channelParams = category === 'channel' ? CHANNEL_LIST_QUERY : '';
+
     const firstRes = await apiInstance.get(
-      `/admin/${category}?page=1&size=${SIZE}`,
-      {
-        signal,
-      }
+      `/admin/${category}?page=1&size=${SIZE}${channelParams}`,
+      { signal }
     );
 
     const totalCount = firstRes.data.data.pageInfo.totalCount;
@@ -62,11 +66,15 @@ export async function fetchAllData(
 
       setProgress(`${Math.round((page / totalPages / 2) * 100)}%`);
       const res = await apiInstance.get(
-        `/admin/${category}?page=${page}&size=${SIZE}`,
+        `/admin/${category}?page=${page}&size=${SIZE}${channelParams}`,
         { signal }
       );
 
       const dataList = res.data.data.dataList;
+
+      if (category === 'channel') {
+        (dataList as usingChannelProps[]).forEach(normalizeChannel);
+      }
 
       allData = allData.concat(dataList);
     }
