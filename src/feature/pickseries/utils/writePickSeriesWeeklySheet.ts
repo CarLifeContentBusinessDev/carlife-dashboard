@@ -1,7 +1,7 @@
-import type { WeeklyExtractionResult } from '@/feature/pickseries/utils/extractPickjoyWeeklyData';
 import { batchUpdateSheetValues } from '@/feature/pickseries/utils/pickSeriesSheetApi';
 import { buildSheetRange } from '@/shared/utils/excel/sheetRange';
 import type { WeeklySheetData } from '@/feature/pickseries/utils/fetchPickSeriesWeeklySheet';
+import type { WeeklyExtractionResult } from '@/feature/pickseries/utils/extractionTypes';
 
 function colIndexToLetter(index: number): string {
   let letter = '';

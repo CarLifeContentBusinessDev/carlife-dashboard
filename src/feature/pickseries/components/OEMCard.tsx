@@ -18,11 +18,14 @@ interface OEMCardProps {
   onToggleOEMAll: (productId: string, oemName: string) => void;
   onToggleOEMItem: (productId: string, oemName: string, item: string) => void;
   selectedDateCount: number;
+  operatingSince?: string;
   getItemExistingDates: (
     productId: string,
     oemName: string,
     item: string
   ) => string[];
+  unsupportedItems?: Set<string>;
+  lockedItemsByOEM?: Record<string, Set<string>>;
 }
 
 const OEMCard = ({
@@ -38,7 +41,10 @@ const OEMCard = ({
   onToggleOEMAll,
   onToggleOEMItem,
   selectedDateCount,
+  operatingSince,
   getItemExistingDates,
+  unsupportedItems,
+  lockedItemsByOEM,
 }: OEMCardProps) => {
   const [expandedOEMs, setExpandedOEMs] = useState<Set<string>>(new Set());
   const [hasInitializedExpand, setHasInitializedExpand] = useState(false);
@@ -67,9 +73,10 @@ const OEMCard = ({
         selectedCount={selectedCount}
         totalCount={totalCount}
         onClick={() => onToggleAll(productId)}
+        operatingSince={operatingSince}
       />
 
-      <div className='overflow-y-auto max-h-[420px] scrollbar-hide'>
+      <div className='overflow-y-auto max-h-105 scrollbar-hide'>
         <CardBodyStatus
           isConnected={isConnected}
           state={state}
@@ -95,9 +102,16 @@ const OEMCard = ({
           {oems.map((oem) => {
             const isExpanded = expandedOEMs.has(oem.name);
             const oemSet = selectedItems[oem.name] ?? new Set<string>();
+            const lockedSet = lockedItemsByOEM?.[oem.name] ?? new Set<string>();
+            const toggleableItems = oem.items.filter(
+              (item) => !(unsupportedItems?.has(item) ?? false)
+            );
             const oemAllChecked =
-              oem.items.length > 0 &&
-              oem.items.every((item) => oemSet.has(item));
+              toggleableItems.length > 0 &&
+              toggleableItems.every((item) => oemSet.has(item));
+            const oemLocked =
+              toggleableItems.length > 0 &&
+              toggleableItems.every((item) => lockedSet.has(item));
 
             return (
               <div key={oem.name}>
@@ -109,11 +123,18 @@ const OEMCard = ({
                   <input
                     type='checkbox'
                     checked={oemAllChecked}
-                    onChange={() => onToggleOEMAll(productId, oem.name)}
+                    disabled={oemLocked}
+                    onChange={() => {
+                      if (!oemLocked) onToggleOEMAll(productId, oem.name);
+                    }}
                     onClick={(e) => e.stopPropagation()}
                     className='w-4 h-4 accent-indigo-600 shrink-0'
                   />
-                  <span className='text-sm font-medium text-gray-700'>
+                  <span
+                    className={`text-sm font-medium ${
+                      oemLocked ? 'text-gray-400' : 'text-gray-700'
+                    }`}
+                  >
                     {oem.name}
                   </span>
                 </button>
@@ -121,6 +142,9 @@ const OEMCard = ({
                 {isExpanded && (
                   <div className='pl-9'>
                     {oem.items.map((item) => {
+                      const unsupported = unsupportedItems?.has(item) ?? false;
+                      const locked = !unsupported && lockedSet.has(item);
+                      const inert = unsupported || locked;
                       const isSelected = oemSet.has(item);
                       const existingDates = getItemExistingDates(
                         productId,
@@ -130,31 +154,47 @@ const OEMCard = ({
                       return (
                         <label
                           key={item}
-                          className={`flex items-center gap-3 px-4 py-2 mr-4 cursor-pointer transition-colors ${
-                            isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
+                          className={`flex items-center gap-3 px-4 py-2 mr-4 transition-colors ${
+                            unsupported
+                              ? 'opacity-40 cursor-not-allowed'
+                              : locked
+                                ? 'bg-gray-50 cursor-not-allowed'
+                                : isSelected
+                                  ? 'bg-indigo-50 cursor-pointer'
+                                  : 'hover:bg-gray-50 cursor-pointer'
                           }`}
                         >
                           <input
                             type='checkbox'
                             checked={isSelected}
-                            onChange={() =>
-                              onToggleOEMItem(productId, oem.name, item)
-                            }
+                            disabled={inert}
+                            onChange={() => {
+                              if (!inert)
+                                onToggleOEMItem(productId, oem.name, item);
+                            }}
                             className='w-4 h-4 accent-indigo-600 shrink-0'
                           />
                           <span
                             className={`text-sm flex-1 ${
-                              isSelected
-                                ? 'text-indigo-800 font-medium'
-                                : 'text-gray-700'
+                              locked
+                                ? 'text-gray-400'
+                                : isSelected
+                                  ? 'text-indigo-800 font-medium'
+                                  : 'text-gray-700'
                             }`}
                           >
                             {item}
                           </span>
-                          <ExistingDatesBadge
-                            existingDates={existingDates}
-                            selectedDateCount={selectedDateCount}
-                          />
+                          {unsupported ? (
+                            <span className='text-xs text-gray-400 shrink-0'>
+                              미연동
+                            </span>
+                          ) : (
+                            <ExistingDatesBadge
+                              existingDates={existingDates}
+                              selectedDateCount={selectedDateCount}
+                            />
+                          )}
                         </label>
                       );
                     })}

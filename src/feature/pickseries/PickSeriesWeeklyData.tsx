@@ -1,26 +1,56 @@
 import { BottomBar } from '@/feature/pickseries/components/BottomBar';
-import WeeklyCard from '@/feature/pickseries/components/WeeklyCard';
-import ExtractionOverlay from '@/feature/pickseries/components/ExtractionOverlay';
 import { DatePickerSection } from '@/feature/pickseries/components/DatePickerSection';
+import ExtractionOverlay from '@/feature/pickseries/components/ExtractionOverlay';
 import PickSeriesPageHeader from '@/feature/pickseries/components/PickSeriesPageHeader';
+import WeeklyCard from '@/feature/pickseries/components/WeeklyCard';
+import { WEEKLY_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
+import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
 import type {
   ExtractionStatus,
   ProductGroup,
   ProductState,
 } from '@/feature/pickseries/types/pickSeriesTypes';
-import { usePickSeriesServerStore } from '@/feature/pickseries/store/usePickSeriesServerStore';
+import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
+import type {
+  ExtractionProgress,
+  WeeklyExtractionResult,
+} from '@/feature/pickseries/utils/extractionTypes';
 import {
   fetchPickSeriesWeeklySheet,
   type WeeklySheetData,
 } from '@/feature/pickseries/utils/fetchPickSeriesWeeklySheet';
+import { extractPickjoyWeeklyData } from '@/feature/pickseries/utils/pickjoy/extractPickjoyWeeklyData';
+import {
+  extractPickleWeeklyData,
+  PICKLE_WEEKLY_ITEMS,
+} from '@/feature/pickseries/utils/pickle/extractPickleWeeklyData';
+import { buildWeekMap, weekKeyOf } from '@/feature/pickseries/utils/weekKey';
 import { writePickSeriesWeeklySheet } from '@/feature/pickseries/utils/writePickSeriesWeeklySheet';
-import { isDateSelectable } from '@/feature/pickseries/utils/dateUtils';
-import type { ExtractionProgress } from '@/feature/pickseries/utils/extractPickjoyOEMData';
-import { extractPickjoyWeeklyData } from '@/feature/pickseries/utils/extractPickjoyWeeklyData';
+import Message from '@/shared/components/common/Message';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { WEEKLY_PRODUCT_GROUPS } from '@/feature/pickseries/constants/pickSeriesProductGroups';
-import Message from '@/shared/components/common/Message';
+
+type WeeklyExtractor = (p: {
+  token: string;
+  selectedItems: Set<string>;
+  dates: string[];
+  onProgress: (p: ExtractionProgress) => void;
+}) => Promise<WeeklyExtractionResult>;
+
+const WEEKLY_EXTRACTORS: Record<string, WeeklyExtractor> = {
+  pickjoy: extractPickjoyWeeklyData,
+  pickle: extractPickleWeeklyData,
+};
+
+// 서비스별로 아직 API 연동된 항목만 허용. 미등록 서비스(픽조이)는 전체 허용.
+const SUPPORTED_WEEKLY_ITEMS: Record<string, Set<string>> = {
+  pickle: new Set(PICKLE_WEEKLY_ITEMS),
+};
+
+const supportedItemsOf = (productId: string, items: string[]): string[] => {
+  const allow = SUPPORTED_WEEKLY_ITEMS[productId];
+  return allow ? items.filter((i) => allow.has(i)) : items;
+};
 
 export default function PickSeriesWeeklyData() {
   const { serverTokens } = usePickSeriesServerStore();
@@ -28,7 +58,8 @@ export default function PickSeriesWeeklyData() {
   const [productStates, setProductStates] = useState<
     Record<string, ProductState<WeeklySheetData>>
   >({});
-  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  // 정규 주차 키(가장 가까운 월요일) 기준으로 선택 상태를 관리한다.
+  const [selectedWeeks, setSelectedWeeks] = useState<Set<string>>(new Set());
   const [selectedItemsByProduct, setSelectedItemsByProduct] = useState<
     Record<string, Set<string>>
   >({});
@@ -73,11 +104,16 @@ export default function PickSeriesWeeklyData() {
             initializedProducts.current.add(product.id);
             setSelectedItemsByProduct((prev) => ({
               ...prev,
-              [product.id]: new Set(data.items),
+              [product.id]: new Set(
+                supportedItemsOf(product.id, data.items)
+              ),
             }));
-            setSelectedDates((prev) => {
+            setSelectedWeeks((prev) => {
               const next = new Set(prev);
-              data.dates.filter(isDateSelectable).forEach((d) => next.add(d));
+              data.dates
+                .map(weekKeyOf)
+                .filter(isDateSelectable)
+                .forEach((wk) => next.add(wk));
               return next;
             });
           }
@@ -103,25 +139,37 @@ export default function PickSeriesWeeklyData() {
     });
   }, [loggedInProducts]);
 
-  const allDates = useMemo(() => {
-    const dateSet = new Set<string>();
+  // 서비스별 정규 주차 키 → 실제 시트 시작일 매핑
+  const weekMaps = useMemo(() => {
+    const maps: Record<string, Map<string, string>> = {};
     loggedInProducts.forEach((pg) => {
-      productStates[pg.id]?.data?.dates.forEach((d) => dateSet.add(d));
+      const dates = productStates[pg.id]?.data?.dates;
+      if (dates) maps[pg.id] = buildWeekMap(dates);
     });
-    return Array.from(dateSet).sort();
+    return maps;
   }, [loggedInProducts, productStates]);
 
-  const toggleDate = useCallback((date: string) => {
-    if (!isDateSelectable(date)) return;
-    setSelectedDates((prev) => {
+  const allWeeks = useMemo(() => {
+    const set = new Set<string>();
+    loggedInProducts.forEach((pg) => {
+      productStates[pg.id]?.data?.dates.forEach((d) => set.add(weekKeyOf(d)));
+    });
+    return Array.from(set).sort();
+  }, [loggedInProducts, productStates]);
+
+  const toggleWeek = useCallback((weekKey: string) => {
+    if (!isDateSelectable(weekKey)) return;
+    setSelectedWeeks((prev) => {
       const next = new Set(prev);
-      if (next.has(date)) next.delete(date);
-      else next.add(date);
+      if (next.has(weekKey)) next.delete(weekKey);
+      else next.add(weekKey);
       return next;
     });
   }, []);
 
   const toggleItem = useCallback((productId: string, item: string) => {
+    const allow = SUPPORTED_WEEKLY_ITEMS[productId];
+    if (allow && !allow.has(item)) return;
     setSelectedItemsByProduct((prev) => {
       const currentSet = new Set(prev[productId] ?? []);
       if (currentSet.has(item)) currentSet.delete(item);
@@ -132,7 +180,10 @@ export default function PickSeriesWeeklyData() {
 
   const toggleProductAll = useCallback(
     (productId: string) => {
-      const items = productStates[productId]?.data?.items ?? [];
+      const items = supportedItemsOf(
+        productId,
+        productStates[productId]?.data?.items ?? []
+      );
       setSelectedItemsByProduct((prev) => {
         const currentSet = prev[productId] ?? new Set<string>();
         const allSelected = items.every((item) => currentSet.has(item));
@@ -145,33 +196,40 @@ export default function PickSeriesWeeklyData() {
     [productStates]
   );
 
-  const isDateFullyFilled = useCallback(
-    (date: string): boolean =>
+  // 정규 주차 키가 모든 서비스에서 (담당 항목 기준) 채워졌는지
+  const isWeekFullyFilled = useCallback(
+    (weekKey: string): boolean =>
       loggedInProducts.length > 0 &&
       loggedInProducts.every((pg) => {
         const data = productStates[pg.id]?.data;
-        if (!data || data.items.length === 0) return false;
-        return data.items.every((item) => data.existingData[date]?.has(item));
+        if (!data) return false;
+        const actual = weekMaps[pg.id]?.get(weekKey);
+        // 이 서비스 시트에 해당 주차가 없으면(운영 시작 전/미담당) 통과
+        if (!actual || !data.existingData[actual]) return true;
+        const items = supportedItemsOf(pg.id, data.items);
+        if (items.length === 0) return false;
+        return items.every((item) => data.existingData[actual]?.has(item));
       }),
-    [loggedInProducts, productStates]
+    [loggedInProducts, productStates, weekMaps]
   );
 
-  const incompleteDates = useMemo(
-    () => allDates.filter((d) => !isDateFullyFilled(d)),
-    [allDates, isDateFullyFilled]
+  const incompleteWeeks = useMemo(
+    () => allWeeks.filter((wk) => !isWeekFullyFilled(wk)),
+    [allWeeks, isWeekFullyFilled]
   );
 
-  const selectableDates = useMemo(
-    () => incompleteDates.filter(isDateSelectable),
-    [incompleteDates]
+  const selectableWeeks = useMemo(
+    () => incompleteWeeks.filter(isDateSelectable),
+    [incompleteWeeks]
   );
 
   const allItems = useMemo(() => {
     const result: { productId: string; item: string }[] = [];
     loggedInProducts.forEach((pg) => {
-      (productStates[pg.id]?.data?.items ?? []).forEach((item) =>
-        result.push({ productId: pg.id, item })
-      );
+      supportedItemsOf(
+        pg.id,
+        productStates[pg.id]?.data?.items ?? []
+      ).forEach((item) => result.push({ productId: pg.id, item }));
     });
     return result;
   }, [loggedInProducts, productStates]);
@@ -182,25 +240,28 @@ export default function PickSeriesWeeklyData() {
       allItems.every(({ productId, item }) =>
         selectedItemsByProduct[productId]?.has(item)
       ) &&
-      selectableDates.length > 0 &&
-      selectableDates.every((d) => selectedDates.has(d)),
-    [allItems, selectedItemsByProduct, selectableDates, selectedDates]
+      selectableWeeks.length > 0 &&
+      selectableWeeks.every((wk) => selectedWeeks.has(wk)),
+    [allItems, selectedItemsByProduct, selectableWeeks, selectedWeeks]
   );
 
   const toggleGlobalAll = useCallback(() => {
     setSelectedItemsByProduct((prev) => {
       const next = { ...prev };
       WEEKLY_PRODUCT_GROUPS.forEach((pg) => {
-        const items = productStates[pg.id]?.data?.items ?? [];
+        const items = supportedItemsOf(
+          pg.id,
+          productStates[pg.id]?.data?.items ?? []
+        );
         next[pg.id] = allSelected ? new Set() : new Set(items);
       });
       return next;
     });
-    setSelectedDates(allSelected ? new Set() : new Set(selectableDates));
-  }, [allSelected, productStates, selectableDates]);
+    setSelectedWeeks(allSelected ? new Set() : new Set(selectableWeeks));
+  }, [allSelected, productStates, selectableWeeks]);
 
   const handleReset = useCallback(() => {
-    setSelectedDates(new Set());
+    setSelectedWeeks(new Set());
     setSelectedItemsByProduct((prev) => {
       const next = { ...prev };
       WEEKLY_PRODUCT_GROUPS.forEach((pg) => {
@@ -210,24 +271,35 @@ export default function PickSeriesWeeklyData() {
     });
   }, []);
 
-  const activeSelectedDates = useMemo(
+  const activeSelectedWeeks = useMemo(
     () =>
-      incompleteDates.filter(
-        (d) => isDateSelectable(d) && selectedDates.has(d)
+      incompleteWeeks.filter(
+        (wk) => isDateSelectable(wk) && selectedWeeks.has(wk)
       ),
-    [incompleteDates, selectedDates]
+    [incompleteWeeks, selectedWeeks]
+  );
+
+  // 그 서비스가 담당하는(시트에 주차가 있는) 선택된 주차 수
+  const coveredSelectedCount = useCallback(
+    (productId: string): number =>
+      activeSelectedWeeks.filter((wk) => {
+        const actual = weekMaps[productId]?.get(wk);
+        return !!actual && !!productStates[productId]?.data?.existingData[actual];
+      }).length,
+    [activeSelectedWeeks, productStates, weekMaps]
   );
 
   const getItemExistingDates = useCallback(
     (productId: string, item: string): string[] => {
-      if (activeSelectedDates.length === 0) return [];
+      if (activeSelectedWeeks.length === 0) return [];
       const data = productStates[productId]?.data;
       if (!data) return [];
-      return activeSelectedDates.filter((date) =>
-        data.existingData[date]?.has(item)
-      );
+      return activeSelectedWeeks.filter((wk) => {
+        const actual = weekMaps[productId]?.get(wk);
+        return !!actual && data.existingData[actual]?.has(item);
+      });
     },
-    [productStates, activeSelectedDates]
+    [productStates, activeSelectedWeeks, weekMaps]
   );
 
   const handleExtractionReset = useCallback(() => {
@@ -267,56 +339,86 @@ export default function PickSeriesWeeklyData() {
   }, []);
 
   const handleExtract = useCallback(async () => {
-    const pickjoyProduct = loggedInProducts.find((p) => p.id === 'pickjoy');
-    const pickjoyData = productStates['pickjoy']?.data;
-    const pickjoyToken = serverTokens['pickjoy'];
+    const targets = loggedInProducts.filter((p) => {
+      const data = productStates[p.id]?.data;
+      const token = serverTokens[p.serverIds[0]];
+      return WEEKLY_EXTRACTORS[p.id] && data && token;
+    });
 
-    if (!pickjoyProduct) {
+    if (targets.length === 0) {
       toast.error(
-        '픽조이 서버가 연결되지 않았습니다. 서버 연결 후 다시 시도해주세요.'
+        '추출 가능한 서버가 없습니다. 로그인·데이터 로드를 확인해주세요.'
       );
       return;
     }
-    if (!pickjoyData || !pickjoyToken) {
-      toast.error(
-        '픽조이 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.'
-      );
+    if (activeSelectedWeeks.length === 0) {
+      toast.warn('추출할 주차를 선택해주세요.');
       return;
     }
 
-    const selectedItems =
-      selectedItemsByProduct['pickjoy'] ?? new Set<string>();
+    const plan = targets
+      .map((product) => {
+        const data = productStates[product.id]!.data!;
+        const weekMap = weekMaps[product.id] ?? new Map<string, string>();
+        // 이 서비스가 담당하는 주차만 실제 시트 시작일로 변환 (픽클=월, 픽조이=일)
+        const productDates = activeSelectedWeeks
+          .map((wk) => weekMap.get(wk))
+          .filter((d): d is string => !!d);
+        const selected =
+          selectedItemsByProduct[product.id] ?? new Set<string>();
+        // 선택된 주차 전부에 이미 값이 있는 항목은 제외
+        const pendingItems = new Set(
+          [...selected].filter(
+            (item) => !productDates.every((d) => data.existingData[d]?.has(item))
+          )
+        );
+        return { product, data, productDates, pendingItems };
+      })
+      .filter((x) => x.productDates.length > 0 && x.pendingItems.size > 0);
+
+    if (plan.length === 0) {
+      toast.info('선택한 주차·항목이 이미 모두 채워져 있습니다.');
+      return;
+    }
 
     setExtractionStatus('running');
     setExtractionProgress(null);
     setExtractionError(null);
 
-    try {
-      const results = await extractPickjoyWeeklyData({
-        token: pickjoyToken,
-        selectedItems,
-        dates: activeSelectedDates,
-        onProgress: setExtractionProgress,
-      });
-      await writePickSeriesWeeklySheet(
-        pickjoyProduct.tabName,
-        pickjoyData,
-        results
-      );
-      refreshProduct(pickjoyProduct);
-      setExtractionStatus('done');
-    } catch (err) {
-      setExtractionError(
-        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
-      );
+    const failed: string[] = [];
+
+    for (const { product, data, productDates, pendingItems } of plan) {
+      const token = serverTokens[product.serverIds[0]]!;
+      try {
+        const results = await WEEKLY_EXTRACTORS[product.id]({
+          token,
+          selectedItems: pendingItems,
+          dates: productDates,
+          onProgress: setExtractionProgress,
+        });
+        await writePickSeriesWeeklySheet(product.tabName, data, results);
+        refreshProduct(product);
+      } catch (err) {
+        console.error(`[주간지표] ${product.label} 추출 실패:`, err);
+        failed.push(
+          `${product.label}: ${err instanceof Error ? err.message : '알 수 없는 오류'}`
+        );
+      }
+    }
+
+    if (failed.length > 0) {
+      setExtractionError(failed.join('\n'));
       setExtractionStatus('error');
+    } else {
+      setExtractionStatus('done');
     }
   }, [
     loggedInProducts,
     productStates,
     serverTokens,
     selectedItemsByProduct,
-    activeSelectedDates,
+    activeSelectedWeeks,
+    weekMaps,
     refreshProduct,
   ]);
 
@@ -336,7 +438,7 @@ export default function PickSeriesWeeklyData() {
         {/* 헤더 */}
         <PickSeriesPageHeader
           title='주간지표'
-          description='시트의 빈 주차를 자동으로 감지하고 데이터를 채웁니다. (월-일 기준)'
+          description='시트의 빈 주차를 자동으로 감지하고 데이터를 채웁니다. (서비스별 주 시작 요일 자동 정렬)'
         />
 
         {!hasAnyLoggedIn ? (
@@ -348,15 +450,15 @@ export default function PickSeriesWeeklyData() {
           <>
             {/* 주차 선택 */}
             <DatePickerSection
-              allDates={allDates}
-              selectedDates={selectedDates}
-              toggleDate={toggleDate}
+              allDates={allWeeks}
+              selectedDates={selectedWeeks}
+              toggleDate={toggleWeek}
               allSelected={allSelected}
               toggleGlobalAll={toggleGlobalAll}
               hasAnyLoggedIn={hasAnyLoggedIn}
               loggedInProducts={loggedInProducts}
               productStates={productStates}
-              incompleteDates={incompleteDates}
+              incompleteDates={incompleteWeeks}
               isDateSelectable={isDateSelectable}
             />
 
@@ -368,12 +470,33 @@ export default function PickSeriesWeeklyData() {
                 );
                 const state = productStates[product.id];
                 const items = state?.data?.items ?? [];
+                const supported = new Set(
+                  supportedItemsOf(product.id, items)
+                );
+                const unsupported = new Set(
+                  items.filter((i) => !supported.has(i))
+                );
                 const selected =
                   selectedItemsByProduct[product.id] ?? new Set<string>();
-                const selectedCount = items.filter((item) =>
+                const selectedCount = [...supported].filter((item) =>
                   selected.has(item)
                 ).length;
-                const isActive = product.id === 'pickjoy' ? true : false;
+                const isActive = product.id === 'picknow' ? false : true;
+
+                // 현재 선택으로는 추출되지 않는 항목 (담당 주차 없음 or 전부 이미 존재)
+                // → 체크된 채로 회색 비활성 표시
+                const productDates = activeSelectedWeeks
+                  .map((wk) => weekMaps[product.id]?.get(wk))
+                  .filter((d): d is string => !!d);
+                const lockedItems = new Set(
+                  [...supported].filter((item) => {
+                    if (!state?.data) return false;
+                    if (productDates.length === 0) return true;
+                    return productDates.every((d) =>
+                      state.data!.existingData[d]?.has(item)
+                    );
+                  })
+                );
 
                 return (
                   <WeeklyCard
@@ -384,12 +507,15 @@ export default function PickSeriesWeeklyData() {
                     items={items}
                     selected={selected}
                     selectedCount={selectedCount}
-                    selectedDateCount={activeSelectedDates.length}
+                    selectedDateCount={coveredSelectedCount(product.id)}
+                    operatingSince={state?.data?.dates[0]}
                     state={state ?? { data: null, loading: false, error: null }}
                     onClick={toggleProductAll}
                     getItemExistingDates={getItemExistingDates}
                     toggleItem={toggleItem}
                     isActive={isActive}
+                    unsupportedItems={unsupported}
+                    lockedItems={lockedItems}
                   />
                 );
               })}
@@ -402,7 +528,7 @@ export default function PickSeriesWeeklyData() {
       {hasAnyLoggedIn && (
         <BottomBar
           handleReset={handleReset}
-          activeSelectedDates={activeSelectedDates}
+          activeSelectedDates={activeSelectedWeeks}
           onClick={handleExtract}
         />
       )}

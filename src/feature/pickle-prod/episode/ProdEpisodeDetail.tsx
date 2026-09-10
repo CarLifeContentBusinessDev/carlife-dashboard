@@ -196,7 +196,9 @@ const ProdEpisodeDetail = () => {
           </div>
           <button
             onClick={() =>
-              isStaging ? navigate(`/stg/episodes`) : navigate(`/episodes`)
+              isStaging
+                ? navigate(`/pickle/stg/episodes`)
+                : navigate(`/pickle/episodes`)
             }
             className='px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition text-sm'
           >
@@ -214,7 +216,7 @@ const ProdEpisodeDetail = () => {
               <div className='px-4 py-4 bg-gray-50 font-semibold text-sm text-gray-600'>
                 {field.label}
               </div>
-              <div className='px-4 py-4 text-sm bg-white break-words min-w-0'>
+              <div className='px-4 py-4 text-sm bg-white wrap-break-words min-w-0'>
                 {renderValue(field.key, episode[field.key] as string | number)}
               </div>
             </div>
@@ -241,7 +243,7 @@ const ProdEpisodeDetail = () => {
                   <div
                     className={`px-4 text-sm bg-white break-all ${
                       isThumbnailField
-                        ? 'py-4 min-h-[180px] flex items-start'
+                        ? 'py-4 min-h-45 flex items-start'
                         : isAudioField
                           ? 'py-4'
                           : 'py-3'

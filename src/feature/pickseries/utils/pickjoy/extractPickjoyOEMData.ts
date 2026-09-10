@@ -1,25 +1,17 @@
+import type {
+  ExtractionProgress,
+  OEMExtractionResult,
+} from '@/feature/pickseries/utils/extractionTypes';
 import type { OEMGroup } from '@/feature/pickseries/utils/fetchPickSeriesOEMSheet';
 import { executeWithConcurrencyLimit } from '@/shared/utils/api/requestPool';
+import { buildOEMParamsMap } from '../resolveOEMParams';
 import {
   createPickjoyApi,
-  fetchServiceStatsFromExport,
   fetchCombinedRegisteredVinCount,
+  fetchServiceStatsFromExport,
   type PickjoyOEMParams,
 } from './pickjoyItemApis';
-import { buildOEMParamsMap } from './resolveOEMParams';
 import { PICKJOY_WEEKLY_OEMS } from './pickjoyWeeklyConfig';
-
-export type ExtractionProgress = {
-  completed: number;
-  total: number;
-  currentLabel: string;
-};
-
-// date → oemName → itemName → value
-export type OEMExtractionResult = Record<
-  string,
-  Record<string, Record<string, string | number>>
->;
 
 const REGISTERED_VIN_KEY = '누적 사용자 수';
 const ACTIVE_USERS_KEY = '활성 사용자 수';
@@ -122,7 +114,7 @@ export async function extractPickjoyOEMData(params: {
               { startDate, endDate },
               { manufacturerSeq, deviceSeq, companySeq }
             );
-            
+
             completed++;
             onProgress({
               completed,

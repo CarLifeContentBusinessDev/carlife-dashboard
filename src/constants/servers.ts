@@ -158,7 +158,7 @@ export const PICKSERIES_SERVERS: PickSeriesServer[] = [
     id: 'pickle-prod',
     label: 'Pickle',
     apiUrl: import.meta.env.VITE_PROD_API_URL as string,
-    isActive: false,
+    isActive: true,
   },
   {
     id: 'picknow-kr-prod-kia',

@@ -5,6 +5,10 @@ import type {
 } from '@/shared/types/pickleProdContents';
 import { getSheetValues } from '@/feature/pickle-prod/utils/pickleProdSheetApi';
 import { api } from '@/shared/utils/api/api';
+import {
+  CHANNEL_LIST_QUERY,
+  normalizeChannel,
+} from '@/shared/utils/format/normalizeChannel';
 import { buildSheetRange } from './sheetRange';
 import { getExcelData } from './updateExcel';
 
@@ -35,8 +39,9 @@ export async function getNewData(
   const excelData = await getExcelData(category, undefined, spreadsheetId);
 
   const size = 1000;
+  const channelParams = category === 'channel' ? CHANNEL_LIST_QUERY : '';
   const firstRes = await apiInstance.get(
-    `/admin/${category}?page=1&size=${size}`,
+    `/admin/${category}?page=1&size=${size}${channelParams}`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
     }
@@ -55,13 +60,16 @@ export async function getNewData(
 
   for (let page = 1; page <= totalPages; page++) {
     const res = await apiInstance.get(
-      `/admin/${category}?page=${page}&size=${size}`,
+      `/admin/${category}?page=${page}&size=${size}${channelParams}`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
     addProgress();
     const pageData = res.data.data.dataList;
+    if (category === 'channel') {
+      (pageData as usingChannelProps[]).forEach(normalizeChannel);
+    }
     allApiData = allApiData.concat(pageData);
   }
 

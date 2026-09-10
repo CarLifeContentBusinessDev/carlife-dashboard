@@ -142,10 +142,13 @@ export async function getExcelData(
                   {
                     categoryId: 0,
                     categoryName: String(row[4]),
-                    displayOrder: null,
+                    displayOrder: 0,
                   },
                 ]
               : [],
+            categoryId: 0,
+            categoryName: String(row[4] ?? ''),
+            interfaceType: '',
             episodeCount: Number(row[5] ?? 0),
             dispDtime: String(row[6] ?? ''),
             channelTypeName: String(row[7] ?? ''),

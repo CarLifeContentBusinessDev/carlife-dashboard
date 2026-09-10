@@ -13,19 +13,25 @@ export interface usingDataProps {
   channelId: number;
 }
 
-interface caegoryListType {
-  categoryId: number;
-  categoryName: string;
-  displayOrder: number | null;
-}
 export interface usingChannelProps {
   channelId: number;
+  categoryList?: {
+    categoryId: number;
+    categoryName: string;
+    displayOrder: number;
+  }[];
+  vendorList?: {
+    vendorId: number;
+    vendorName: string;
+    displayOrder: number;
+  }[];
   interfaceUrl: string;
   usageYn: string;
   channelName: string;
   channelTypeName: string;
   interfaceType: string;
-  categoryList: caegoryListType[];
+  categoryId: number;
+  categoryName: string;
   episodeCount?: number;
   vendorName: string;
   likeCnt: number;
@@ -129,4 +135,87 @@ export interface curationEpisodesProps {
   playTime: number;
   likeCnt: number;
   listenCnt: number;
+}
+
+export interface fastHlsStatusProps {
+  exportId: string;
+  status: string;
+  complete: boolean;
+  cancelRequested: boolean | null;
+  progressPercent: number;
+  generationStartedAt: string | null;
+  elapsedSeconds: number | null;
+  generationEndedAt: string | null;
+}
+
+export interface fastListItemProps {
+  fastId: number;
+  usageYn: string;
+  liveTagYn: string;
+  fastName: string;
+  fastDesc: string;
+  contentType: string;
+  thumbnailUrlAaos: string;
+  thumbnailUrlAos: string;
+  thumbnailUrl: string;
+  thumbnailUrlRect: string;
+  episodeCount: number;
+  creatorName: string;
+  createdAt: string;
+  dispStartDtime: string;
+  dispEndDtime: string;
+  streamId: string;
+  streamUrl: string;
+  hlsStatus: fastHlsStatusProps;
+}
+
+export interface fastContentItemProps {
+  episodeId: number;
+  channelId: number;
+  channelName: string;
+  language: string;
+  interfaceType: string;
+  episodeType: string;
+  episodeName: string;
+  playTime: number;
+  vendorName: string;
+  thumbnailUrl: string;
+  audioUrl: string;
+  touchCount: number;
+  listenCnt: number;
+  lastUpdateDtime: string;
+  dispDtime: string;
+  usageYn: string;
+  createdAt: string;
+}
+
+export interface fastDetailProps extends fastListItemProps {
+  totalPlayTime: number;
+  previewStreamUrl: string;
+  contentTotalCount: number;
+  contentList: fastContentItemProps[];
+}
+
+export interface fastStatsProps {
+  playRequestCount: number;
+  touchCount: number;
+}
+
+export interface ProdFastRow {
+  fastId: number;
+  usageYn: string;
+  fastName: string;
+  includedChannelNames: string;
+  hlsStatus: string;
+  episodeCount: number;
+  createdAt: string;
+  dispStartDtime: string;
+  dispEndDtime: string;
+  generationStartedAt: string;
+  generationEndedAt: string;
+  totalGenerationSeconds: number;
+  touchCount: number;
+  playRequestCount: number;
+  streamUrl: string;
+  thumbnailUrl: string;
 }

@@ -1,4 +1,4 @@
-import type { ExtractionProgress } from '@/feature/pickseries/utils/extractPickjoyOEMData';
+import type { ExtractionProgress } from '@/feature/pickseries/utils/extractionTypes';
 
 interface ExtractionOverlayProps {
   status: 'running' | 'done' | 'error';

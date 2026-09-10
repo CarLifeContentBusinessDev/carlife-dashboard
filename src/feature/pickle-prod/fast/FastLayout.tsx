@@ -1,73 +1,74 @@
-import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout.tsx';
-import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader.tsx';
-import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState.tsx';
-import SyncToolbar from '@/feature/pickle-prod/components/SyncToolbar.tsx';
-import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio.tsx';
-import SheetSelector from '@/feature/pickseries/components/SheetSelector.tsx';
-import { useSheetSelection } from '@/feature/pickseries/hooks/useSheetSelection.ts';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'react-toastify';
+import ProdTabLayout from '@/feature/pickle-prod/components/ProdTabLayout';
+import SyncCountHeader from '@/feature/pickle-prod/components/SyncCountHeader';
+import { SyncEmptyState } from '@/feature/pickle-prod/components/SyncEmptyState';
+import SyncToolbar from '@/feature/pickle-prod/components/SyncToolbar';
+import UsageFilterRadio from '@/feature/pickle-prod/components/UsageFilterRadio';
+import SheetSelector from '@/feature/pickseries/components/SheetSelector';
+import { useSheetSelection } from '@/feature/pickseries/hooks/useSheetSelection';
 import {
   SYNC_PAGE_SIZE,
   useSyncState,
-} from '@/feature/pickseries/hooks/useSyncState.ts';
-import LoadingOverlay from '@/shared/components/common/LoadingOverlay.tsx';
-import Pagination from '@/shared/components/common/Pagination.tsx';
+} from '@/feature/pickseries/hooks/useSyncState';
+import LoadingOverlay from '@/shared/components/common/LoadingOverlay';
+import Pagination from '@/shared/components/common/Pagination';
 import SortControls from '@/shared/components/table/SortControls';
-import useListSort from '@/shared/hooks/useListSort.ts';
-import { useStagingEnv } from '@/shared/hooks/useStagingEnv.ts';
-import { useChannelStore } from '@/shared/store/useChannelStore.ts';
-import { usePickleServerStore } from '@/shared/store/usePickleServerStore.ts';
-import type { usingChannelProps } from '@/shared/types/pickleProdContents.ts';
-import { fetchAllData } from '@/shared/utils/api/fetchAllData.ts';
-import { appendNewDataToTop } from '@/shared/utils/excel/appendNewDataToExcel.ts';
-import { getNewData } from '@/shared/utils/excel/getNewData.ts';
-import { overwriteExcelData } from '@/shared/utils/excel/updateExcel.ts';
-import { updateSheetSyncTime } from '@/shared/utils/excel/updateSheetSyncTime.ts';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { toast } from 'react-toastify';
-import ProdChannelList from './ProdChannelList.tsx';
+import useListSort from '@/shared/hooks/useListSort';
+import { useStagingEnv } from '@/shared/hooks/useStagingEnv';
+import { useFastStore } from '@/shared/store/useFastStore';
+import { usePickleServerStore } from '@/shared/store/usePickleServerStore';
+import type { ProdFastRow } from '@/shared/types/pickleProdContents';
+import { fetchAllFastData } from '@/shared/utils/api/fetchAllFastData';
+import { appendNewFastToExcel } from '@/shared/utils/excel/appendNewFast';
+import { getNewFastData } from '@/shared/utils/excel/getNewFast';
+import { overwriteFastExcelData } from '@/shared/utils/excel/updateFast';
+import { updateSheetSyncTime } from '@/shared/utils/excel/updateSheetSyncTime';
+import ProdFastList from './ProdFastList';
 
-const CATEGORY = 'channel';
+type FastSortKey = 'createdAt' | 'fastName' | 'dispStartDtime' | 'dispEndDtime';
 
-type ChannelSortKey =
-  'createdAt' | 'channelName' | 'dispDtime' | 'likeCnt' | 'listenCnt';
-
-const CHANNEL_SORT_OPTIONS: Array<{ value: ChannelSortKey; label: string }> = [
-  { value: 'createdAt', label: '등록일' },
-  { value: 'channelName', label: '채널명' },
-  { value: 'dispDtime', label: '최근 업로드일' },
-  { value: 'likeCnt', label: '좋아요수' },
-  { value: 'listenCnt', label: '재생 요청 수' },
+const FAST_SORT_OPTIONS: Array<{ value: FastSortKey; label: string }> = [
+  { value: 'createdAt', label: '등록 일시' },
+  { value: 'fastName', label: 'FAST 명' },
+  { value: 'dispStartDtime', label: '게시 시작일' },
+  { value: 'dispEndDtime', label: '게시 종료일' },
 ];
 
-// 시트 적재 순서와 동일하게 등록일(createdAt) 내림차순으로 정렬한다.
-const sortChannels = (channels: usingChannelProps[]) =>
-  [...channels].sort((a, b) => {
-    const createdA = new Date(a.createdAt).getTime() || 0;
-    const createdB = new Date(b.createdAt).getTime() || 0;
-    if (createdB !== createdA) return createdB - createdA;
+const FAST_STATUS_FILTER_OPTIONS = [
+  '전체',
+  '생성 대기',
+  '생성중',
+  '생성완료',
+  '생성취소',
+] as const;
 
-    const nameA = (a.channelName ?? '').toLowerCase();
-    const nameB = (b.channelName ?? '').toLowerCase();
-    return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
-  });
+type FastStatusFilter = (typeof FAST_STATUS_FILTER_OPTIONS)[number];
 
-const ChannelLayout = () => {
+const FAST_STATUS_FILTER_TO_CODE: Record<FastStatusFilter, string> = {
+  전체: 'ALL',
+  '생성 대기': 'QUEUED',
+  생성중: 'IN_PROGRESS',
+  생성완료: 'COMPLETED',
+  생성취소: 'CANCELED',
+};
+
+const FastLayout = () => {
   const { isStaging, apiInstance, spreadsheetId } = useStagingEnv();
-  const { getServerToken, isServerLoggedIn } = usePickleServerStore();
-  const accessToken =
-    getServerToken(isStaging ? 'pickle-stg' : 'pickle-prod') ?? '';
+  const { isServerLoggedIn } = usePickleServerStore();
   const isPickleLoggedIn = isServerLoggedIn(
     isStaging ? 'pickle-stg' : 'pickle-prod'
   );
 
   // 데이터 탭
-  const [allChannelData, setAllChannelData] = useState<usingChannelProps[]>([]);
+  const [allFastData, setAllFastData] = useState<ProdFastRow[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
-  const [dataProgress, setDataProgress] = useState('');
   const [dataKeyword, setDataKeyword] = useState('');
   const [dataUsageFilter, setDataUsageFilter] = useState<'All' | 'Y' | 'N'>(
     'All'
   );
+  const [dataStatusFilter, setDataStatusFilter] =
+    useState<FastStatusFilter>('전체');
   const [dataPage, setDataPage] = useState(1);
   const [dataPageSize, setDataPageSize] = useState(10);
   const [isPageSizeChanging, startPageSizeTransition] = useTransition();
@@ -77,82 +78,91 @@ const ChannelLayout = () => {
 
   useEffect(() => {
     if (!isPickleLoggedIn) {
-      setAllChannelData([]);
+      setAllFastData([]);
       return;
     }
     const env = isStaging ? 'stg' : 'prod';
-    const { cache, isStale, setCache } = useChannelStore.getState();
+    const { cache, isStale, setCache } = useFastStore.getState();
     if (!isStale(env)) {
-      setAllChannelData(cache[env]!.data);
+      setAllFastData(cache[env]!.data);
       return;
     }
     dataAbortRef.current?.abort();
     const controller = new AbortController();
     dataAbortRef.current = controller;
     setDataLoading(true);
-    setAllChannelData([]);
+    setAllFastData([]);
     setDataPage(1);
-    fetchAllData('channel', setDataProgress, controller.signal, apiInstance)
+    fetchAllFastData(apiInstance, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) {
-          setAllChannelData(data);
+          setAllFastData(data);
           if (data.length > 0) setCache(env, data);
         }
       })
-      .finally(() => {
+      .catch((error) => {
         if (!controller.signal.aborted) {
-          setDataLoading(false);
-          setDataProgress('');
+          console.error('FAST 목록 조회 실패:', error);
         }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDataLoading(false);
       });
     return () => controller.abort();
-  }, [isStaging, isPickleLoggedIn, apiInstance]);
+  }, [isStaging, isPickleLoggedIn]);
 
-  const filteredChannelData = useMemo(() => {
-    return allChannelData.filter((item) => {
+  const filteredFastData = useMemo(() => {
+    const statusCode = FAST_STATUS_FILTER_TO_CODE[dataStatusFilter];
+    return allFastData.filter((item) => {
       if (dataUsageFilter !== 'All' && item.usageYn !== dataUsageFilter)
         return false;
+      if (statusCode !== 'ALL' && item.hlsStatus !== statusCode) return false;
       if (
         dataKeyword.trim() &&
-        !item.channelName.toLowerCase().includes(dataKeyword.toLowerCase())
+        !item.fastName.toLowerCase().includes(dataKeyword.toLowerCase())
       )
         return false;
       return true;
     });
-  }, [allChannelData, dataUsageFilter, dataKeyword]);
+  }, [allFastData, dataUsageFilter, dataStatusFilter, dataKeyword]);
 
   const {
     sortKey: dataSortKey,
     setSortKey: setDataSortKey,
     sortDirection: dataSortDir,
     setSortDirection: setDataSortDir,
-    sortedData: sortedChannelData,
-  } = useListSort<usingChannelProps, ChannelSortKey>({
-    data: filteredChannelData,
-    sortOptions: CHANNEL_SORT_OPTIONS,
+    sortedData: sortedFastData,
+  } = useListSort<ProdFastRow, FastSortKey>({
+    data: filteredFastData,
+    sortOptions: FAST_SORT_OPTIONS,
     initialSortKey: 'createdAt',
     initialSortDirection: 'desc',
   });
 
   useEffect(() => {
     setDataPage(1);
-  }, [dataUsageFilter, dataKeyword, dataSortKey, dataSortDir, dataPageSize]);
+  }, [
+    dataUsageFilter,
+    dataStatusFilter,
+    dataKeyword,
+    dataSortKey,
+    dataSortDir,
+    dataPageSize,
+  ]);
 
   const dataTotalPages =
-    dataPageSize === 0 ? 1 : Math.ceil(sortedChannelData.length / dataPageSize);
-  const displayChannelData =
+    dataPageSize === 0 ? 1 : Math.ceil(sortedFastData.length / dataPageSize);
+  const displayFastData =
     dataPageSize === 0
-      ? sortedChannelData
-      : sortedChannelData.slice(
+      ? sortedFastData
+      : sortedFastData.slice(
           (dataPage - 1) * dataPageSize,
           dataPage * dataPageSize
         );
 
   // 동기화 탭
-  const [newChannels, setNewChannels] = useState<usingChannelProps[] | null>(
-    null
-  );
-  const [addData, setAddData] = useState<usingChannelProps[]>([]);
+  const [newFasts, setNewFasts] = useState<ProdFastRow[]>([]);
+  const [allFasts, setAllFasts] = useState<ProdFastRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
   const [progress, setProgress] = useState('');
@@ -167,10 +177,8 @@ const ChannelLayout = () => {
     handleSyncPageChange,
   } = useSyncState();
 
-  const defaultSheetName = isStaging ? 'stg_채널 DB' : '채널 DB';
-  const storageKey = isStaging
-    ? 'sheetName:channel:stg'
-    : 'sheetName:channel:prod';
+  const defaultSheetName = isStaging ? 'stg_FAST DB' : 'FAST DB';
+  const storageKey = isStaging ? 'sheetName:fast:stg' : 'sheetName:fast:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
     spreadsheetId,
@@ -178,41 +186,35 @@ const ChannelLayout = () => {
     storageKey,
   });
 
-  const handleLoadAllChannels = async () => {
+  const handleLoadAllFasts = async () => {
     const currentSheet = localStorage.getItem(storageKey) || selectedSheet;
     if (!currentSheet) return toast.warn('시트를 먼저 선택해주세요!');
 
-    setNewChannels(null);
-    setAddData([]);
-    setSyncPreviewMode(null);
-
     try {
       setLoading(true);
-      const env = isStaging ? 'stg' : 'prod';
-      const { cache, isStale, setCache } = useChannelStore.getState();
+      setAllFasts([]);
+      setNewFasts([]);
+      setSyncPreviewMode(null);
+      setSyncPage(1);
 
-      let allData: usingChannelProps[];
+      const env = isStaging ? 'stg' : 'prod';
+      const { cache, isStale, setCache } = useFastStore.getState();
+
+      let allData: ProdFastRow[];
       if (!isStale(env) && cache[env]?.data.length) {
         allData = cache[env]!.data;
       } else {
-        allData = await fetchAllData(
-          CATEGORY,
-          setProgress,
-          undefined,
-          apiInstance
-        );
+        allData = await fetchAllFastData(apiInstance, undefined, setProgress);
         if (allData.length > 0) setCache(env, allData);
       }
-      const sortedAllData = sortChannels(allData);
-      setAddData(sortedAllData);
-      setSyncTotalPages(Math.ceil(sortedAllData.length / SYNC_PAGE_SIZE));
-      setSyncPage(1);
+      setAllFasts(allData);
+      setSyncTotalPages(Math.ceil(allData.length / SYNC_PAGE_SIZE));
       setSyncPreviewMode('all');
       toast.info(
-        `${sortedAllData.length}개의 전체 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
+        `${allData.length}개의 전체 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
       );
     } catch (error) {
-      console.error('전체 채널·도서 조회 실패:', error);
+      console.error('전체 FAST 조회 실패:', error);
     } finally {
       setLoading(false);
       setProgress('');
@@ -225,32 +227,30 @@ const ChannelLayout = () => {
 
     try {
       setLoading(true);
-      setNewChannels(null);
-      setAddData([]);
+      setNewFasts([]);
+      setAllFasts([]);
       setSyncPreviewMode(null);
       setSyncPage(1);
 
-      const newList = await getNewData(
-        accessToken,
+      const newList = await getNewFastData(
         setProgress,
-        CATEGORY,
         apiInstance,
-        spreadsheetId
+        spreadsheetId,
+        currentSheet
       );
-      const sortedNewList = sortChannels(newList);
-      setNewChannels(sortedNewList);
-      setSyncTotalPages(Math.ceil(sortedNewList.length / SYNC_PAGE_SIZE));
+      setNewFasts(newList);
+      setSyncTotalPages(Math.ceil(newList.length / SYNC_PAGE_SIZE));
       setSyncPreviewMode('new');
 
-      if (sortedNewList.length === 0) {
-        toast.info('추가할 신규 채널·도서가 없습니다.');
+      if (newList.length === 0) {
+        toast.info('추가할 신규 FAST가 없습니다.');
       } else {
         toast.info(
-          `${sortedNewList.length}개의 신규 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
+          `${newList.length}개의 신규 데이터를 조회했습니다. 확인 후 동기화를 실행해주세요.`
         );
       }
     } catch (error) {
-      console.error('신규 채널·도서 탐지 실패:', error);
+      console.error('신규 FAST 탐지 실패:', error);
     } finally {
       setLoading(false);
       setProgress('');
@@ -263,8 +263,7 @@ const ChannelLayout = () => {
     if (!syncPreviewMode)
       return toast.warn('먼저 신규 또는 전체 조회를 실행해주세요!');
 
-    const previewData =
-      syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
+    const previewData = syncPreviewMode === 'new' ? newFasts : allFasts;
 
     if (syncPreviewMode === 'new' && previewData.length === 0) {
       return toast.info('동기화할 신규 데이터가 없습니다.');
@@ -281,22 +280,15 @@ const ChannelLayout = () => {
       setExcelLoading(true);
 
       if (syncPreviewMode === 'new') {
-        await appendNewDataToTop(
+        await appendNewFastToExcel(
           previewData,
           setProgress,
-          CATEGORY,
           setExcelLoading,
           currentSheet,
-          true,
           spreadsheetId
         );
       } else {
-        await overwriteExcelData(
-          previewData,
-          CATEGORY,
-          currentSheet,
-          spreadsheetId
-        );
+        await overwriteFastExcelData(previewData, currentSheet, spreadsheetId);
       }
 
       await updateSheetSyncTime(defaultSheetName, spreadsheetId);
@@ -308,17 +300,19 @@ const ChannelLayout = () => {
     }
   };
 
-  const excelHref = isStaging
-    ? `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_STG_SPREADSHEET_ID}/edit?gid=902383353#gid=902383353`
-    : `https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_SPREADSHEET_ID}/edit?gid=934666118#gid=934666118`;
+  const selectedSheetGid = sheetList.find(
+    (sheet) => sheet.name === selectedSheet
+  )?.id;
+  const excelHref = selectedSheetGid
+    ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit?gid=${selectedSheetGid}#gid=${selectedSheetGid}`
+    : `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
 
-  const syncDisplayData =
-    syncPreviewMode === 'new' ? (newChannels ?? []) : addData;
+  const syncDisplayData = syncPreviewMode === 'new' ? newFasts : allFasts;
 
   return (
     <ProdTabLayout
       parentMenu='상용 콘텐츠 관리'
-      childMenu='채널·도서 관리'
+      childMenu='FAST 관리'
       isStaging={isStaging}
       heightClass='h-[90vh]'
     >
@@ -328,15 +322,15 @@ const ChannelLayout = () => {
             <div className='flex-1 p-8 flex flex-col min-h-0'>
               <div className='flex justify-between items-center shrink-0 mb-4'>
                 <h3 className='text-point-color font-semibold'>
-                  채널·도서 총{' '}
+                  FAST 총{' '}
                   <span className='font-extrabold'>
-                    {sortedChannelData.length}
+                    {sortedFastData.length}
                   </span>
                   개
                 </h3>
                 <SortControls
                   sortKey={dataSortKey}
-                  sortOptions={CHANNEL_SORT_OPTIONS}
+                  sortOptions={FAST_SORT_OPTIONS}
                   onSortKeyChange={setDataSortKey}
                   sortDirection={dataSortDir}
                   onSortDirectionChange={setDataSortDir}
@@ -345,9 +339,17 @@ const ChannelLayout = () => {
               <div className='flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-xl gap-4'>
                 <div className='flex items-center gap-6 flex-wrap'>
                   <UsageFilterRadio
-                    name='channelUsageFilter'
+                    name='usageFilter'
+                    label='활성화'
                     value={dataUsageFilter}
                     onChange={(v) => setDataUsageFilter(v)}
+                  />
+                  <UsageFilterRadio
+                    name='statusFilter'
+                    label='생성 상태'
+                    options={FAST_STATUS_FILTER_OPTIONS}
+                    value={dataStatusFilter}
+                    onChange={(v) => setDataStatusFilter(v)}
                   />
                 </div>
                 <div className='flex items-center border border-gray-300 rounded-lg bg-white px-3 py-1.5 gap-2 min-w-55'>
@@ -355,7 +357,7 @@ const ChannelLayout = () => {
                     type='text'
                     value={dataKeyword}
                     onChange={(e) => setDataKeyword(e.target.value)}
-                    placeholder='채널명 검색'
+                    placeholder='FAST 명 검색'
                     className='outline-none text-sm flex-1 text-gray-700 placeholder-gray-400'
                   />
                   <svg
@@ -374,8 +376,8 @@ const ChannelLayout = () => {
                   </svg>
                 </div>
               </div>
-              <LoadingOverlay loading={dataLoading} progress={dataProgress}>
-                채널 목록을 불러오는 중입니다.
+              <LoadingOverlay loading={dataLoading}>
+                FAST 목록을 불러오는 중입니다.
                 <br />
                 잠시만 기다려주세요!
               </LoadingOverlay>
@@ -393,9 +395,8 @@ const ChannelLayout = () => {
                     ref={tableScrollRef}
                     className='overflow-auto episode-table-scroll h-full pb-1'
                   >
-                    <ProdChannelList
-                      data={displayChannelData}
-                      scrollRef={tableScrollRef}
+                    <ProdFastList
+                      data={displayFastData}
                       isStaging={isStaging}
                     />
                   </div>
@@ -417,7 +418,7 @@ const ChannelLayout = () => {
             <div className='flex-1 p-8 flex flex-col min-h-0'>
               <SyncToolbar
                 onSearchNew={handleSearchNew}
-                onLoadAll={handleLoadAllChannels}
+                onLoadAll={handleLoadAllFasts}
                 excelHref={excelHref}
                 onSync={handleSyncExcel}
                 loading={loading}
@@ -428,8 +429,8 @@ const ChannelLayout = () => {
               <div className='flex justify-between items-center shrink-0'>
                 <SyncCountHeader
                   syncPreviewMode={syncPreviewMode}
-                  newCount={newChannels?.length ?? 0}
-                  allCount={addData.length}
+                  newCount={newFasts.length}
+                  allCount={allFasts.length}
                 />
                 <div className='flex gap-8 items-center'>
                   <SheetSelector
@@ -442,7 +443,7 @@ const ChannelLayout = () => {
               </div>
               <div className='w-full flex-1 flex flex-col mt-4 min-h-0'>
                 <LoadingOverlay progress={progress} loading={loading}>
-                  새로운 채널·도서 목록을 불러오는 중입니다.
+                  FAST 목록을 불러오는 중입니다.
                   <br />
                   잠시만 기다려주세요!
                 </LoadingOverlay>
@@ -452,14 +453,11 @@ const ChannelLayout = () => {
                       ref={syncScrollRef}
                       className='overflow-x-scroll episode-table-scroll pb-1 flex-1'
                     >
-                      <ProdChannelList
+                      <ProdFastList
                         data={syncDisplayData.slice(
                           (syncPage - 1) * SYNC_PAGE_SIZE,
                           syncPage * SYNC_PAGE_SIZE
                         )}
-                        scrollRef={syncScrollRef}
-                        episodeCountByChannelId={{}}
-                        latestEpisodeUploadByChannelId={{}}
                         isStaging={isStaging}
                       />
                     </div>
@@ -483,4 +481,4 @@ const ChannelLayout = () => {
   );
 };
 
-export default ChannelLayout;
+export default FastLayout;
