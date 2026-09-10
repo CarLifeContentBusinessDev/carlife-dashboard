@@ -178,9 +178,7 @@ const FastLayout = () => {
   } = useSyncState();
 
   const defaultSheetName = isStaging ? 'stg_FAST DB' : 'FAST DB';
-  const storageKey = isStaging
-    ? 'sheetName:fast:stg'
-    : 'sheetName:fast:prod';
+  const storageKey = isStaging ? 'sheetName:fast:stg' : 'sheetName:fast:prod';
   const { sheetList, selectedSheet, handleSelectSheet } = useSheetSelection({
     isStaging,
     spreadsheetId,
@@ -397,7 +395,10 @@ const FastLayout = () => {
                     ref={tableScrollRef}
                     className='overflow-auto episode-table-scroll h-full pb-1'
                   >
-                    <ProdFastList data={displayFastData} isStaging={isStaging} />
+                    <ProdFastList
+                      data={displayFastData}
+                      isStaging={isStaging}
+                    />
                   </div>
                 </div>
               )}

@@ -105,7 +105,7 @@ const EPISODE_COLUMNS: Array<{
     width: 'w-[120px]',
     render: (ep) => formatPlayTime(ep.playTime ?? 0),
   },
-  { key: 'likeCnt', label: '좋아요수', width: 'w-[90px]' },
+  { key: 'touchCount', label: '터치수', width: 'w-[90px]' },
   { key: 'listenCnt', label: '청취수', width: 'w-[90px]' },
   {
     key: 'dispDtime',
@@ -256,7 +256,10 @@ const FastDetail = () => {
     },
     { label: '터치 수', value: stats?.touchCount ?? 0 },
     { label: '게시자', value: detail?.creatorName ?? '-' },
-    { label: 'streamUrl', value: detail?.streamUrl ?? fastState?.streamUrl ?? '-' },
+    {
+      label: 'streamUrl',
+      value: detail?.streamUrl ?? fastState?.streamUrl ?? '-',
+    },
     { label: 'previewStreamUrl', value: detail?.previewStreamUrl ?? '-' },
   ];
 

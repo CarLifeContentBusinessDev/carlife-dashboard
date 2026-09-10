@@ -35,7 +35,7 @@ export function mapFastToRow(
     generationStartedAt: hls?.generationStartedAt ?? '',
     generationEndedAt: hls?.generationEndedAt ?? '',
     totalGenerationSeconds: hls?.elapsedSeconds ?? 0,
-    likeCnt: 0,
+    touchCount: stats?.touchCount ?? 0,
     playRequestCount: stats?.playRequestCount ?? 0,
     streamUrl: item.streamUrl ?? '',
     thumbnailUrl: '',

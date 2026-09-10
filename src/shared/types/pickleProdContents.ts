@@ -171,7 +171,7 @@ export interface fastContentItemProps {
   vendorName: string;
   thumbnailUrl: string;
   audioUrl: string;
-  likeCnt: number;
+  touchCount: number;
   listenCnt: number;
   lastUpdateDtime: string;
   dispDtime: string;
@@ -204,7 +204,7 @@ export interface ProdFastRow {
   generationStartedAt: string;
   generationEndedAt: string;
   totalGenerationSeconds: number;
-  likeCnt: number;
+  touchCount: number;
   playRequestCount: number;
   streamUrl: string;
   thumbnailUrl: string;
