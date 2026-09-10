@@ -4,6 +4,7 @@ import {
   getSheetValues,
 } from '@/feature/pickle-prod/utils/pickleProdSheetApi';
 import type { ProdFastRow } from '@/shared/types/pickleProdContents';
+import { chunkValuesBySize } from './chunkValuesBySize';
 import { fastRowToSheetValues } from './updateFast';
 
 const STARTROW = 4;
@@ -55,30 +56,22 @@ export async function appendNewFastToExcel(
       return;
     }
 
-    const batchSize = 1000;
-    const batches = Math.ceil(filteredData.length / batchSize);
+    const allValues = filteredData.map(fastRowToSheetValues);
 
-    for (let batchIdx = 0; batchIdx < batches; batchIdx++) {
-      const batchStart = batchIdx * batchSize;
-      const batchEnd = Math.min(
-        (batchIdx + 1) * batchSize,
-        filteredData.length
-      );
-      const batchData = filteredData.slice(batchStart, batchEnd);
-
-      setProgress(
-        `데이터 추가 중... (${batchIdx + 1}/${batches} 배치, ${Math.round((batchEnd / filteredData.length) * 100)}%)`
-      );
-
-      const values = batchData.map(fastRowToSheetValues);
-
+    // Vercel 요청 본문 4.5MB 한도를 넘지 않도록 크기 기준 청킹
+    let written = 0;
+    for (const chunk of chunkValuesBySize(allValues)) {
       await appendSheetValues(
         spreadsheetId,
         `${sheetName}!B${nextRow}`,
-        values
+        chunk.rows
       );
 
-      nextRow += batchData.length;
+      nextRow += chunk.rows.length;
+      written += chunk.rows.length;
+      setProgress(
+        `데이터 추가 중... (${written}/${allValues.length}, ${Math.round((written / allValues.length) * 100)}%)`
+      );
       await delay(100);
     }
 

@@ -15,9 +15,12 @@ import {
   formatPlayTime,
   parsePlayTime,
 } from '@/shared/utils/format/formatPlayTime';
+import { chunkValuesBySize } from './chunkValuesBySize';
 import { buildSheetRange } from './sheetRange';
 
 const STARTROW = 4;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const resolveSheetName = (
   category: 'episode' | 'channel',
@@ -181,7 +184,6 @@ export async function overwriteExcelData(
   startRow?: number,
   setProgress?: (msg: string) => void
 ) {
-  const WRITE_BATCH_SIZE = 10000;
   const targetSpreadsheetId =
     spreadsheetId || import.meta.env.VITE_SPREADSHEET_ID;
   const targetSheet =
@@ -213,7 +215,14 @@ export async function overwriteExcelData(
     let values: (string | number)[][];
 
     if (category === 'episode') {
-      values = (data as usingDataProps[]).map((row) => [
+      // 등록일(createdAt) 내림차순, 동률 시 게시일시(dispDtime) 내림차순
+      const sorted = [...(data as usingDataProps[])].sort((a, b) => {
+        const createdDiff =
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (createdDiff !== 0) return createdDiff;
+        return new Date(b.dispDtime).getTime() - new Date(a.dispDtime).getTime();
+      });
+      values = sorted.map((row) => [
         row.episodeId,
         row.usageYn,
         row.channelName,
@@ -268,19 +277,24 @@ export async function overwriteExcelData(
       ]);
     }
 
-    // 5. 정확한 범위에 배치 쓰기
-    for (let i = 0; i < values.length; i += WRITE_BATCH_SIZE) {
-      const batch = values.slice(i, i + WRITE_BATCH_SIZE);
-      const percent = Math.round(((i + batch.length) / values.length) * 100);
-      setProgress?.(`데이터 쓰기 중... ${percent}%`);
-
-      const batchStartRow = targetStartRow + i;
+    // 5. 정확한 범위에 배치 쓰기 (Vercel 요청 본문 4.5MB 한도를 넘지 않도록 크기 기준 청킹)
+    const chunks = chunkValuesBySize(values);
+    let writtenRows = 0;
+    for (const chunk of chunks) {
+      const batchStartRow = targetStartRow + chunk.offset;
 
       await updateSheetValues(
         targetSpreadsheetId,
         buildSheetRange(targetSheet, `B${batchStartRow}`),
-        batch
+        chunk.rows
       );
+
+      writtenRows += chunk.rows.length;
+      const percent = Math.round((writtenRows / values.length) * 100);
+      setProgress?.(`데이터 쓰기 중... ${percent}%`);
+
+      // Google Sheets 쓰기 쿼터(사용자당 60회/분) 완화
+      if (chunks.length > 1) await delay(300);
     }
 
     // 6. rowCount를 데이터 수에 맞게 정확히 조정하고 필터 범위 갱신

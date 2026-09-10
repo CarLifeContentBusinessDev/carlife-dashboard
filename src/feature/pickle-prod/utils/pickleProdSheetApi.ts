@@ -6,6 +6,25 @@ async function callPickleSheetApi<T>(body: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+
+  const contentType = res.headers.get('content-type') ?? '';
+  const isJson = contentType.includes('application/json');
+
+  // Vercel 서버리스 함수 한도 초과 등: 본문이 JSON 이 아닌 평문/HTML 로 온다.
+  if (!isJson) {
+    const text = await res.text().catch(() => '');
+    if (res.status === 413) {
+      throw new Error(
+        '전송 데이터가 서버 요청 한도(4.5MB)를 초과했습니다. 더 작은 단위로 나눠 다시 시도해주세요.'
+      );
+    }
+    throw new Error(
+      `Google Sheets 요청에 실패했습니다. (HTTP ${res.status})${
+        text ? ` ${text.slice(0, 200)}` : ''
+      }`
+    );
+  }
+
   const json = await res.json();
   if (!res.ok) {
     throw new Error(json.error ?? 'Google Sheets 요청에 실패했습니다.');

@@ -6,6 +6,7 @@ import {
 import type { usingCurationExcelProps } from '@/shared/types/pickleProdContents';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { formatPlayTime } from '@/shared/utils/format/formatPlayTime';
+import { chunkValuesBySize } from './chunkValuesBySize';
 
 const STARTROW = 4;
 
@@ -64,49 +65,45 @@ export async function appendNewCurationToExcel(
       return;
     }
 
-    const batchSize = 1000;
-    const batches = Math.ceil(filteredData.length / batchSize);
+    const allValues = filteredData.map((row) => [
+      row.thumbnailTitle,
+      row.curationType,
+      row.curationName,
+      row.curationDesc,
+      row.activeState,
+      row.exhibitionState,
+      row.field,
+      row.section,
+      excelDateTime(row.dispStartDtime),
+      excelDateTime(row.dispEndDtime),
+      excelDateTime(row.curationCreatedAt),
+      row.channelId,
+      row.episodeId,
+      row.usageYn,
+      row.channelName,
+      row.episodeName,
+      excelDateTime(row.dispDtime),
+      excelDateTime(row.createdAt),
+      formatPlayTime(row.playTime ?? 0),
+      row.likeCnt,
+      row.listenCnt,
+      row.uploader,
+    ]);
 
-    for (let batchIdx = 0; batchIdx < batches; batchIdx++) {
-      const batchStart = batchIdx * batchSize;
-      const batchEnd = Math.min(
-        (batchIdx + 1) * batchSize,
-        filteredData.length
+    // Vercel 요청 본문 4.5MB 한도를 넘지 않도록 크기 기준 청킹
+    let written = 0;
+    for (const chunk of chunkValuesBySize(allValues)) {
+      await appendSheetValues(
+        spreadsheetId,
+        `${sheetName}!B${nextRow}`,
+        chunk.rows
       );
-      const batchData = filteredData.slice(batchStart, batchEnd);
 
+      nextRow += chunk.rows.length;
+      written += chunk.rows.length;
       setProgress(
-        `데이터 추가 중... (${batchIdx + 1}/${batches} 배치, ${Math.round((batchEnd / filteredData.length) * 100)}%)`
+        `데이터 추가 중... (${written}/${allValues.length}, ${Math.round((written / allValues.length) * 100)}%)`
       );
-
-      const values = batchData.map((row) => [
-        row.thumbnailTitle,
-        row.curationType,
-        row.curationName,
-        row.curationDesc,
-        row.activeState,
-        row.exhibitionState,
-        row.field,
-        row.section,
-        excelDateTime(row.dispStartDtime),
-        excelDateTime(row.dispEndDtime),
-        excelDateTime(row.curationCreatedAt),
-        row.channelId,
-        row.episodeId,
-        row.usageYn,
-        row.channelName,
-        row.episodeName,
-        excelDateTime(row.dispDtime),
-        excelDateTime(row.createdAt),
-        formatPlayTime(row.playTime ?? 0),
-        row.likeCnt,
-        row.listenCnt,
-        row.uploader,
-      ]);
-
-      await appendSheetValues(spreadsheetId, `${sheetName}!B${nextRow}`, values);
-
-      nextRow += batchData.length;
       await delay(100);
     }
 

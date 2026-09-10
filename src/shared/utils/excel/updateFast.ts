@@ -10,10 +10,12 @@ import type { ProdFastRow } from '@/shared/types/pickleProdContents';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { formatPlayTime } from '@/shared/utils/format/formatPlayTime';
 import { mapFastHlsStatus } from '@/shared/utils/format/statusMapper';
+import { chunkValuesBySize } from './chunkValuesBySize';
 import { getUsedRange } from './updateExcel';
 
 const STARTROW = 4;
 const LAST_COLUMN = 'P';
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const toDateOnly = (value?: string) => formatDateString(value).slice(0, 10);
 
 const toDispPeriod = (start?: string, end?: string) => {
@@ -91,12 +93,22 @@ export async function overwriteFastExcelData(
 
     const values = data.map(fastRowToSheetValues);
 
-    const MAX_ROWS = 300000;
-    const range = `${targetSheet}!B${STARTROW}:${LAST_COLUMN}${STARTROW + values.length - 1}`;
+    const MAX_ROWS = 400000;
     const clearRange = `${targetSheet}!B${STARTROW}:${LAST_COLUMN}${MAX_ROWS}`;
 
     await clearSheetValues(targetSpreadsheetId, clearRange);
-    await updateSheetValues(targetSpreadsheetId, range, values);
+
+    // Vercel 요청 본문 4.5MB 한도를 넘지 않도록 크기 기준 청킹
+    const chunks = chunkValuesBySize(values);
+    for (const chunk of chunks) {
+      const chunkStartRow = STARTROW + chunk.offset;
+      await updateSheetValues(
+        targetSpreadsheetId,
+        `${targetSheet}!B${chunkStartRow}`,
+        chunk.rows
+      );
+      if (chunks.length > 1) await delay(300);
+    }
 
     const meta = await getSpreadsheetMeta(targetSpreadsheetId);
     const sheetMeta = meta.sheets?.find(

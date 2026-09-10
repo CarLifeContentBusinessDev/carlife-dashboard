@@ -11,6 +11,7 @@ import type {
 } from '@/shared/types/pickleProdContents';
 import formatDateString from '@/shared/utils/format/formatDateString';
 import { formatPlayTime } from '@/shared/utils/format/formatPlayTime';
+import { chunkValuesBySize } from './chunkValuesBySize';
 import { buildSheetRange } from './sheetRange';
 
 const STARTROW = 4;
@@ -42,17 +43,8 @@ export async function appendNewDataToTop(
   try {
     setLoading(true);
 
+    // 등록일(createdAt) 내림차순, 동률 시 게시일시(dispDtime) 내림차순
     const sortedData = [...newData].sort((a, b) => {
-      if (category === 'episode') {
-        const dispDateA = new Date(a.dispDtime).getTime();
-        const dispDateB = new Date(b.dispDtime).getTime();
-        if (dispDateB !== dispDateA) return dispDateB - dispDateA;
-
-        const createdDateA = new Date(a.createdAt).getTime();
-        const createdDateB = new Date(b.createdAt).getTime();
-        return createdDateB - createdDateA;
-      }
-
       const createdDateA = new Date(a.createdAt).getTime();
       const createdDateB = new Date(b.createdAt).getTime();
       if (createdDateB !== createdDateA) return createdDateB - createdDateA;
@@ -167,24 +159,16 @@ export async function appendNewDataToTop(
       ]);
     }
 
-    // Step 4: 배치 쓰기
-    const batchSize = 2000;
-    const batches = Math.ceil(allNewValues.length / batchSize);
+    // Step 4: 배치 쓰기 (Vercel 요청 본문 4.5MB 한도를 넘지 않도록 크기 기준 청킹)
     let totalWritten = 0;
 
-    for (let batchIdx = 0; batchIdx < batches; batchIdx++) {
-      const batchStart = batchIdx * batchSize;
-      const batchEnd = Math.min(
-        (batchIdx + 1) * batchSize,
-        allNewValues.length
-      );
-      const batchData = allNewValues.slice(batchStart, batchEnd);
-      const startRow = STARTROW + batchStart;
+    for (const chunk of chunkValuesBySize(allNewValues)) {
+      const startRow = STARTROW + chunk.offset;
       const range = buildSheetRange(sheetName, `B${startRow}`);
 
-      await updateSheetValues(spreadsheetId, range, batchData);
+      await updateSheetValues(spreadsheetId, range, chunk.rows);
 
-      totalWritten += batchData.length;
+      totalWritten += chunk.rows.length;
       const percentage = Math.round((totalWritten / allNewValues.length) * 100);
       setProgress(
         `데이터 쓰기 중... (${totalWritten}/${allNewValues.length}, ${percentage}%)`

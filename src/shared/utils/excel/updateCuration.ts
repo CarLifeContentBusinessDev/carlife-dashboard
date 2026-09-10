@@ -12,7 +12,10 @@ import {
   formatPlayTime,
   parsePlayTime,
 } from '@/shared/utils/format/formatPlayTime';
+import { chunkValuesBySize } from './chunkValuesBySize';
 import { getUsedRange } from './updateExcel';
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function getCurationExcelData(
   spreadsheetId: string,
@@ -115,15 +118,24 @@ export async function overwriteCurationExcelData(
     ]);
 
     const STARTROW = 4;
-    const MAX_ROWS = 300000;
+    const MAX_ROWS = 400000;
     const lastColumn = 'X';
 
-    const range = `${targetSheet}!B${STARTROW}:${lastColumn}${STARTROW + values.length - 1}`;
     const clearRange = `${targetSheet}!B${STARTROW}:${lastColumn}${MAX_ROWS}`;
 
     await clearSheetValues(targetSpreadsheetId, clearRange);
 
-    await updateSheetValues(targetSpreadsheetId, range, values);
+    // Vercel 요청 본문 4.5MB 한도를 넘지 않도록 크기 기준 청킹
+    const chunks = chunkValuesBySize(values);
+    for (const chunk of chunks) {
+      const chunkStartRow = STARTROW + chunk.offset;
+      await updateSheetValues(
+        targetSpreadsheetId,
+        `${targetSheet}!B${chunkStartRow}`,
+        chunk.rows
+      );
+      if (chunks.length > 1) await delay(300);
+    }
 
     // rowCount를 데이터 수에 맞게 정확히 조정하고 필터 범위 갱신
     const meta = await getSpreadsheetMeta(targetSpreadsheetId);
