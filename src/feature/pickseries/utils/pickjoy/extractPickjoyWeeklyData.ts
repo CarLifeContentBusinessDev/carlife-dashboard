@@ -1,25 +1,23 @@
-import type { ExtractionProgress } from './extractPickjoyOEMData';
+import type {
+  ExtractionProgress,
+  WeeklyExtractionResult,
+} from '@/feature/pickseries/utils/extractionTypes';
+import { buildOEMParamsMap, type OEMApiParams } from '../resolveOEMParams';
 import {
   createPickjoyApi,
-  fetchTotalClicksStat,
-  fetchContentsStats,
-  fetchCombinedTopContent,
-  fetchCombinedRegisteredVinCount,
   fetchCombinedActiveUsers,
+  fetchCombinedRegisteredVinCount,
+  fetchCombinedTopContent,
+  fetchContentsStats,
+  fetchTotalClicksStat,
   type PickjoyOEMParams,
 } from './pickjoyItemApis';
 import {
   PICKJOY_WEEKLY_ITEM_KEYS,
-  PICKJOY_WEEKLY_TOP_CONTENT,
   PICKJOY_WEEKLY_OEMS,
+  PICKJOY_WEEKLY_TOP_CONTENT,
   getActiveWeeklyOEMs,
 } from './pickjoyWeeklyConfig';
-import { buildOEMParamsMap, type OEMApiParams } from './resolveOEMParams';
-
-export type WeeklyExtractionResult = Record<
-  string,
-  Record<string, string | number>
->;
 
 function sheetDateToApiDates(sheetDate: string): {
   startDate: string;

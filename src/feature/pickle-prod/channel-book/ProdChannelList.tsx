@@ -10,7 +10,7 @@ const COLUMNS = [
   { key: 'usageYn', label: '활성 상태', width: '80px' },
   { key: 'channelName', label: '채널명', width: '200px' },
   { key: 'vendorName', label: '제작사명', width: '140px' },
-  { key: 'categoryName', label: '카테고리', width: '120px' },
+  { key: 'categoryName', label: '카테고리', width: '220px' },
   { key: 'episodeCount', label: '에피소드 수', width: '110px' },
   { key: 'dispDtime', label: '최근 에피소드 업로드일', width: '180px' },
   { key: 'channelTypeName', label: '채널 타입', width: '110px' },
@@ -40,6 +40,22 @@ const getCellContent = (
   latestEpisodeUploadByChannelId: Record<number, string>
 ): React.ReactNode => {
   switch (key) {
+    case 'categoryName': {
+      const cats = channel.categoryList ?? [];
+      if (cats.length === 0) return channel.categoryName || '-';
+      return (
+        <div className='flex flex-wrap gap-1'>
+          {cats.map((c) => (
+            <span
+              key={c.categoryId}
+              className='px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-xs whitespace-nowrap'
+            >
+              {c.categoryName}
+            </span>
+          ))}
+        </div>
+      );
+    }
     case 'usageYn': {
       const usageYn = normalizeUsageYn(channel.usageYn);
       return (
@@ -58,8 +74,6 @@ const getCellContent = (
       );
     case 'createdAt':
       return formatDateString(channel.createdAt);
-    case 'categoryName':
-      return channel.categoryList?.map((c) => c.categoryName).join(', ') || '-';
     case 'episodeCount': {
       if (episodeCountByChannelId[channel.channelId] !== undefined) {
         return episodeCountByChannelId[channel.channelId];
@@ -138,7 +152,9 @@ const ProdChannelList: React.FC<ProdChannelListProps> = ({
             {COLUMNS.map((col) => (
               <div
                 key={col.key}
-                className='px-2 shrink-0 text-sm truncate'
+                className={`px-2 shrink-0 text-sm ${
+                  col.key === 'categoryName' ? '' : 'truncate'
+                }`}
                 style={{ width: col.width }}
               >
                 {getCellContent(

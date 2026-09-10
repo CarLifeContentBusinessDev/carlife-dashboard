@@ -20,7 +20,7 @@ const CHANNEL_FIELD_DEFS: Array<{
   { key: 'channelName', label: '채널명' },
   { key: 'vendorName', label: '제작사명' },
   { key: 'usageYn', label: '활성 상태' },
-  { key: 'categoryList', label: '카테고리' },
+  { key: 'categoryName', label: '카테고리' },
   { key: 'channelTypeName', label: '채널 타입' },
   { key: 'createdAt', label: '등록일' },
   { key: 'likeCnt', label: '좋아요수' },
@@ -54,13 +54,9 @@ const isImageUrl = (url: string) =>
 
 const formatFieldValue = (
   key: keyof usingChannelProps,
-  value: usingChannelProps[keyof usingChannelProps]
+  value: string | number,
+  channel?: usingChannelProps
 ): React.ReactNode => {
-  if (key === 'categoryList') {
-    const categoryList = value as usingChannelProps['categoryList'];
-    return categoryList?.map((c) => c.categoryName).join(', ') || '-';
-  }
-
   if (key === 'dispDtime' || key === 'createdAt') {
     return formatDateString(String(value));
   }
@@ -94,6 +90,31 @@ const formatFieldValue = (
             />
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (key === 'categoryName') {
+    const categories =
+      channel?.categoryList && channel.categoryList.length > 0
+        ? channel.categoryList.map((c) => c.categoryName)
+        : String(value ?? '')
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean);
+
+    if (categories.length === 0) return '-';
+
+    return (
+      <div className='flex flex-wrap gap-1'>
+        {categories.map((category) => (
+          <span
+            key={category}
+            className='px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-xs whitespace-nowrap'
+          >
+            {category}
+          </span>
+        ))}
       </div>
     );
   }
@@ -254,7 +275,11 @@ const ProdChannelDetail = () => {
                         : 'py-3'
                     }`}
                   >
-                    {formatFieldValue(field.key, channel[field.key])}
+                    {formatFieldValue(
+                      field.key,
+                      channel[field.key] as string | number,
+                      channel
+                    )}
                   </div>
                 </div>
               );
