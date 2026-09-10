@@ -15,6 +15,16 @@ export interface usingDataProps {
 
 export interface usingChannelProps {
   channelId: number;
+  categoryList?: {
+    categoryId: number;
+    categoryName: string;
+    displayOrder: number;
+  }[];
+  vendorList?: {
+    vendorId: number;
+    vendorName: string;
+    displayOrder: number;
+  }[];
   interfaceUrl: string;
   usageYn: string;
   channelName: string;
